@@ -1,0 +1,145 @@
+@model Bakery.Domain.Entities.ProductionRecipe
+@{
+    ViewData["Title"] = "وصفة شكارة الدقيق";
+    var rawMaterials = ViewBag.RawMaterials as IEnumerable<Bakery.Domain.Entities.RawMaterial> ?? new List<Bakery.Domain.Entities.RawMaterial>();
+    var itemsList = Model.RecipeItems.ToList();
+}
+
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-scroll text-warning me-2"></i> مقادير معيار شكارة الدقيق الواحدة</h2>
+        <p class="text-muted mb-0">تحديد واستبدال خامات ومقادير الخلطة اللازمة لإنتاج شكارة دقيق واحدة</p>
+    </div>
+</div>
+
+<div class="card card-custom mb-4 border-warning border-2">
+    <div class="card-body bg-light p-3 d-flex align-items-center gap-3">
+        <i class="fa-solid fa-lightbulb text-warning fs-2"></i>
+        <div>
+            <h6 class="fw-bold mb-1 text-dark">كيف تعمل الوصفة؟</h6>
+            <p class="mb-0 text-secondary small">
+                عند إدخال عدد الشكاير في قسم الإنتاج اليومي، يقوم النظام تلقائياً بضرب عدد الشكاير في المقادير المحددة أدناه لحساب إجمالي الخامات المطلوبة بدقة وتحديد مدى توافرها بالمخزن قبل تأكيد التشغيل.
+            </p>
+        </div>
+    </div>
+</div>
+
+<form asp-action="Save" method="post">
+    <div class="card card-custom mb-4">
+        <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center py-3">
+            <span><i class="fa-solid fa-list-check me-2 text-primary"></i> مكونات الوصفة الحالية</span>
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addRecipeRow()">
+                <i class="fa-solid fa-plus me-1"></i> إضافة خامة جديدة للوصفة
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bakery mb-0" id="recipeTable">
+                    <thead>
+                        <tr>
+                            <th>المادة الخام المطلوبة</th>
+                            <th>الكمية المطلوبة لشكارة واحدة</th>
+                            <th style="width: 100px;" class="text-center">إزالة</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recipeTbody">
+                        @if (itemsList.Any())
+                        {
+                            for (int i = 0; i < itemsList.Count; i++)
+                            {
+                                <tr>
+                                    <td>
+                                        <select name="items[@i].RawMaterialId" class="form-select" required>
+                                            <option value="">-- اختر المادة الخام --</option>
+                                            @foreach (var mat in rawMaterials)
+                                            {
+                                                <option value="@mat.Id" selected="@(itemsList[i].RawMaterialId == mat.Id)">
+                                                    @mat.Name (@mat.MeasurementUnit?.Name)
+                                                </option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <div class="input-group">
+                                            <input type="number" step="0.001" name="items[@i].RequiredQuantity" value="@itemsList[i].RequiredQuantity" class="form-control fw-bold" required />
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr id="emptyRow">
+                                <td colspan="3" class="text-center p-4 text-muted">لا توجد خامات مضافة للوصفة بعد. اضغط على إضافة خامة جديدة للبدء.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-white p-3 text-end">
+            <button type="submit" class="btn btn-bakery btn-lg px-4">
+                <i class="fa-solid fa-floppy-disk me-1"></i> حفظ الوصفة والمعايير
+            </button>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        let rawMaterialsOptions = `
+            <option value="">-- اختر المادة الخام --</option>
+            @foreach (var mat in rawMaterials)
+            {
+                <text><option value="@mat.Id">@mat.Name (@mat.MeasurementUnit?.Name)</option></text>
+            }
+        `;
+
+        function addRecipeRow() {
+            const emptyRow = document.getElementById('emptyRow');
+            if (emptyRow) emptyRow.remove();
+
+            const tbody = document.getElementById('recipeTbody');
+            const rowCount = tbody.querySelectorAll('tr').length;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>
+                    <select name="items[${rowCount}].RawMaterialId" class="form-select" required>
+                        ${rawMaterialsOptions}
+                    </select>
+                </td>
+                <td>
+                    <input type="number" step="0.001" name="items[${rowCount}].RequiredQuantity" value="1" class="form-control fw-bold" required />
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+            reindexRows();
+        }
+
+        function removeRow(btn) {
+            btn.closest('tr').remove();
+            reindexRows();
+        }
+
+        function reindexRows() {
+            const rows = document.querySelectorAll('#recipeTbody tr');
+            rows.forEach((row, index) => {
+                const select = row.querySelector('select');
+                const input = row.querySelector('input');
+                if (select) select.name = `items[${index}].RawMaterialId`;
+                if (input) input.name = `items[${index}].RequiredQuantity`;
+            });
+        }
+    </script>
+}

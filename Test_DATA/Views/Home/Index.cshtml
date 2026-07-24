@@ -1,0 +1,153 @@
+@model Bakery.Business.DTOs.DashboardSummaryDto
+@{
+    ViewData["Title"] = "لوحة التحكم الرئيسية";
+}
+
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-chart-pie me-2 text-warning"></i> لوحة التحكم والإحصائيات</h2>
+        <p class="text-muted mb-0">نظرة عامة سريعة على حركة المصنع والإنتاج والمخزن اليوم</p>
+    </div>
+    <div class="col-auto">
+        <span class="badge bg-light text-dark p-2 fs-6 border"><i class="fa-solid fa-calendar-day text-primary me-1"></i> اليوم: @DateTime.Today.ToString("yyyy/MM/dd")</span>
+    </div>
+</div>
+
+<!-- Dashboard Stat Cards Row 1 -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card bg-amber">
+            <div>
+                <div class="stat-title">عدد الشكاير اليوم</div>
+                <div class="stat-value">@Model.TodayFlourSacks <small class="fs-6">شكارة</small></div>
+            </div>
+            <div class="stat-icon"><i class="fa-solid fa-wheat-awn"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-blue">
+            <div>
+                <div class="stat-title">الإنتاج المستهدف</div>
+                <div class="stat-value">@Model.TodayTargetProduction <small class="fs-6">قطعة</small></div>
+            </div>
+            <div class="stat-icon"><i class="fa-solid fa-bullseye"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-emerald">
+            <div>
+                <div class="stat-title">الإنتاج الفعلي</div>
+                <div class="stat-value">@Model.TodayActualProduction <small class="fs-6">قطعة</small></div>
+            </div>
+            <div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-purple">
+            <div>
+                <div class="stat-title">عدد الباسكيت اليوم</div>
+                <div class="stat-value">@Model.TodayActualBaskets <small class="fs-6">من @Model.TodayExpectedBaskets</small></div>
+            </div>
+            <div class="stat-icon"><i class="fa-solid fa-basket-shopping"></i></div>
+        </div>
+    </div>
+</div>
+
+<!-- Dashboard Stat Cards Row 2 -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card bg-slate">
+            <div>
+                <div class="stat-title">قيمة المخزن الحالية</div>
+                <div class="stat-value">@Model.InventoryTotalValue.ToString("N2") <small class="fs-6">ج.م</small></div>
+            </div>
+            <div class="stat-icon"><i class="fa-solid fa-warehouse"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-emerald">
+            <div>
+                <div class="stat-title">دخل اليوم</div>
+                <div class="stat-value">@Model.TodayIncome.ToString("N2") <small class="fs-6">ج.م</small></div>
+            </div>
+            <div class="stat-icon"><i class="fa-solid fa-money-bill-trend-up"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-rose">
+            <div>
+                <div class="stat-title">مصروفات اليوم</div>
+                <div class="stat-value">@Model.TodayExpenses.ToString("N2") <small class="fs-6">ج.م</small></div>
+            </div>
+            <div class="stat-icon"><i class="fa-solid fa-money-bill-transfer"></i></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card @(Model.TodayNetProfit >= 0 ? "bg-emerald" : "bg-rose")">
+            <div>
+                <div class="stat-title">صافي ربح اليوم</div>
+                <div class="stat-value">@Model.TodayNetProfit.ToString("N2") <small class="fs-6">ج.م</small></div>
+            </div>
+            <div class="stat-icon"><i class="fa-solid fa-coins"></i></div>
+        </div>
+    </div>
+</div>
+
+<!-- Extra Alert Cards & Low Stock Table -->
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card card-custom h-100">
+            <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center py-3">
+                <span><i class="fa-solid fa-triangle-exclamation text-warning me-2"></i> خامات قاربت على النفاد (تنبيه المخزن)</span>
+                <a asp-controller="Inventory" asp-action="Index" class="btn btn-sm btn-outline-warning">إدارة المخزن</a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.LowStockMaterials.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-bakery mb-0">
+                            <thead>
+                                <tr>
+                                    <th>اسم المادة الخام</th>
+                                    <th>الكمية المتاحة حالياً</th>
+                                    <th>الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var mat in Model.LowStockMaterials)
+                                {
+                                    <tr>
+                                        <td class="fw-bold">@mat.Name</td>
+                                        <td class="text-danger fw-bold">@mat.CurrentQuantity @mat.UnitName</td>
+                                        <td><span class="badge bg-danger">منخفض جداً</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="p-4 text-center text-success">
+                        <i class="fa-solid fa-circle-check fs-1 mb-2 d-block"></i>
+                         ممتاز! جميع الخامات بالمخزن متوفرة بكميات آمنة.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card card-custom h-100">
+            <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center py-3">
+                <span><i class="fa-solid fa-scale-unbalanced text-danger me-2"></i> المبالغ المتبقية غير المدفوعة (التزامات)</span>
+                <a asp-controller="Expenses" asp-action="Index" class="btn btn-sm btn-outline-danger">مراجعة المصروفات</a>
+            </div>
+            <div class="card-body d-flex flex-column justify-content-center text-center p-4">
+                <h5 class="text-muted mb-2">إجمالي مبالغ المصروفات المتبقية (غير سادادها):</h5>
+                <h2 class="display-5 fw-extrabold text-danger mb-3">@Model.RemainingAmountsPayable.ToString("N2") <small class="fs-4 text-dark">ج.م</small></h2>
+                <p class="text-secondary small mb-0">ملاحظة: المبالغ غير المدفوعة لا تُحسب ضمن النقدية المتاحة بالخزينة لحين سدادها.</p>
+            </div>
+        </div>
+    </div>
+</div>

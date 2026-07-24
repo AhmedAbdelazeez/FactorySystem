@@ -1,0 +1,209 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap');
+
+:root {
+    --primary-color: #d97706; /* Amber 600 */
+    --primary-hover: #b45309;
+    --primary-light: #fef3c7;
+    --secondary-color: #78350f;
+    --bg-color: #f8fafc;
+    --card-bg: #ffffff;
+    --text-color: #1e293b;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --info-color: #0284c7;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --radius: 12px;
+}
+
+body {
+    font-family: 'Cairo', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    direction: rtl;
+    text-align: right;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+/* Navbar */
+.bakery-navbar {
+    background: linear-gradient(135deg, #78350f 0%, #b45309 100%);
+    box-shadow: var(--shadow-lg);
+    padding: 0.8rem 1.5rem;
+}
+
+.bakery-navbar .navbar-brand {
+    font-weight: 800;
+    font-size: 1.4rem;
+    color: #ffffff !important;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.bakery-navbar .nav-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 600;
+    padding: 0.5rem 1rem !important;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.bakery-navbar .nav-link:hover,
+.bakery-navbar .nav-link.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff !important;
+}
+
+/* Cards & Layout */
+.card-custom {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
+}
+
+.card-custom:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-card {
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--shadow);
+}
+
+.stat-card .stat-icon {
+    font-size: 2.5rem;
+    opacity: 0.85;
+}
+
+.stat-card .stat-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    opacity: 0.9;
+}
+
+.stat-card .stat-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin: 0;
+}
+
+.bg-amber { background: linear-gradient(135deg, #d97706, #b45309); }
+.bg-emerald { background: linear-gradient(135deg, #10b981, #047857); }
+.bg-blue { background: linear-gradient(135deg, #0284c7, #0369a1); }
+.bg-rose { background: linear-gradient(135deg, #f43f5e, #be123c); }
+.bg-purple { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+.bg-slate { background: linear-gradient(135deg, #475569, #334155); }
+
+/* Buttons */
+.btn-bakery {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 0.5rem 1.25rem;
+    border: none;
+    transition: background 0.2s ease;
+}
+
+.btn-bakery:hover {
+    background-color: var(--primary-hover);
+    color: #ffffff;
+}
+
+/* Table */
+.table-bakery {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+}
+
+.table-bakery th {
+    background-color: #f1f5f9;
+    color: #334155;
+    font-weight: 700;
+    border-bottom: 2px solid var(--border-color);
+    padding: 0.85rem 1rem;
+}
+
+.table-bakery td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.table-bakery tr:hover td {
+    background-color: #f8fafc;
+}
+
+/* Funny Bakery Loader Overlay */
+#bakeryLoader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 99999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.loader-card {
+    background: #ffffff;
+    padding: 2.5rem 3rem;
+    border-radius: 20px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    text-align: center;
+    max-width: 420px;
+    width: 90%;
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.loader-icon {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    display: inline-block;
+    animation: spinBakery 2s infinite linear;
+}
+
+@keyframes spinBakery {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.1); }
+    100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes popIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.loader-text {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #78350f;
+    margin-top: 0.5rem;
+}
+
+.loader-subtext {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}

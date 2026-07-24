@@ -1,0 +1,92 @@
+@model IEnumerable<Bakery.Domain.Entities.InventoryTransaction>
+@{
+    ViewData["Title"] = "سجل حركة المخزن";
+    var rawMaterials = ViewBag.RawMaterials as IEnumerable<Bakery.Domain.Entities.RawMaterial> ?? new List<Bakery.Domain.Entities.RawMaterial>();
+}
+
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-clock-rotate-left text-warning me-2"></i> سجل حركة المخزن والتوريدات والخصم</h2>
+        <p class="text-muted mb-0">بيان تفصيلي لجميع عمليات الإضافة والخصم الآلي من مخزن المواد الخام</p>
+    </div>
+    <div class="col-auto">
+        <a asp-action="Index" class="btn btn-outline-primary"><i class="fa-solid fa-arrow-right me-1"></i> العودة للمخزن الرئيسية</a>
+    </div>
+</div>
+
+<div class="card card-custom p-3 mb-4">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-8">
+            <label class="form-label fw-bold small">فلترة حسب المادة الخام</label>
+            <select name="rawMaterialId" class="form-select">
+                <option value="">جميع المواد الخام</option>
+                @foreach (var mat in rawMaterials)
+                {
+                    <option value="@mat.Id" selected="@(ViewBag.SelectedMaterialId == mat.Id)">@mat.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-filter me-1"></i> عرض الحركات</button>
+            <a asp-action="Transactions" class="btn btn-outline-secondary"><i class="fa-solid fa-rotate"></i></a>
+        </div>
+    </form>
+</div>
+
+<div class="card card-custom">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bakery mb-0">
+                <thead>
+                    <tr>
+                        <th>التاريخ والوقت</th>
+                        <th>المادة الخام</th>
+                        <th>نوع الحركة</th>
+                        <th>الكمية</th>
+                        <th>سعر الوحدة</th>
+                        <th>الإجمالي</th>
+                        <th>البيان والتفاصيل</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        foreach (var tx in Model)
+                        {
+                            <tr>
+                                <td class="small text-muted fw-bold">@tx.TransactionDate.ToString("yyyy/MM/dd HH:mm")</td>
+                                <td class="fw-bold">@(tx.RawMaterial?.Name ?? "-")</td>
+                                <td>
+                                    @switch (tx.TransactionType)
+                                    {
+                                        case TransactionType.Purchase:
+                                            <span class="badge bg-success"><i class="fa-solid fa-plus me-1"></i> توريد / إضافة</span>
+                                            break;
+                                        case TransactionType.ProductionDeduction:
+                                            <span class="badge bg-danger"><i class="fa-solid fa-minus me-1"></i> خصم استهلاك إنتاج</span>
+                                            break;
+                                        default:
+                                            <span class="badge bg-secondary">تسوية</span>
+                                            break;
+                                    }
+                                </td>
+                                <td class="fw-bold fs-6 @(tx.Quantity > 0 ? "text-success" : "text-danger")">
+                                    @(tx.Quantity > 0 ? "+" : "")@tx.Quantity.ToString("0.###") @(tx.RawMaterial?.MeasurementUnit?.Name)
+                                </td>
+                                <td>@tx.UnitPrice.ToString("N2") ج.م</td>
+                                <td>@tx.TotalAmount.ToString("N2") ج.م</td>
+                                <td class="small text-secondary">@tx.Notes</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center p-4 text-muted">لا توجد حركات مخزنية مسجلة حتى الآن.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,318 @@
+@model IEnumerable<Bakery.Domain.Entities.Expense>
+@{
+    ViewData["Title"] = "إدارة المصروفات";
+    var categories = ViewBag.Categories as IEnumerable<Bakery.Domain.Entities.ExpenseCategory> ?? new List<Bakery.Domain.Entities.ExpenseCategory>();
+    var rawMaterials = ViewBag.RawMaterials as IEnumerable<Bakery.Domain.Entities.RawMaterial> ?? new List<Bakery.Domain.Entities.RawMaterial>();
+    var employees = ViewBag.Employees as IEnumerable<Bakery.Domain.Entities.Employee> ?? new List<Bakery.Domain.Entities.Employee>();
+
+    decimal totalAll = Model.Sum(e => e.TotalAmount);
+    decimal paidAll = Model.Sum(e => e.PaidAmount);
+    decimal remainingAll = Model.Sum(e => e.RemainingAmount);
+}
+
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-receipt text-warning me-2"></i> المصروفات اليومية والشهرية</h2>
+        <p class="text-muted mb-0">تسجيل ومتابعة مصروفات العمالة، المواد الخام، والمصاريف التشغيلية</p>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-bakery" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
+            <i class="fa-solid fa-plus me-1"></i> إضافة مصروف جديد
+        </button>
+    </div>
+</div>
+
+<!-- Summary Bar -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card card-custom p-3 text-center border-start border-primary border-4">
+            <div class="text-muted small fw-bold">إجمالي المصروفات المعروضة</div>
+            <div class="fs-4 fw-extrabold text-primary">@totalAll.ToString("N2") ج.م</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom p-3 text-center border-start border-success border-4">
+            <div class="text-muted small fw-bold">إجمالي المدفوع بالفعل</div>
+            <div class="fs-4 fw-extrabold text-success">@paidAll.ToString("N2") ج.م</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom p-3 text-center border-start border-danger border-4">
+            <div class="text-muted small fw-bold">إجمالي المتبقي (غير مدفوع)</div>
+            <div class="fs-4 fw-extrabold text-danger">@remainingAll.ToString("N2") ج.م</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card card-custom p-3 mb-4">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label fw-bold small">من تاريخ</label>
+            <input type="date" name="startDate" value="@ViewBag.StartDate" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-bold small">إلى تاريخ</label>
+            <input type="date" name="endDate" value="@ViewBag.EndDate" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-bold small">تصنيف المصروف</label>
+            <select name="categoryId" class="form-select">
+                <option value="">جميع التصنيفات</option>
+                @foreach (var cat in categories)
+                {
+                    <option value="@cat.Id" selected="@(ViewBag.SelectedCategoryId == cat.Id)">@cat.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-filter me-1"></i> تصفية</button>
+            <a asp-action="Index" class="btn btn-outline-secondary"><i class="fa-solid fa-rotate"></i></a>
+        </div>
+    </form>
+</div>
+
+<!-- Expenses Table -->
+<div class="card card-custom">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bakery mb-0">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>اسم المصروف</th>
+                        <th>التصنيف</th>
+                        <th>الكمية</th>
+                        <th>سعر الوحدة</th>
+                        <th>الإجمالي</th>
+                        <th>طريقة الدفع</th>
+                        <th>المدفوع</th>
+                        <th>المتبقي</th>
+                        <th>ملاحظات / العامل</th>
+                        <th class="text-center">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="fw-bold text-muted">@item.Date.ToString("yyyy/MM/dd")</td>
+                                <td class="fw-bold">@item.Name</td>
+                                <td><span class="badge bg-light text-dark border">@(item.ExpenseCategory?.Name ?? "-")</span></td>
+                                <td>@item.Quantity</td>
+                                <td>@item.UnitPrice.ToString("N2")</td>
+                                <td class="fw-bold text-primary">@item.TotalAmount.ToString("N2")</td>
+                                <td>
+                                    @switch (item.PaymentMethod)
+                                    {
+                                        case PaymentMethod.Cash:
+                                            <span class="badge bg-success">كاش</span>
+                                            break;
+                                        case PaymentMethod.BankTransfer:
+                                            <span class="badge bg-info text-dark">تحويل بنكي</span>
+                                            break;
+                                        case PaymentMethod.PartiallyPaid:
+                                            <span class="badge bg-warning text-dark">مدفوع جزئياً</span>
+                                            break;
+                                        case PaymentMethod.Unpaid:
+                                            <span class="badge bg-danger">غير مدفوع</span>
+                                            break;
+                                    }
+                                </td>
+                                <td class="text-success fw-bold">@item.PaidAmount.ToString("N2")</td>
+                                <td class="@(item.RemainingAmount > 0 ? "text-danger fw-bold" : "text-muted")">@item.RemainingAmount.ToString("N2")</td>
+                                <td>
+                                    <small class="d-block text-secondary">@item.Notes</small>
+                                    @if (item.Employee != null)
+                                    {
+                                        <small class="badge bg-secondary"><i class="fa-solid fa-user me-1"></i> @item.Employee.Name</small>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (item.RemainingAmount > 0)
+                                    {
+                                        <button class="btn btn-sm btn-outline-success" onclick="openPayModal(@item.Id, '@item.Name', @item.RemainingAmount)">
+                                            <i class="fa-solid fa-hand-holding-dollar"></i> سداد
+                                        </button>
+                                    }
+                                    <form asp-action="Delete" method="post" class="d-inline" onsubmit="return confirm('هل أنت تأكد من حذف هذا المصروف؟');">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="11" class="text-center p-4 text-muted">لا توجد مصروفات مسجلة للفترة المحددة.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add Expense -->
+<div class="modal fade" id="addExpenseModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-amber text-white">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-plus me-1"></i> إضافة مصروف جديد</h5>
+                <button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="Create" method="post" id="addExpenseForm">
+                <div class="modal-body row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">اسم المصروف <span class="text-danger">*</span></label>
+                        <input type="text" name="Name" required class="form-control" placeholder="مثال: فاتورة كهرباء / شراء دقيق / راتب عمال" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">تصنيف المصروف <span class="text-danger">*</span></label>
+                        <select name="ExpenseCategoryId" required class="form-select" id="expCategorySelect">
+                            @foreach (var cat in categories)
+                            {
+                                <option value="@cat.Id">@cat.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">الكمية</label>
+                        <input type="number" step="0.001" name="Quantity" id="expQty" value="1" class="form-control" oninput="calcExpTotal()" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">سعر الوحدة</label>
+                        <input type="number" step="0.01" name="UnitPrice" id="expPrice" value="0" class="form-control" oninput="calcExpTotal()" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">المبلغ الإجمالي</label>
+                        <input type="number" step="0.01" name="TotalAmount" id="expTotal" readonly class="form-control bg-light fw-bold text-primary" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">طريقة الدفع</label>
+                        <select name="PaymentMethod" id="expPaymentMethod" class="form-select" onchange="togglePaidAmount()">
+                            <option value="1">كاش (مدفوع بالكامل)</option>
+                            <option value="2">تحويل بنكي (مدفوع بالكامل)</option>
+                            <option value="3">مدفوع جزئياً</option>
+                            <option value="4">غير مدفوع (آجل)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">المبلغ المدفوع</label>
+                        <input type="number" step="0.01" name="PaidAmount" id="expPaidAmount" value="0" class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">تاريخ المصروف</label>
+                        <input type="date" name="Date" value="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">ربط بعامل (اختياري)</label>
+                        <select name="EmployeeId" class="form-select">
+                            <option value="">-- بدون عامل --</option>
+                            @foreach (var emp in employees)
+                            {
+                                <option value="@emp.Id">@emp.Name (@emp.JobTitle)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">ربط بمادة خام لزيادة المخزن (اختياري)</label>
+                        <select name="linkedRawMaterialId" class="form-select">
+                            <option value="">-- لا يوجد (لا يؤثر على كمية المخزن) --</option>
+                            @foreach (var mat in rawMaterials)
+                            {
+                                <option value="@mat.Id">@mat.Name (@mat.MeasurementUnit?.Name)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">ملاحظات</label>
+                        <input type="text" name="Notes" class="form-control" placeholder="ملاحظات تفصيلية..." />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-bakery">حفظ المصروف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Pay Remaining -->
+<div class="modal fade" id="payModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-hand-holding-dollar me-1"></i> سداد متبقي مصروف</h5>
+                <button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="PayRemaining" method="post">
+                <input type="hidden" name="expenseId" id="payExpenseId" />
+                <div class="modal-body g-3">
+                    <p class="fw-bold mb-2">اسم المصروف: <span id="payExpenseName" class="text-primary"></span></p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">المبلغ المتبقي المستحق</label>
+                        <input type="text" id="payRemainingDisp" readonly class="form-control bg-light fw-bold text-danger" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">المبلغ المدفوع الآن <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" name="amountPaidNow" id="payNowVal" required class="form-control fw-bold" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">طريقة السداد</label>
+                        <select name="paymentMethod" class="form-select">
+                            <option value="1">كاش</option>
+                            <option value="2">تحويل بنكي</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-success fw-bold">تأكيد السداد</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function calcExpTotal() {
+            const qty = parseFloat(document.getElementById('expQty').value) || 0;
+            const price = parseFloat(document.getElementById('expPrice').value) || 0;
+            const total = qty * price;
+            document.getElementById('expTotal').value = total.toFixed(2);
+            togglePaidAmount();
+        }
+
+        function togglePaidAmount() {
+            const pm = document.getElementById('expPaymentMethod').value;
+            const total = parseFloat(document.getElementById('expTotal').value) || 0;
+            const paidInp = document.getElementById('expPaidAmount');
+
+            if (pm === '1' || pm === '2') { // Cash or Bank
+                paidInp.value = total.toFixed(2);
+                paidInp.readOnly = true;
+            } else if (pm === '4') { // Unpaid
+                paidInp.value = '0.00';
+                paidInp.readOnly = true;
+            } else { // PartiallyPaid
+                paidInp.readOnly = false;
+            }
+        }
+
+        function openPayModal(id, name, remaining) {
+            document.getElementById('payExpenseId').value = id;
+            document.getElementById('payExpenseName').innerText = name;
+            document.getElementById('payRemainingDisp').value = remaining.toFixed(2) + " ج.م";
+            document.getElementById('payNowVal').value = remaining.toFixed(2);
+            document.getElementById('payNowVal').max = remaining;
+            new bootstrap.Modal(document.getElementById('payModal')).show();
+        }
+    </script>
+}

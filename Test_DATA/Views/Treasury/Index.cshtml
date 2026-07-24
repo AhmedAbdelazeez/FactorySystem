@@ -1,0 +1,198 @@
+@model IEnumerable<Bakery.Domain.Entities.TreasuryTransaction>
+@{
+    ViewData["Title"] = "الخزينة والأرباح";
+    var summary = ViewBag.Summary as Bakery.Business.DTOs.TreasurySummaryDto ?? new Bakery.Business.DTOs.TreasurySummaryDto();
+}
+
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-vault text-warning me-2"></i> حركة الخزينة والأرباح الإجمالية</h2>
+        <p class="text-muted mb-0">بيان تفصيلي بالمبيعات، المصروفات، النقدية المتاحة بالخزينة، والمتبقيات</p>
+    </div>
+</div>
+
+<!-- Net Profit & Treasury Summary Main Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card card-custom p-4 bg-emerald text-white text-center">
+            <h6 class="text-white-50 fw-bold mb-1">إجمالي الإيرادات (المبيعات الفعلية)</h6>
+            <h2 class="fw-extrabold mb-0">@summary.TotalIncome.ToString("N2") <small class="fs-5">ج.م</small></h2>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom p-4 bg-rose text-white text-center">
+            <h6 class="text-white-50 fw-bold mb-1">إجمالي المصروفات الكلية</h6>
+            <h2 class="fw-extrabold mb-0">@summary.TotalExpenses.ToString("N2") <small class="fs-5">ج.م</small></h2>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom p-4 @(summary.NetProfit >= 0 ? "bg-amber" : "bg-danger") text-white text-center">
+            <h6 class="text-white-50 fw-bold mb-1">صافي الربح الفعلي (الإيراد - المصروف)</h6>
+            <h2 class="fw-extrabold mb-0">@summary.NetProfit.ToString("N2") <small class="fs-5">ج.م</small></h2>
+        </div>
+    </div>
+</div>
+
+<!-- Breakdown Financial Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-start border-success border-4">
+            <small class="text-muted fw-bold">الرصيد النقدي بالكاش (الخزينة الحالية)</small>
+            <div class="fs-4 fw-extrabold text-success mt-1">@summary.CashBalance.ToString("N2") ج.م</div>
+            <small class="text-secondary">المبالغ الكاش المحصلة فعلياً</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-start border-info border-4">
+            <small class="text-muted fw-bold">رصيد التحويلات البنكية</small>
+            <div class="fs-4 fw-extrabold text-info mt-1">@summary.BankTransferBalance.ToString("N2") ج.م</div>
+            <small class="text-secondary">المبالغ بالبنوك أو المحافظ</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-start border-danger border-4">
+            <small class="text-muted fw-bold">المبالغ المتبقية المستحقة (آجل)</small>
+            <div class="fs-4 fw-extrabold text-danger mt-1">@summary.TotalRemainingAmountsPayable.ToString("N2") ج.م</div>
+            <small class="text-danger small">غير محسوبة ضمن الكاش المتاح</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-start border-secondary border-4">
+            <small class="text-muted fw-bold">إجمالي قيمة البضاعة بالمخزن</small>
+            <div class="fs-4 fw-extrabold text-secondary mt-1">@summary.InventoryValue.ToString("N2") ج.م</div>
+            <small class="text-secondary">خامات دقيق وزبدة وسكر ومستلزمات</small>
+        </div>
+    </div>
+</div>
+
+<!-- Expenses Categories Breakdown -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card card-custom p-3 bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-users text-primary me-2"></i> مصروفات العمالة والأجور</span>
+                <span class="fw-bold fs-5 text-dark">@summary.LaborExpenses.ToString("N2") ج.م</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom p-3 bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-boxes-stacked text-warning me-2"></i> مصروفات شراء الخامات</span>
+                <span class="fw-bold fs-5 text-dark">@summary.RawMaterialExpenses.ToString("N2") ج.م</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom p-3 bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-bolt text-danger me-2"></i> المصاريف التشغيلية (كهرباء، غاز...)</span>
+                <span class="fw-bold fs-5 text-dark">@summary.OperatingExpenses.ToString("N2") ج.م</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card card-custom p-3 mb-4">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label fw-bold small">من تاريخ</label>
+            <input type="date" name="startDate" value="@ViewBag.StartDate" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-bold small">إلى تاريخ</label>
+            <input type="date" name="endDate" value="@ViewBag.EndDate" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-bold small">نوع المعاملة</label>
+            <select name="type" class="form-select">
+                <option value="">جميع المعاملات</option>
+                <option value="1" selected="@(ViewBag.SelectedType == TreasuryTransactionType.Income)">إيرادات (مبيعات)</option>
+                <option value="2" selected="@(ViewBag.SelectedType == TreasuryTransactionType.Expense)">مصروفات</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-filter me-1"></i> عرض سجل الخزينة</button>
+            <a asp-action="Index" class="btn btn-outline-secondary"><i class="fa-solid fa-rotate"></i></a>
+        </div>
+    </form>
+</div>
+
+<!-- Treasury Detailed Log Table -->
+<div class="card card-custom">
+    <div class="card-header bg-white fw-bold py-3">
+        <i class="fa-solid fa-list-ul text-warning me-2"></i> سجل حركة معاملات الخزينة اليومية
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bakery mb-0">
+                <thead>
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>اسم المعاملة</th>
+                        <th>نوع المعاملة</th>
+                        <th>التصنيف</th>
+                        <th>المبلغ الإجمالي</th>
+                        <th>طريقة الدفع</th>
+                        <th>المبلغ المدفوع</th>
+                        <th>المتبقي</th>
+                        <th>ملاحظات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        foreach (var tx in Model)
+                        {
+                            <tr>
+                                <td class="small text-muted fw-bold">@tx.Date.ToString("yyyy/MM/dd HH:mm")</td>
+                                <td class="fw-bold">@tx.TransactionName</td>
+                                <td>
+                                    @if (tx.TransactionType == TreasuryTransactionType.Income)
+                                    {
+                                        <span class="badge bg-success"><i class="fa-solid fa-arrow-down-left me-1"></i> إيراد</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger"><i class="fa-solid fa-arrow-up-right me-1"></i> مصروف</span>
+                                    }
+                                </td>
+                                <td><span class="badge bg-light text-dark border">@tx.Category</span></td>
+                                <td class="fw-bold @(tx.TransactionType == TreasuryTransactionType.Income ? "text-success" : "text-danger")">
+                                    @tx.Amount.ToString("N2") ج.م
+                                </td>
+                                <td>
+                                    @switch (tx.PaymentMethod)
+                                    {
+                                        case PaymentMethod.Cash:
+                                            <span class="badge bg-success">كاش</span>
+                                            break;
+                                        case PaymentMethod.BankTransfer:
+                                            <span class="badge bg-info text-dark">تحويل بنكي</span>
+                                            break;
+                                        case PaymentMethod.PartiallyPaid:
+                                            <span class="badge bg-warning text-dark">جزئي</span>
+                                            break;
+                                        case PaymentMethod.Unpaid:
+                                            <span class="badge bg-danger">آجل (غير مدفوع)</span>
+                                            break;
+                                    }
+                                </td>
+                                <td class="fw-bold text-success">@tx.PaidAmount.ToString("N2") ج.م</td>
+                                <td class="@(tx.RemainingAmount > 0 ? "fw-bold text-danger" : "text-muted")">@tx.RemainingAmount.ToString("N2") ج.م</td>
+                                <td class="small text-secondary">@tx.Notes</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center p-4 text-muted">لا توجد معاملات مسجلة بالخزينة للفترة المحددة.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
