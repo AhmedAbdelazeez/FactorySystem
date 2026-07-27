@@ -1,0 +1,177 @@
+@model IEnumerable<Bakery.Domain.Entities.EmployeeAttendance>
+@{
+    ViewData["Title"] = "حضور وانصراف العاملين";
+    var selectedDateStr = ViewBag.SelectedDate as string ?? DateTime.Today.ToString("yyyy-MM-dd");
+    var totalEmployees = Model.Count();
+    var presentCount = Model.Count(a => a.IsPresent);
+    var absentCount = totalEmployees - presentCount;
+}
+
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-clipboard-user text-warning me-2"></i> سجل حضور وانصراف العاملين</h2>
+        <p class="text-muted mb-0">اختر الموظف وأكد حضوره لليوم بضغطة زر واحدة</p>
+    </div>
+    <div class="col-auto">
+        <form method="get" class="d-flex align-items-center gap-2">
+            <label class="fw-bold text-secondary mb-0">التاريخ:</label>
+            <input type="date" name="date" value="@selectedDateStr" class="form-control fw-bold" onchange="this.form.submit()" />
+            <button type="submit" class="btn btn-outline-secondary"><i class="fa-solid fa-filter"></i></button>
+        </form>
+    </div>
+</div>
+
+<!-- Stats Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card card-custom p-3 border-start border-primary border-4 bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small d-block">إجمالي الموظفين</span>
+                    <span class="fs-3 fw-bold text-primary">@totalEmployees</span>
+                </div>
+                <i class="fa-solid fa-users fs-1 text-primary opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom p-3 border-start border-success border-4 bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small d-block">الحاضرين اليوم</span>
+                    <span class="fs-3 fw-bold text-success">@presentCount</span>
+                </div>
+                <i class="fa-solid fa-user-check fs-1 text-success opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom p-3 border-start border-danger border-4 bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small d-block">الغائبين اليوم</span>
+                    <span class="fs-3 fw-bold text-danger">@absentCount</span>
+                </div>
+                <i class="fa-solid fa-user-xmark fs-1 text-danger opacity-50"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Attendance Form & Table -->
+<form asp-action="SaveBulk" method="post">
+    <input type="hidden" name="date" value="@selectedDateStr" />
+    <div class="card card-custom">
+        <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center py-3">
+            <span><i class="fa-solid fa-list-check me-2 text-warning"></i> كشف حضور تاريخ: <span class="text-primary">@selectedDateStr</span></span>
+            <div>
+                <button type="button" class="btn btn-sm btn-outline-success me-2" onclick="selectAll(true)">
+                    <i class="fa-solid fa-check-double me-1"></i> تحديد الكل حاضر
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger me-2" onclick="selectAll(false)">
+                    <i class="fa-solid fa-xmark me-1"></i> إلغاء تحديد الكل
+                </button>
+                <button type="submit" class="btn btn-bakery btn-sm px-3 fw-bold">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> حفظ الكشف بالكامل
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bakery align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;" class="text-center">حضر؟</th>
+                            <th>اسم الموظف / العامل</th>
+                            <th>الوظيفة</th>
+                            <th>وقت تسجيل الحضور</th>
+                            <th>الحالة الراهنة</th>
+                            <th>ملاحظات الحضور</th>
+                            <th class="text-center">إجراء سريع</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Any())
+                        {
+                            foreach (var item in Model)
+                            {
+                                var emp = item.Employee;
+                                <tr>
+                                    <td class="text-center">
+                                        <input type="checkbox" name="presentEmployeeIds" value="@item.EmployeeId" class="form-check-input emp-check fs-5" @(item.IsPresent ? "checked" : "") />
+                                    </td>
+                                    <td class="fw-bold text-dark fs-6">
+                                        <i class="fa-solid fa-user-tie text-secondary me-2"></i> @(emp?.Name ?? "موظف")
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border">@(emp?.JobTitle ?? "-")</span></td>
+                                    <td>
+                                        @if (item.IsPresent && item.CheckInTime.HasValue)
+                                        {
+                                            <span class="badge bg-info text-dark"><i class="fa-solid fa-clock me-1"></i> @item.CheckInTime.Value.ToString("hh:mm tt")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (item.IsPresent)
+                                        {
+                                            <span class="badge bg-success p-2"><i class="fa-solid fa-circle-check me-1"></i> حاضر</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger p-2"><i class="fa-solid fa-circle-xmark me-1"></i> غائب</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <small class="text-secondary">@(string.IsNullOrEmpty(item.Notes) ? "-" : item.Notes)</small>
+                                    </td>
+                                    <td class="text-center">
+                                        @if (item.IsPresent)
+                                        {
+                                            <form asp-action="Confirm" method="post" class="d-inline">
+                                                <input type="hidden" name="employeeId" value="@item.EmployeeId" />
+                                                <input type="hidden" name="date" value="@selectedDateStr" />
+                                                <input type="hidden" name="isPresent" value="false" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="fa-solid fa-user-minus me-1"></i> تسجيل كـ غائب
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <form asp-action="Confirm" method="post" class="d-inline">
+                                                <input type="hidden" name="employeeId" value="@item.EmployeeId" />
+                                                <input type="hidden" name="date" value="@selectedDateStr" />
+                                                <input type="hidden" name="isPresent" value="true" />
+                                                <button type="submit" class="btn btn-sm btn-success fw-bold">
+                                                    <i class="fa-solid fa-user-check me-1"></i> تأكيد الحضور الآن
+                                                </button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center p-4 text-muted">لا يوجد موظفين مسجلين بالسستم بعد. يرجى إضافة موظفين أولاً.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        function selectAll(status) {
+            const checks = document.querySelectorAll('.emp-check');
+            checks.forEach(chk => chk.checked = status);
+        }
+    </script>
+}

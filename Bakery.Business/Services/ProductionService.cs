@@ -189,6 +189,14 @@ namespace Bakery.Business.Services
 
             var calc = await CalculateProductionTargetAsync(flourSackCount, customBasketPrice);
 
+            // Validation: Check stock availability before creating order
+            var insufficientList = calc.RequiredMaterials.Where(m => !m.IsSufficient).ToList();
+            if (insufficientList.Any())
+            {
+                var errorMsgs = string.Join("، ", insufficientList.Select(m => $"{m.MaterialName} (المتاح: {m.AvailableQuantity} {m.MeasurementUnitName} - المطلوب: {m.TotalRequiredQuantity} {m.MeasurementUnitName})"));
+                throw new InvalidOperationException($"عفواً، لا يمكن بدء الإنتاج اليومي لعدم وجود مخزون كافٍ بالمخزن للمواد التالية: {errorMsgs}");
+            }
+
             var order = new ProductionOrder
             {
                 ProductionDate = DateTime.Today,

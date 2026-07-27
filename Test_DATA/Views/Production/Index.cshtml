@@ -194,7 +194,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-bakery fw-bold">حفظ أمر الإنتاج (مسودة)</button>
+                    <button type="submit" id="submitProductionBtn" class="btn btn-bakery fw-bold">حفظ أمر الإنتاج (مسودة)</button>
                 </div>
             </form>
         </div>
@@ -251,13 +251,32 @@
                         document.getElementById('liveBaskets').innerText = d.expectedBaskets + " باسيكت (" + d.remainingPieces + " قطعة متبقية)";
                         document.getElementById('liveSalesVal').innerText = d.totalExpectedSalesValue.toFixed(2);
 
+                        let hasShortage = false;
                         let matHtml = `<table class="table table-sm table-bordered bg-white text-end mb-0"><thead><tr class="table-secondary"><th>المادة الخام</th><th>المطلوب لـ ${sacks} شكارة</th><th>المتاح بالمخزن</th><th>الحالة</th></tr></thead><tbody>`;
                         d.requiredMaterials.forEach(m => {
+                            if (!m.isSufficient) hasShortage = true;
                             const badge = m.isSufficient ? '<span class="badge bg-success">متوفر بالمخزن</span>' : `<span class="badge bg-danger">عجز: ${m.shortage} ${m.measurementUnitName}</span>`;
                             matHtml += `<tr><td>${m.materialName}</td><td class="fw-bold">${m.totalRequiredQuantity} ${m.measurementUnitName}</td><td>${m.availableQuantity} ${m.measurementUnitName}</td><td>${badge}</td></tr>`;
                         });
                         matHtml += `</tbody></table>`;
+
+                        if (hasShortage) {
+                            matHtml += `<div class="alert alert-danger mb-0 mt-2 p-2 fw-bold small"><i class="fa-solid fa-triangle-exclamation me-1"></i> تنبيه: لا يمكن بدء الإنتاج اليومي بسبب وجود عجز في بعض الخامات بالمخزن! يرجى توريد الخامات أولاً.</div>`;
+                        }
+
                         document.getElementById('liveMaterialsTableContainer').innerHTML = matHtml;
+
+                        const submitBtn = document.getElementById('submitProductionBtn');
+                        if (submitBtn) {
+                            submitBtn.disabled = hasShortage;
+                            if (hasShortage) {
+                                submitBtn.classList.remove('btn-bakery');
+                                submitBtn.classList.add('btn-secondary');
+                            } else {
+                                submitBtn.classList.remove('btn-secondary');
+                                submitBtn.classList.add('btn-bakery');
+                            }
+                        }
                     }
                 });
         }

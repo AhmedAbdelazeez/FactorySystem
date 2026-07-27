@@ -21,6 +21,7 @@ namespace Bakery.DataAccess
         public DbSet<ProductionOrderResult> ProductionOrderResults { get; set; } = null!;
         public DbSet<InventoryTransaction> InventoryTransactions { get; set; } = null!;
         public DbSet<Employee> Employees { get; set; } = null!;
+        public DbSet<EmployeeAttendance> EmployeeAttendances { get; set; } = null!;
         public DbSet<TreasuryTransaction> TreasuryTransactions { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -159,6 +160,12 @@ namespace Bakery.DataAccess
             modelBuilder.Entity<Employee>()
                 .Property(e => e.MonthlySalary).HasPrecision(18, 2);
 
+            modelBuilder.Entity<EmployeeAttendance>()
+                .HasOne(a => a.Employee)
+                .WithMany(e => e.Attendances)
+                .HasForeignKey(a => a.EmployeeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             // Treasury Transaction
             modelBuilder.Entity<TreasuryTransaction>()
                 .Property(t => t.Amount).HasPrecision(18, 2);
@@ -180,7 +187,9 @@ namespace Bakery.DataAccess
                 new MeasurementUnit { Id = 3, Name = "شكارة" },
                 new MeasurementUnit { Id = 4, Name = "قطعة" },
                 new MeasurementUnit { Id = 5, Name = "لتر" },
-                new MeasurementUnit { Id = 6, Name = "كرتونة" }
+                new MeasurementUnit { Id = 6, Name = "زجاجة" },
+                new MeasurementUnit { Id = 7, Name = "رول" },
+                new MeasurementUnit { Id = 8, Name = "كرتونة" }
             );
 
             modelBuilder.Entity<ProductionSetting>().HasData(

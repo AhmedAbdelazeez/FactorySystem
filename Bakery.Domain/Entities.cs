@@ -161,6 +161,19 @@ namespace Bakery.Domain.Entities
         public bool IsActive { get; set; } = true;
 
         public ICollection<Expense> Expenses { get; set; } = new List<Expense>();
+        public ICollection<EmployeeAttendance> Attendances { get; set; } = new List<EmployeeAttendance>();
+    }
+
+    public class EmployeeAttendance
+    {
+        public int Id { get; set; }
+        public int EmployeeId { get; set; }
+        public Employee? Employee { get; set; }
+        public DateTime Date { get; set; } = DateTime.Today;
+        public bool IsPresent { get; set; } = true;
+        public DateTime? CheckInTime { get; set; }
+        public string? Notes { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 
     public class TreasuryTransaction
