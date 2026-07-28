@@ -21,6 +21,8 @@ namespace Bakery.Business.Services
         Task AddStockAsync(int rawMaterialId, decimal quantity, decimal unitPrice, string? notes = null, int? expenseId = null);
         Task DeductStockAsync(int rawMaterialId, decimal quantity, int productionOrderId, string? notes = null);
         Task<IEnumerable<InventoryTransaction>> GetTransactionsAsync(int? rawMaterialId = null);
+
+        Task<bool> MaterialNameExistsAsync(string name, int? excludeId = null);
     }
 
     public class InventoryService : IInventoryService
@@ -53,6 +55,9 @@ namespace Bakery.Business.Services
 
         public async Task AddRawMaterialAsync(RawMaterial material)
         {
+            if(await MaterialNameExistsAsync(material.Name))
+                throw new InvalidOperationException($"الماده الخام '{material.Name}' موجودة بالفعل فى المخزن يمكنك توريد كميه جديده.");
+
             if (material.CurrentQuantity < 0)
                 throw new InvalidOperationException("لا يمكن أن تكون كمية المخزون بالسالب.");
 
@@ -66,6 +71,9 @@ namespace Bakery.Business.Services
         {
             var existing = await _materialRepo.GetByIdAsync(material.Id);
             if (existing == null) throw new KeyNotFoundException("المادة الخام غير موجودة.");
+
+            if(await MaterialNameExistsAsync(material.Name,excludeId:material.Id))
+                throw new InvalidOperationException($"يوجد مادة خام بنفس الاسم.'{material.Name}'");
 
             if (material.CurrentQuantity < 0)
                 throw new InvalidOperationException("لا يمكن أن تكون كمية المخزون بالسالب.");
@@ -98,6 +106,8 @@ namespace Bakery.Business.Services
 
         public async Task AddStockAsync(int rawMaterialId, decimal quantity, decimal unitPrice, string? notes = null, int? expenseId = null)
         {
+            
+
             if (quantity <= 0) throw new InvalidOperationException("يجب أن تكون الكمية أكبر من الصفر.");
 
             var material = await _materialRepo.GetByIdAsync(rawMaterialId);
@@ -173,6 +183,21 @@ namespace Bakery.Business.Services
             }
 
             return await query.OrderByDescending(t => t.TransactionDate).ToListAsync();
+        }
+
+        public async Task<bool> MaterialNameExistsAsync(string name, int? excludeId = null)
+        {
+            var normName = name.Trim().ToLower();
+
+            var query = _context.RawMaterials
+                .Where(m=>m.Name.Trim().ToLower()==normName);
+
+            if(excludeId.HasValue)
+            {
+                query = query.Where(m => m.Id != excludeId.Value);
+            }
+
+            return await query.AnyAsync();
         }
     }
 }

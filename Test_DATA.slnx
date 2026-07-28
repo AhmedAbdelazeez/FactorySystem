@@ -1,3 +1,6 @@
 <Solution>
+  <Project Path="Bakery.Business/Bakery.Business.csproj" />
+  <Project Path="Bakery.DataAccess/Bakery.DataAccess.csproj" />
+  <Project Path="Bakery.Domain/Bakery.Domain.csproj" />
   <Project Path="Test_DATA/Test_DATA.csproj" />
 </Solution>
