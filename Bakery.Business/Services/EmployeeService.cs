@@ -19,6 +19,8 @@ namespace Bakery.Business.Services
         Task UpdateEmployeeAsync(Employee employee);
         Task DeleteEmployeeAsync(int id);
         Task PaySalaryAsync(int employeeId, decimal salaryAmount, PaymentMethod paymentMethod, string? notes = null);
+
+       // Task AddAdvanceAsync(int employeeId,decimal advanceAmount, PaymentMethod paymentMethod, string? notes = null);
     }
 
     public class EmployeeService : IEmployeeService
@@ -53,6 +55,9 @@ namespace Bakery.Business.Services
 
         public async Task AddEmployeeAsync(Employee employee)
         {
+            if (employee.Age <= 0)
+                throw new InvalidOperationException("عمر العامل يجب أن يكون رقمًا موجبًا أكبر من الصفر.");
+
             await _empRepo.AddAsync(employee);
             await _empRepo.SaveChangesAsync();
         }
@@ -61,6 +66,9 @@ namespace Bakery.Business.Services
         {
             var existing = await _empRepo.GetByIdAsync(employee.Id);
             if (existing == null) throw new KeyNotFoundException("العامل غير موجود.");
+
+            if (employee.Age <= 0)
+                throw new InvalidOperationException("عمر العامل يجب أن يكون رقمًا موجبًا أكبر من الصفر.");
 
             existing.Name = employee.Name;
             existing.Age = employee.Age;
@@ -119,5 +127,15 @@ namespace Bakery.Business.Services
 
             await _expenseService.AddExpenseAsync(expense);
         }
+
+        //public async Task AddAdvanceAsync(int employeeId, decimal advanceAmount, PaymentMethod paymentMethod, string? notes = null)
+        //{
+        //    var emp = await _empRepo.GetByIdAsync(employeeId);
+
+        //    if(emp is null) 
+        //        throw new KeyNotFoundException("العامل غير موجود.");
+
+
+        //}
     }
 }
