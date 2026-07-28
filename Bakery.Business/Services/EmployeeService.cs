@@ -7,6 +7,7 @@ using Bakery.DataAccess;
 using Bakery.DataAccess.Repositories;
 using Bakery.Domain.Entities;
 using Bakery.Domain.Enums;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Bakery.Business.Services
 {
@@ -88,6 +89,15 @@ namespace Bakery.Business.Services
         {
             var emp = await _empRepo.GetByIdAsync(employeeId);
             if (emp == null) throw new KeyNotFoundException("العامل غير موجود.");
+
+            var salaryPaid = await _context.Expenses
+                .AnyAsync(e => e.EmployeeId == employeeId
+                       && e.Date.Year == DateTime.Now.Year
+                       && e.Date.Month == DateTime.Now.Month);
+                       
+
+            if(salaryPaid) 
+                throw new InvalidOperationException("تم صرف الراتب لهذا الشهر بالفعل.");
 
             var laborCategory = await _context.ExpenseCategories.FirstOrDefaultAsync(c => c.Name == "عمالة");
             int categoryId = laborCategory?.Id ?? 1;

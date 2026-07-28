@@ -196,8 +196,9 @@ namespace Bakery.Business.Services
             {
                 query = query.Where(m => m.Id != excludeId.Value);
             }
+            var result = await query.AnyAsync();
 
-            return await query.AnyAsync();
+            return result;
         }
     }
 }
