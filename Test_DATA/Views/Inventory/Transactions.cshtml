@@ -22,7 +22,7 @@
                 <option value="">جميع المواد الخام</option>
                 @foreach (var mat in rawMaterials)
                 {
-                    <option value="@mat.Id" selected="@(ViewBag.SelectedMaterialId == mat.Id)">@mat.Name</option>
+                    <option value="@mat.Id" selected="@(ViewBag.SelectedMaterialId == mat.Id)">@mat.MaterialType?.Name</option>
                 }
             </select>
         </div>
@@ -55,7 +55,7 @@
                         {
                             <tr>
                                 <td class="small text-muted fw-bold">@tx.TransactionDate.ToString("yyyy/MM/dd HH:mm")</td>
-                                <td class="fw-bold">@(tx.RawMaterial?.Name ?? "-")</td>
+                                <td class="fw-bold">@(tx.RawMaterial?.MaterialType?.Name ?? "-")</td>
                                 <td>
                                     @switch (tx.TransactionType)
                                     {

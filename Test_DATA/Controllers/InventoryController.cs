@@ -20,6 +20,7 @@ namespace Test_DATA.Controllers
         public async Task<IActionResult> Index()
         {
             ViewBag.MeasurementUnits = await _lookupService.GetMeasurementUnitsAsync();
+            ViewBag.MaterialTypes = await _lookupService.GetMaterialTypesAsync();
             ViewBag.TotalInventoryValue = await _inventoryService.GetTotalInventoryValueAsync();
 
             var materials = await _inventoryService.GetAllRawMaterialsAsync();
@@ -31,11 +32,11 @@ namespace Test_DATA.Controllers
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(material.Name))
-                {
-                    TempData["ErrorMessage"] = "يرجى إدخال اسم المادة الخام.";
-                    return RedirectToAction(nameof(Index));
-                }
+                //if (string.IsNullOrWhiteSpace(material.MaterialType?.Name))
+                //{
+                //    TempData["ErrorMessage"] = "يرجى إدخال اسم المادة الخام.";
+                //    return RedirectToAction(nameof(Index));
+                //}
 
                 await _inventoryService.AddRawMaterialAsync(material);
                 TempData["SuccessMessage"] = "تم إضافة المادة الخام للمخزن بنجاح!";

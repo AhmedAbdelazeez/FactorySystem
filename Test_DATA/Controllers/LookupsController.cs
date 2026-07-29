@@ -18,7 +18,23 @@ namespace Test_DATA.Controllers
         {
             ViewBag.Categories = await _lookupService.GetExpenseCategoriesAsync();
             ViewBag.Units = await _lookupService.GetMeasurementUnitsAsync();
+            ViewBag.MaterialTypes = await _lookupService.GetMaterialTypesAsync();
             return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddMaterialType(string name)
+        {
+            try
+            {
+                await _lookupService.AddMaterialTypeAsync(name);
+                TempData["SuccessMessage"] = "تم إضافة نوع المادة الخام بنجاح.";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]

@@ -54,7 +54,7 @@
                                             @foreach (var mat in rawMaterials)
                                             {
                                                 <option value="@mat.Id" selected="@(itemsList[i].RawMaterialId == mat.Id)">
-                                                    @mat.Name (@mat.MeasurementUnit?.Name)
+                                                    @mat.MaterialType?.Name (@mat.MeasurementUnit?.Name)
                                                 </option>
                                             }
                                         </select>
@@ -96,7 +96,7 @@
             <option value="">-- اختر المادة الخام --</option>
             @foreach (var mat in rawMaterials)
             {
-                <text><option value="@mat.Id">@mat.Name (@mat.MeasurementUnit?.Name)</option></text>
+                <text><option value="@mat.Id">@mat.MaterialType?.Name (@mat.MeasurementUnit?.Name)</option></text>
             }
         `;
 

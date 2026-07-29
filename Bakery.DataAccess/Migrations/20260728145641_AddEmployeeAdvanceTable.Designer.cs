@@ -4,6 +4,7 @@ using Bakery.DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Bakery.DataAccess.Migrations
 {
     [DbContext(typeof(BakeryDbContext))]
-    partial class BakeryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260728145641_AddEmployeeAdvanceTable")]
+    partial class AddEmployeeAdvanceTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -60,7 +63,7 @@ namespace Bakery.DataAccess.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Employees", (string)null);
+                    b.ToTable("Employees");
                 });
 
             modelBuilder.Entity("Bakery.Domain.Entities.EmployeeAdvance", b =>
@@ -97,7 +100,7 @@ namespace Bakery.DataAccess.Migrations
 
                     b.HasIndex("EmployeeId");
 
-                    b.ToTable("EmployeeAdvances", (string)null);
+                    b.ToTable("EmployeeAdvances");
                 });
 
             modelBuilder.Entity("Bakery.Domain.Entities.EmployeeAttendance", b =>
@@ -130,7 +133,7 @@ namespace Bakery.DataAccess.Migrations
 
                     b.HasIndex("EmployeeId");
 
-                    b.ToTable("EmployeeAttendances", (string)null);
+                    b.ToTable("EmployeeAttendances");
                 });
 
             modelBuilder.Entity("Bakery.Domain.Entities.Expense", b =>
@@ -186,7 +189,7 @@ namespace Bakery.DataAccess.Migrations
 
                     b.HasIndex("ExpenseCategoryId");
 
-                    b.ToTable("Expenses", (string)null);
+                    b.ToTable("Expenses");
                 });
 
             modelBuilder.Entity("Bakery.Domain.Entities.ExpenseCategory", b =>
@@ -207,7 +210,7 @@ namespace Bakery.DataAccess.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ExpenseCategories", (string)null);
+                    b.ToTable("ExpenseCategories");
 
                     b.HasData(
                         new
@@ -276,67 +279,7 @@ namespace Bakery.DataAccess.Migrations
 
                     b.HasIndex("RawMaterialId");
 
-                    b.ToTable("InventoryTransactions", (string)null);
-                });
-
-            modelBuilder.Entity("Bakery.Domain.Entities.MaterialType", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("MaterialTypes", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Name = "شكاره دقيق"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Name = "خميرة"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Name = "مواد حافظه"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Name = "سكر"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Name = "زيت"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Name = "زبده"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            Name = "ورق تغليف"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            Name = "محسن"
-                        });
+                    b.ToTable("InventoryTransactions");
                 });
 
             modelBuilder.Entity("Bakery.Domain.Entities.MeasurementUnit", b =>
@@ -354,7 +297,7 @@ namespace Bakery.DataAccess.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("MeasurementUnits", (string)null);
+                    b.ToTable("MeasurementUnits");
 
                     b.HasData(
                         new
@@ -455,7 +398,7 @@ namespace Bakery.DataAccess.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ProductionOrders", (string)null);
+                    b.ToTable("ProductionOrders");
                 });
 
             modelBuilder.Entity("Bakery.Domain.Entities.ProductionOrderResult", b =>
@@ -493,7 +436,7 @@ namespace Bakery.DataAccess.Migrations
 
                     b.HasIndex("ProductionOrderId");
 
-                    b.ToTable("ProductionOrderResults", (string)null);
+                    b.ToTable("ProductionOrderResults");
                 });
 
             modelBuilder.Entity("Bakery.Domain.Entities.ProductionRecipe", b =>
@@ -517,7 +460,7 @@ namespace Bakery.DataAccess.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ProductionRecipes", (string)null);
+                    b.ToTable("ProductionRecipes");
 
                     b.HasData(
                         new
@@ -553,7 +496,7 @@ namespace Bakery.DataAccess.Migrations
 
                     b.HasIndex("RawMaterialId");
 
-                    b.ToTable("ProductionRecipeItems", (string)null);
+                    b.ToTable("ProductionRecipeItems");
                 });
 
             modelBuilder.Entity("Bakery.Domain.Entities.ProductionSetting", b =>
@@ -588,7 +531,7 @@ namespace Bakery.DataAccess.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ProductionSettings", (string)null);
+                    b.ToTable("ProductionSettings");
 
                     b.HasData(
                         new
@@ -618,11 +561,13 @@ namespace Bakery.DataAccess.Migrations
                     b.Property<DateTime>("LastUpdatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("MaterialTypeId")
-                        .HasColumnType("int");
-
                     b.Property<int>("MeasurementUnitId")
                         .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.Property<decimal>("TotalValue")
                         .HasPrecision(18, 2)
@@ -634,11 +579,9 @@ namespace Bakery.DataAccess.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MaterialTypeId");
-
                     b.HasIndex("MeasurementUnitId");
 
-                    b.ToTable("RawMaterials", (string)null);
+                    b.ToTable("RawMaterials");
                 });
 
             modelBuilder.Entity("Bakery.Domain.Entities.TreasuryTransaction", b =>
@@ -689,7 +632,7 @@ namespace Bakery.DataAccess.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TreasuryTransactions", (string)null);
+                    b.ToTable("TreasuryTransactions");
                 });
 
             modelBuilder.Entity("Bakery.Domain.Entities.EmployeeAdvance", b =>
@@ -789,19 +732,11 @@ namespace Bakery.DataAccess.Migrations
 
             modelBuilder.Entity("Bakery.Domain.Entities.RawMaterial", b =>
                 {
-                    b.HasOne("Bakery.Domain.Entities.MaterialType", "MaterialType")
-                        .WithMany("RawMaterials")
-                        .HasForeignKey("MaterialTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("Bakery.Domain.Entities.MeasurementUnit", "MeasurementUnit")
                         .WithMany("RawMaterials")
                         .HasForeignKey("MeasurementUnitId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("MaterialType");
 
                     b.Navigation("MeasurementUnit");
                 });
@@ -818,11 +753,6 @@ namespace Bakery.DataAccess.Migrations
             modelBuilder.Entity("Bakery.Domain.Entities.ExpenseCategory", b =>
                 {
                     b.Navigation("Expenses");
-                });
-
-            modelBuilder.Entity("Bakery.Domain.Entities.MaterialType", b =>
-                {
-                    b.Navigation("RawMaterials");
                 });
 
             modelBuilder.Entity("Bakery.Domain.Entities.MeasurementUnit", b =>

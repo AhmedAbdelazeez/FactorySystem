@@ -30,14 +30,14 @@ namespace Test_DATA
             var materials = (await inventoryService.GetAllRawMaterialsAsync()).ToList();
             foreach (var m in materials)
             {
-                Console.WriteLine($"  - المادة: {m.Name} | الرصيد: {m.CurrentQuantity} {m.MeasurementUnit?.Name} | السعر: {m.UnitPrice} ج.م");
+                Console.WriteLine($"  - المادة: {m.MaterialType?.Name} | الرصيد: {m.CurrentQuantity} {m.MeasurementUnit?.Name} | السعر: {m.UnitPrice} ج.م");
             }
 
             var recipe = await productionService.GetActiveRecipeAsync();
             Console.WriteLine($"\n  📜 مكونات الوصفة ({recipe.Name}):");
             foreach (var item in recipe.RecipeItems)
             {
-                Console.WriteLine($"  - {item.RawMaterial?.Name}: {item.RequiredQuantity} {item.RawMaterial?.MeasurementUnit?.Name}");
+                Console.WriteLine($"  - {item.RawMaterial?.MaterialType?.Name}: {item.RequiredQuantity} {item.RawMaterial?.MeasurementUnit?.Name}");
             }
 
             // 2. Verify 5 Employees

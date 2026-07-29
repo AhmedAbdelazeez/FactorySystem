@@ -120,11 +120,12 @@ namespace Bakery.Business.Services
 
             var lowStock = await _context.RawMaterials
                 .Include(r => r.MeasurementUnit)
+                .Include(r => r.MaterialType)
                 .Where(r => r.CurrentQuantity <= 10) // low stock threshold
                 .Select(r => new LowStockMaterialDto
                 {
                     Id = r.Id,
-                    Name = r.Name,
+                    Name = r.MaterialType != null ? r.MaterialType.Name : "",
                     CurrentQuantity = r.CurrentQuantity,
                     UnitName = r.MeasurementUnit != null ? r.MeasurementUnit.Name : ""
                 })

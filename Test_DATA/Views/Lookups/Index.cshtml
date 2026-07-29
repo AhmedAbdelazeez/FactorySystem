@@ -1,111 +1,157 @@
 @{
-    ViewData["Title"] = "الجداول المرجعية للأكواد";
-    var categories = ViewBag.Categories as IEnumerable<Bakery.Domain.Entities.ExpenseCategory> ?? new List<Bakery.Domain.Entities.ExpenseCategory>();
-    var units = ViewBag.Units as IEnumerable<Bakery.Domain.Entities.MeasurementUnit> ?? new List<Bakery.Domain.Entities.MeasurementUnit>();
+	ViewData["Title"] = "الجداول المرجعية للأكواد";
+	var categories = ViewBag.Categories as IEnumerable<Bakery.Domain.Entities.ExpenseCategory> ?? new List<Bakery.Domain.Entities.ExpenseCategory>();
+	var units = ViewBag.Units as IEnumerable<Bakery.Domain.Entities.MeasurementUnit> ?? new List<Bakery.Domain.Entities.MeasurementUnit>();
+	var materialTypes = ViewBag.MaterialTypes as IEnumerable<Bakery.Domain.Entities.MaterialType> ?? new List<Bakery.Domain.Entities.MaterialType>();
 }
 
 <div class="row mb-4 align-items-center">
-    <div class="col">
-        <h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-list text-warning me-2"></i> الجداول المرجعية والأكواد</h2>
-        <p class="text-muted mb-0">إضافة وإدارة تصنيفات المصروفات ووحدات القياس القابلة للتكثيف بالمستقبل</p>
-    </div>
+	<div class="col">
+		<h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-list text-warning me-2"></i> الجداول المرجعية والأكواد</h2>
+		<p class="text-muted mb-0">إضافة وإدارة تصنيفات المصروفات ووحدات القياس والمواد الخام المستخدمه فى الانتاج والقابلة للتكثيف بالمستقبل</p>
+	</div>
 </div>
 
 <div class="row g-4">
-    <!-- Expense Categories Card -->
-    <div class="col-md-6">
-        <div class="card card-custom h-100">
-            <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center py-3">
-                <span><i class="fa-solid fa-tags text-primary me-2"></i> تصنيفات المصروفات</span>
-                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
-                    <i class="fa-solid fa-plus me-1"></i> إضافة تصنيف
-                </button>
-            </div>
-            <div class="card-body p-0">
-                <ul class="list-group list-group-flush p-0">
-                    @foreach (var cat in categories)
-                    {
-                        <li class="list-group-item d-flex justify-content-between align-items-center p-3">
-                            <span class="fw-bold text-dark">@cat.Name</span>
-                            @if (cat.IsSystem)
-                            {
-                                <span class="badge bg-secondary">تصنيف رئيسي بالنظام</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-light text-dark border">مُخصص</span>
-                            }
-                        </li>
-                    }
-                </ul>
-            </div>
-        </div>
-    </div>
+	<!-- Expense Categories Card -->
+	<div class="col-md-4">
+		<div class="card card-custom h-100">
+			<div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center py-3">
+				<span><i class="fa-solid fa-tags text-primary me-2"></i> تصنيفات المصروفات</span>
+				<button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+					<i class="fa-solid fa-plus me-1"></i> إضافة تصنيف
+				</button>
+			</div>
+			<div class="card-body p-0">
+				<ul class="list-group list-group-flush p-0">
+					@foreach (var cat in categories)
+					{
+						<li class="list-group-item d-flex justify-content-between align-items-center p-3">
+							<span class="fw-bold text-dark">@cat.Name</span>
+							@if (cat.IsSystem)
+							{
+								<span class="badge bg-secondary">تصنيف رئيسي بالنظام</span>
+							}
+							else
+							{
+								<span class="badge bg-light text-dark border">مُخصص</span>
+							}
+						</li>
+					}
+				</ul>
+			</div>
+		</div>
+	</div>
 
-    <!-- Measurement Units Card -->
-    <div class="col-md-6">
-        <div class="card card-custom h-100">
-            <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center py-3">
-                <span><i class="fa-solid fa-scale-balanced text-success me-2"></i> وحدات القياس (المخزن والوصفات)</span>
-                <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#addUnitModal">
-                    <i class="fa-solid fa-plus me-1"></i> إضافة وحدة
-                </button>
-            </div>
-            <div class="card-body p-0">
-                <ul class="list-group list-group-flush p-0">
-                    @foreach (var u in units)
-                    {
-                        <li class="list-group-item d-flex justify-content-between align-items-center p-3">
-                            <span class="fw-bold text-dark">@u.Name</span>
-                            <span class="badge bg-light text-dark border">وحدة مسجلة</span>
-                        </li>
-                    }
-                </ul>
-            </div>
-        </div>
-    </div>
+	<!-- Measurement Units Card -->
+	<div class="col-md-4">
+		<div class="card card-custom h-100">
+			<div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center py-3">
+				<span><i class="fa-solid fa-scale-balanced text-success me-2"></i> وحدات القياس (المخزن والوصفات)</span>
+				<button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#addUnitModal">
+					<i class="fa-solid fa-plus me-1"></i> إضافة وحدة
+				</button>
+			</div>
+			<div class="card-body p-0">
+				<ul class="list-group list-group-flush p-0">
+					@foreach (var u in units)
+					{
+						<li class="list-group-item d-flex justify-content-between align-items-center p-3">
+							<span class="fw-bold text-dark">@u.Name</span>
+							<span class="badge bg-light text-dark border">وحدة مسجلة</span>
+						</li>
+					}
+				</ul>
+			</div>
+		</div>
+	</div>
+
+	<!-- matrial card-->
+	<div class="col-md-4">
+		<div class="card card-custom h-100">
+			<div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center py-3">
+				<span><i class="fa-solid fa-wheat-awn text-warning me-2"></i> المواد الخام)</span>
+				<button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#addMaterialTypeModal">
+					<i class="fa-solid fa-plus me-1"></i> إضافة ماده
+				</button>
+			</div>
+			<div class="card-body p-0">
+				<ul class="list-group list-group-flush p-0">
+					@foreach (var type in materialTypes)
+					{
+						<li class="list-group-item d-flex justify-content-between align-items-center p-3">
+							<span class="fw-bold text-dark">@type.Name</span>
+							<span class="badge bg-light text-dark border">ماده مسجلة</span>
+						</li>
+					}
+				</ul>
+			</div>
+		</div>
+	</div>
 </div>
 
 <!-- Modal Add Category -->
 <div class="modal fade" id="addCategoryModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold"><i class="fa-solid fa-plus me-1"></i> إضافة تصنيف مصروف جديد</h5>
-                <button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
-            </div>
-            <form asp-action="AddCategory" method="post">
-                <div class="modal-body">
-                    <label class="form-label fw-bold">اسم التصنيف الجديد <span class="text-danger">*</span></label>
-                    <input type="text" name="name" required class="form-control" placeholder="مثال: مصاريف صيانة معدات..." />
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-primary">إضافة التصنيف</button>
-                </div>
-            </form>
-        </div>
-    </div>
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header bg-primary text-white">
+				<h5 class="modal-title fw-bold"><i class="fa-solid fa-plus me-1"></i> إضافة تصنيف مصروف جديد</h5>
+				<button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
+			</div>
+			<form asp-action="AddCategory" method="post">
+				<div class="modal-body">
+					<label class="form-label fw-bold">اسم التصنيف الجديد <span class="text-danger">*</span></label>
+					<input type="text" name="name" required class="form-control" placeholder="مثال: مصاريف صيانة معدات..." />
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+					<button type="submit" class="btn btn-primary">إضافة التصنيف</button>
+				</div>
+			</form>
+		</div>
+	</div>
 </div>
 
 <!-- Modal Add Unit -->
 <div class="modal fade" id="addUnitModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title fw-bold"><i class="fa-solid fa-plus me-1"></i> إضافة وحدة قياس جديدة</h5>
-                <button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
-            </div>
-            <form asp-action="AddUnit" method="post">
-                <div class="modal-body">
-                    <label class="form-label fw-bold">اسم وحدة القياس <span class="text-danger">*</span></label>
-                    <input type="text" name="name" required class="form-control" placeholder="مثال: عبوة / جافال / كرتونة..." />
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-success">إضافة الوحدة</button>
-                </div>
-            </form>
-        </div>
-    </div>
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header bg-success text-white">
+				<h5 class="modal-title fw-bold"><i class="fa-solid fa-plus me-1"></i> إضافة وحدة قياس جديدة</h5>
+				<button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
+			</div>
+			<form asp-action="AddUnit" method="post">
+				<div class="modal-body">
+					<label class="form-label fw-bold">اسم وحدة القياس <span class="text-danger">*</span></label>
+					<input type="text" name="name" required class="form-control" placeholder="مثال: عبوة / جافال / كرتونة..." />
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+					<button type="submit" class="btn btn-success">إضافة الوحدة</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+
+<!-- Modal Add material -->
+<div class="modal fade" id="addMaterialTypeModal" tabindex="-1">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header bg-warning text-dark">
+				<h5 class="modal-title fw-bold"><i class="fa-solid fa-plus me-1"></i> إضافة مادة خام جديده</h5>
+				<button type="button" class="btn-close btn-close-warning ms-0 me-auto" data-bs-dismiss="modal"></button>
+			</div>
+			<form asp-action="AddMaterialType" method="post">
+				<div class="modal-body">
+					<label class="form-label fw-bold">اسم الماده الخام <span class="text-danger">*</span></label>
+					<input type="text" name="name" required class="form-control" placeholder="مثال: دقيق  / سكر  / زبدة ..." />
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+					<button type="submit" class="btn btn-warning ">إضافة الماده</button>
+				</div>
+			</form>
+		</div>
+	</div>
 </div>

@@ -225,7 +225,7 @@
                             <option value="">-- لا يوجد (لا يؤثر على كمية المخزن) --</option>
                             @foreach (var mat in rawMaterials)
                             {
-                                <option value="@mat.Id">@mat.Name (@mat.MeasurementUnit?.Name)</option>
+                                <option value="@mat.Id">@mat.MaterialType?.Name (@mat.MeasurementUnit?.Name)</option>
                             }
                         </select>
                     </div>

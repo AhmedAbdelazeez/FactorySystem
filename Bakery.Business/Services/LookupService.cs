@@ -12,7 +12,9 @@ namespace Bakery.Business.Services
         Task<IEnumerable<ExpenseCategory>> GetExpenseCategoriesAsync();
         Task AddExpenseCategoryAsync(string name);
         Task<IEnumerable<MeasurementUnit>> GetMeasurementUnitsAsync();
+        Task<IEnumerable<MaterialType>> GetMaterialTypesAsync();
         Task AddMeasurementUnitAsync(string name);
+        Task AddMaterialTypeAsync(string name);
         List<string> GetWeekdays();
         List<string> GetDefaultJobTitles();
     }
@@ -46,12 +48,27 @@ namespace Bakery.Business.Services
             return await _context.MeasurementUnits.OrderBy(u => u.Id).ToListAsync();
         }
 
+        public async Task<IEnumerable<MaterialType>> GetMaterialTypesAsync()
+        {
+            return await _context.MaterialTypes.OrderBy(t => t.Id).ToListAsync();
+        }
+
         public async Task AddMeasurementUnitAsync(string name)
         {
             if (string.IsNullOrWhiteSpace(name)) return;
             if (!await _context.MeasurementUnits.AnyAsync(u => u.Name == name.Trim()))
             {
                 await _context.MeasurementUnits.AddAsync(new MeasurementUnit { Name = name.Trim() });
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task AddMaterialTypeAsync(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return;
+            if (!await _context.MaterialTypes.AnyAsync( m=>m.Name == name.Trim()))
+            {
+                await _context.MaterialTypes.AddAsync(new MaterialType { Name = name.Trim() });
                 await _context.SaveChangesAsync();
             }
         }

@@ -42,10 +42,22 @@ namespace Bakery.Domain.Entities
         public ICollection<RawMaterial> RawMaterials { get; set; } = new List<RawMaterial>();
     }
 
-    public class RawMaterial
+    public class MaterialType
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
+        public ICollection<RawMaterial> RawMaterials{ get; set; }= new List<RawMaterial>();
+    }
+
+    public class RawMaterial
+    {
+        public int Id { get; set; }
+
+        public int MaterialTypeId { get; set; }
+        
+        public MaterialType? MaterialType { get; set; }
+        
+        
         public decimal CurrentQuantity { get; set; }
         public int MeasurementUnitId { get; set; }
         public MeasurementUnit? MeasurementUnit { get; set; }
@@ -162,6 +174,8 @@ namespace Bakery.Domain.Entities
 
         public ICollection<Expense> Expenses { get; set; } = new List<Expense>();
         public ICollection<EmployeeAttendance> Attendances { get; set; } = new List<EmployeeAttendance>();
+
+        public ICollection<EmployeeAdvance> Advances { get; set; } = new List<EmployeeAdvance>();
     }
 
     public class EmployeeAttendance
@@ -174,6 +188,22 @@ namespace Bakery.Domain.Entities
         public DateTime? CheckInTime { get; set; }
         public string? Notes { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+    }
+
+    public class EmployeeAdvance
+    {
+        public int Id { get; set; }
+        public int EmployeeId { get; set; }
+        public Employee? Employee { get; set; }
+
+        public decimal Amount { get; set; }
+        public DateTime Date { get; set; } = DateTime.Now;
+        public PaymentMethod PaymentMethod { get; set; }
+        public string? Notes { get; set; }
+
+        public bool IsPaid { get; set; } = false;
+
+        public DateTime? PaidDate { get; set; }
     }
 
     public class TreasuryTransaction

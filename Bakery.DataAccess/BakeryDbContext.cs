@@ -24,6 +24,12 @@ namespace Bakery.DataAccess
         public DbSet<EmployeeAttendance> EmployeeAttendances { get; set; } = null!;
         public DbSet<TreasuryTransaction> TreasuryTransactions { get; set; } = null!;
 
+        // Employee Advances
+        public DbSet<EmployeeAdvance> EmployeeAdvances { get; set; } = null!;
+
+        //materialtype lookup
+        public DbSet<MaterialType> MaterialTypes { get; set; } = null!;
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -64,11 +70,13 @@ namespace Bakery.DataAccess
                 .HasMaxLength(50)
                 .IsRequired();
 
-            // Raw Material
-            modelBuilder.Entity<RawMaterial>()
-                .Property(r => r.Name)
+            //Material Type
+            modelBuilder.Entity<MaterialType>()
+                .Property(m => m.Name)
                 .HasMaxLength(150)
                 .IsRequired();
+
+            // Raw Material
             modelBuilder.Entity<RawMaterial>()
                 .Property(r => r.CurrentQuantity).HasPrecision(18, 3);
             modelBuilder.Entity<RawMaterial>()
@@ -81,6 +89,12 @@ namespace Bakery.DataAccess
                 .WithMany(u => u.RawMaterials)
                 .HasForeignKey(r => r.MeasurementUnitId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<RawMaterial>()
+               .HasOne(r => r.MaterialType)
+               .WithMany(m => m.RawMaterials)
+               .HasForeignKey(r => r.MaterialTypeId)
+               .OnDelete(DeleteBehavior.Restrict);
 
             // Production Recipe & Items
             modelBuilder.Entity<ProductionRecipe>()
@@ -174,6 +188,19 @@ namespace Bakery.DataAccess
             modelBuilder.Entity<TreasuryTransaction>()
                 .Property(t => t.RemainingAmount).HasPrecision(18, 2);
 
+            // Employee Advance
+            modelBuilder.Entity<EmployeeAdvance>()
+                .Property(a => a.Amount).HasPrecision(18, 2);
+
+            modelBuilder.Entity<EmployeeAdvance>()
+                .HasOne(a => a.Employee)
+                .WithMany(e => e.Advances)
+                .HasForeignKey(a => a.EmployeeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+
+
+           
             // Seed Lookup Data
             modelBuilder.Entity<ExpenseCategory>().HasData(
                 new ExpenseCategory { Id = 1, Name = "عمالة", IsSystem = true },
@@ -191,6 +218,17 @@ namespace Bakery.DataAccess
                 new MeasurementUnit { Id = 7, Name = "رول" },
                 new MeasurementUnit { Id = 8, Name = "كرتونة" }
             );
+
+            modelBuilder.Entity<MaterialType>().HasData(
+                new MaterialType { Id = 1, Name = "شكاره دقيق" },
+                new MaterialType { Id = 2, Name = "خميرة" },
+                new MaterialType { Id = 3, Name = "مواد حافظه" },
+                new MaterialType { Id = 4, Name = "سكر" },
+                new MaterialType { Id = 5, Name = "زيت" },
+                new MaterialType { Id = 6, Name = "زبده" },
+                new MaterialType { Id = 7, Name = "ورق تغليف" },
+                new MaterialType { Id = 8, Name = "محسن" }
+            ); 
 
             modelBuilder.Entity<ProductionSetting>().HasData(
                 new ProductionSetting

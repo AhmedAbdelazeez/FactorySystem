@@ -81,8 +81,11 @@ namespace Bakery.Business.Services
         {
             var recipe = await _context.ProductionRecipes
                 .Include(r => r.RecipeItems)
-                .ThenInclude(i => i.RawMaterial)
-                .ThenInclude(m => m!.MeasurementUnit)
+                  .ThenInclude(i => i.RawMaterial)
+                  .ThenInclude(m => m!.MeasurementUnit)
+                .Include(r => r.RecipeItems)
+                  .ThenInclude(i => i.RawMaterial)
+                  .ThenInclude(m => m!.MaterialType)
                 .FirstOrDefaultAsync(r => r.IsActive);
 
             if (recipe == null)
@@ -147,6 +150,7 @@ namespace Bakery.Business.Services
 
             var rawMaterials = await _context.RawMaterials
                 .Include(r => r.MeasurementUnit)
+                .Include(r => r.MaterialType)
                 .ToDictionaryAsync(r => r.Id);
 
             var requiredMaterials = new List<RequiredMaterialDto>();
@@ -158,7 +162,7 @@ namespace Bakery.Business.Services
                     requiredMaterials.Add(new RequiredMaterialDto
                     {
                         RawMaterialId = item.RawMaterialId,
-                        MaterialName = mat.Name,
+                        MaterialName = mat.MaterialType != null ? mat.MaterialType.Name : "",
                         MeasurementUnitName = mat.MeasurementUnit?.Name ?? "",
                         RequiredQuantityPerSack = item.RequiredQuantity,
                         TotalRequiredQuantity = totalReq,

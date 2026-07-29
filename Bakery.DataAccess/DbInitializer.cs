@@ -24,17 +24,29 @@ namespace Bakery.DataAccess
             var unitBottle = units.FirstOrDefault(u => u.Name == "زجاجة" || u.Name == "إزازة") ?? await AddUnitAsync(context, "زجاجة");
             var unitRoll = units.FirstOrDefault(u => u.Name == "رول") ?? await AddUnitAsync(context, "رول");
 
-            // 2. Seed Raw Materials in Warehouse
+
+            //seed matrial types(lookup) if not present
+            var materialTypes = await context.MaterialTypes.ToListAsync();
+            var matFlourType = materialTypes.FirstOrDefault(mt => mt.Name == "شكاره دقيق") ?? await AddMaterialTypeAsync(context, "شكاره دقيق");
+            var matOilType = materialTypes.FirstOrDefault(mt => mt.Name == "زيت") ?? await AddMaterialTypeAsync(context, "زيت");
+            var matSugarType = materialTypes.FirstOrDefault(mt => mt.Name == "سكر") ?? await AddMaterialTypeAsync(context, "سكر");
+            var matButterType = materialTypes.FirstOrDefault(mt => mt.Name == "زبدة") ?? await AddMaterialTypeAsync(context, "زبدة");
+            var matPreservativesType = materialTypes.FirstOrDefault(mt => mt.Name == "مواد حافظة") ?? await AddMaterialTypeAsync(context, "مواد حافظة");
+            var matPackagingType = materialTypes.FirstOrDefault(mt => mt.Name == "ورق تغليف") ?? await AddMaterialTypeAsync(context, "ورق تغليف");
+            var matImproverType = materialTypes.FirstOrDefault(mt => mt.Name == "محسن") ?? await AddMaterialTypeAsync(context, "محسن");
+            var matYeastType = materialTypes.FirstOrDefault(mt => mt.Name == "خميرة") ?? await AddMaterialTypeAsync(context, "خميرة");
+
+            // 2. Seed Raw Materials in warehouse
             var rawMaterials = await context.RawMaterials.ToListAsync();
 
-            RawMaterial GetOrAddMaterial(string name, int unitId, decimal defaultQty, decimal unitPrice)
+            RawMaterial GetOrAddMaterial(MaterialType type, int unitId, decimal defaultQty, decimal unitPrice)
             {
-                var mat = rawMaterials.FirstOrDefault(m => m.Name.Contains(name) || name.Contains(m.Name));
+                var mat = rawMaterials.FirstOrDefault(m => m.MaterialTypeId == type.Id);
                 if (mat == null)
                 {
                     mat = new RawMaterial
                     {
-                        Name = name,
+                        MaterialTypeId = type.Id,
                         MeasurementUnitId = unitId,
                         CurrentQuantity = defaultQty,
                         UnitPrice = unitPrice,
@@ -57,14 +69,14 @@ namespace Bakery.DataAccess
                 return mat;
             }
 
-            var matFlour = GetOrAddMaterial("شكاير دقيق", unitSack.Id, 50, 450);
-            var matOil = GetOrAddMaterial("زيت", unitBottle.Id, 100, 60);
-            var matSugar = GetOrAddMaterial("سكر", unitKg.Id, 200, 35);
-            var matButter = GetOrAddMaterial("زبدة", unitKg.Id, 150, 120);
-            var matPreservatives = GetOrAddMaterial("مواد حافظة", unitGram.Id, 15000, 0.5m);
-            var matPackaging = GetOrAddMaterial("ورق تغليف", unitRoll.Id, 100, 25);
-            var matImprover = GetOrAddMaterial("محسن", unitPiece.Id, 200, 15);
-            var matYeast = GetOrAddMaterial("خميرة", unitPiece.Id, 100, 20);
+            var matFlour = GetOrAddMaterial(matFlourType, unitSack.Id, 50, 450);
+            var matOil = GetOrAddMaterial(matOilType, unitBottle.Id, 100, 60);
+            var matSugar = GetOrAddMaterial(matSugarType, unitKg.Id, 200, 35);
+            var matButter = GetOrAddMaterial(matButterType, unitKg.Id, 150, 120);
+            var matPreservatives = GetOrAddMaterial(matPreservativesType, unitGram.Id, 15000, 0.5m);
+            var matPackaging = GetOrAddMaterial(matPackagingType, unitRoll.Id, 100, 25);
+            var matImprover = GetOrAddMaterial(matImproverType, unitPiece.Id, 200, 15);
+            var matYeast = GetOrAddMaterial(matYeastType, unitPiece.Id, 100, 20);
 
             // 3. Seed Recipe Items for Flour Sack
             var recipe = await context.ProductionRecipes
@@ -144,5 +156,14 @@ namespace Bakery.DataAccess
             await context.SaveChangesAsync();
             return unit;
         }
+
+        private static async Task<MaterialType> AddMaterialTypeAsync(BakeryDbContext context, string name)
+        {
+            var type = new MaterialType { Name = name };
+            context.MaterialTypes.Add(type);
+            await context.SaveChangesAsync();
+            return type;
+        }
+        
     }
 }
