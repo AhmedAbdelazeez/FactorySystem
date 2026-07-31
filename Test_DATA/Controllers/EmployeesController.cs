@@ -79,12 +79,27 @@ namespace Test_DATA.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> PaySalary(int employeeId, decimal salaryAmount, PaymentMethod paymentMethod, string? notes)
+        public async Task<IActionResult> PaySalary(int employeeId, PaymentMethod paymentMethod, string? notes)
         {
             try
             {
-                await _employeeService.PaySalaryAsync(employeeId, salaryAmount, paymentMethod, notes);
-                TempData["SuccessMessage"] = "تم صرف راتب العامل وتسجيله تحت مصروفات العمالة بالخزينة بنجاح!";
+                await _employeeService.PaySalaryAsync(employeeId, paymentMethod, notes);
+                TempData["SuccessMessage"] = $"تم صرف الراتب بنجاح ✅ | {notes}";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddAdvance(int employeeId, decimal advanceAmount, PaymentMethod paymentMethod, string? notes)
+        {
+            try
+            {
+                await _employeeService.AddAdvanceAsync(employeeId, advanceAmount, paymentMethod, notes);
+                TempData["SuccessMessage"] = "تم صرف السلفة بنجاح وخصمها من الخزينة، وستُخصم من راتب هذا الشهر.";
             }
             catch (Exception ex)
             {

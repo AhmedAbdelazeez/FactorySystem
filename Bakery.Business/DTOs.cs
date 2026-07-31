@@ -101,4 +101,27 @@ namespace Bakery.Business.DTOs
         public decimal CurrentQuantity { get; set; }
         public string UnitName { get; set; } = string.Empty;
     }
+
+
+
+    public class EmployeeListItemDto 
+    { 
+    
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public int Age { get; set; }
+        public string JobTitle { get; set; } = string.Empty;
+        public decimal MonthlySalary { get; set; }
+        public string WeeklyDayOff { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
+        public string Notes { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; }
+
+        public int AbsentDaysSinceLastSalary { get; set; }
+        public decimal PendingAdvanceAmount { get; set; }
+
+
+    }
+
 }

@@ -177,63 +177,153 @@ namespace Bakery.Business.Services
             }
         }
 
-        public async Task DeleteExpenseAsync(int id)
+        
+        public async Task DeleteExpenseAsync(int expenseId)
         {
-            var existing = await _expenseRepo.GetByIdAsync(id);
-            if (existing != null)
+            // التأكد من وجود Transaction مفتوح حالياً أو إنشاء جديد
+            var existingTransaction = _context.Database.CurrentTransaction;
+            using var transaction = existingTransaction == null
+                ? await _context.Database.BeginTransactionAsync()
+                : null;
+
+            try
             {
-                var treasuryTx = await _context.TreasuryTransactions.FirstOrDefaultAsync(t => t.ExpenseId == id);
-                if (treasuryTx != null)
+                var expense = await _context.Expenses.FindAsync(expenseId);
+                if (expense == null) throw new KeyNotFoundException("المصروف غير موجود.");
+
+              
+                // 1. التعامل مع مصروفات العمالة (الرواتب والسُلف)
+                if (expense.EmployeeId.HasValue)
                 {
-                    _treasuryRepo.Remove(treasuryTx);
+                    //  إذا كان المصروف عبارة عن "سلفة" تم إضافتها سابقاً
+                    if (expense.Name.StartsWith("سلفة للعامل"))
+                    {
+                        // نجد السلفة المعلقة أو غير المعلقة المرتبطة بهذا العامل ونفس المبلغ/التاريخ
+                        var matchingAdvance = await _context.EmployeeAdvances
+                            .FirstOrDefaultAsync(a => a.EmployeeId == expense.EmployeeId.Value
+                                                   && a.Amount == expense.TotalAmount
+                                                   && a.Date.Date == expense.Date.Date);
+
+                        if (matchingAdvance != null)
+                        {
+                            // نحذف السلفة من الجدول تماماً فتختفي تلقائياً من "السلف المعلقة"
+                            _context.EmployeeAdvances.Remove(matchingAdvance);
+                        }
+                    }
+                    // حالة ب: إذا كان المصروف عبارة عن "راتب شهر" تم صرفه
+                    else if (expense.Name.StartsWith("راتب العامل"))
+                    {
+                        // نعيد السلف التي تم تسويتها مع هذا الراتب لتصبح "معلقة" مرة أخرى
+                        var paidAdvances = await _context.EmployeeAdvances
+                            .Where(a => a.EmployeeId == expense.EmployeeId.Value && a.PaidDate.HasValue && a.PaidDate.Value.Date == expense.Date.Date)
+                            .ToListAsync();
+
+                        foreach (var advance in paidAdvances)
+                        {
+                            advance.IsPaid = false;
+                            advance.PaidDate = null;
+                        }
+                    }
                 }
 
-                _expenseRepo.Remove(existing);
+              
+                // 2. حذف حركة الخزينة المرتبطة بالمصروف (سواء كانت سداد أصلي أو سداد متبقيات
+                var relatedTreasuryTxs = await _context.TreasuryTransactions
+                    .Where(t => t.ExpenseId == expenseId)
+                    .ToListAsync();
+
+                if (relatedTreasuryTxs.Any())
+                {
+                    _context.TreasuryTransactions.RemoveRange(relatedTreasuryTxs);
+                }
+
+             
+                // 3. حذف المصروف نفسه
+              
+                _expenseRepo.Remove(expense);
+
                 await _context.SaveChangesAsync();
+
+                if (transaction != null)
+                {
+                    await transaction.CommitAsync();
+                }
+            }
+            catch
+            {
+                if (transaction != null)
+                {
+                    await transaction.RollbackAsync();
+                }
+                throw;
             }
         }
 
         public async Task PayRemainingAsync(int expenseId, decimal amountPaidNow, PaymentMethod paymentMethod)
         {
-            var expense = await _expenseRepo.GetByIdAsync(expenseId);
-            if (expense == null) throw new KeyNotFoundException("المصروف غير موجود.");
+            if (amountPaidNow <= 0)
+                throw new InvalidOperationException("المبلغ المدفوع يجب أن يكون أكبر من الصفر.");
 
-            if (amountPaidNow <= 0) throw new InvalidOperationException("المبلغ المدفوع يجب أن يكون أكبر من الصفر.");
-            if (amountPaidNow > expense.RemainingAmount)
-                throw new InvalidOperationException($"المبلغ المدفوع ({amountPaidNow}) أكبر من المتبقي ({expense.RemainingAmount}).");
+            var existingTransaction = _context.Database.CurrentTransaction;
+            using var transaction = existingTransaction == null
+                ? await _context.Database.BeginTransactionAsync()
+                : null;
 
-            expense.PaidAmount += amountPaidNow;
-            expense.RemainingAmount = expense.TotalAmount - expense.PaidAmount;
-
-            if (expense.RemainingAmount == 0)
+            try
             {
-                expense.PaymentMethod = paymentMethod;
+                var expense = await _expenseRepo.GetByIdAsync(expenseId);
+                if (expense == null) throw new KeyNotFoundException("المصروف غير موجود.");
+
+                if (amountPaidNow > expense.RemainingAmount)
+                    throw new InvalidOperationException($"المبلغ المدفوع ({amountPaidNow:N2}) أكبر من المتبقي ({expense.RemainingAmount:N2}).");
+
+                expense.PaidAmount += amountPaidNow;
+                expense.RemainingAmount = expense.TotalAmount - expense.PaidAmount;
+
+                if (expense.RemainingAmount == 0)
+                {
+                    expense.PaymentMethod = paymentMethod;
+                }
+                else
+                {
+                    expense.PaymentMethod = PaymentMethod.PartiallyPaid;
+                }
+
+                _expenseRepo.Update(expense);
+
+                // تسجيل حركة السداد في الخزينة
+                var treasuryTx = new TreasuryTransaction
+                {
+                    Date = DateTime.Now,
+                    TransactionName = $"سداد متبقي مصروف: {expense.Name}",
+                    TransactionType = TreasuryTransactionType.Expense,
+                    Category = "سداد متبقيات",
+                    Amount = amountPaidNow,
+                    PaymentMethod = paymentMethod,
+                    PaidAmount = amountPaidNow,
+                    RemainingAmount = 0,
+                    Notes = $"سداد دفعة للمصروف رقم #{expense.Id}",
+                    ExpenseId = expense.Id
+                };
+
+                await _treasuryRepo.AddAsync(treasuryTx);
+
+                await _context.SaveChangesAsync();
+
+                if (transaction != null)
+                {
+                    await transaction.CommitAsync();
+                }
             }
-            else
+            catch
             {
-                expense.PaymentMethod = PaymentMethod.PartiallyPaid;
+                if (transaction != null)
+                {
+                    await transaction.RollbackAsync();
+                }
+                throw;
             }
-
-            _expenseRepo.Update(expense);
-            await _expenseRepo.SaveChangesAsync();
-
-            // Record a payment transaction in treasury
-            var treasuryTx = new TreasuryTransaction
-            {
-                Date = DateTime.Now,
-                TransactionName = $"سداد متبقي مصروف: {expense.Name}",
-                TransactionType = TreasuryTransactionType.Expense,
-                Category = "سداد متبقيات",
-                Amount = amountPaidNow,
-                PaymentMethod = paymentMethod,
-                PaidAmount = amountPaidNow,
-                RemainingAmount = 0,
-                Notes = $"سداد جزئي/كلي لمصروف رقم {expense.Id}",
-                ExpenseId = expense.Id
-            };
-
-            await _treasuryRepo.AddAsync(treasuryTx);
-            await _treasuryRepo.SaveChangesAsync();
         }
     }
-}
+ }
+

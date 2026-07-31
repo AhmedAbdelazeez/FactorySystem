@@ -30,7 +30,7 @@ namespace Test_DATA.Controllers
         {
             ViewBag.Categories = await _lookupService.GetExpenseCategoriesAsync();
             ViewBag.RawMaterials = await _inventoryService.GetAllRawMaterialsAsync();
-            ViewBag.Employees = await _employeeService.GetAllEmployeesAsync(true);
+            //ViewBag.Employees = await _employeeService.GetAllEmployeesAsync(true);
             ViewBag.StartDate = startDate?.ToString("yyyy-MM-dd");
             ViewBag.EndDate = endDate?.ToString("yyyy-MM-dd");
             ViewBag.SelectedCategoryId = categoryId;
@@ -40,10 +40,19 @@ namespace Test_DATA.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(Expense expense, int? linkedRawMaterialId)
+        public async Task<IActionResult> Create(Expense expense, decimal? TotalAmountOperating, int? linkedRawMaterialId)
         {
             try
             {
+                if (TotalAmountOperating.HasValue && TotalAmountOperating.Value > 0)
+                {
+                    expense.Quantity = 1;
+                    expense.UnitPrice = TotalAmountOperating.Value;
+                }
+
+                if (expense.Quantity * expense.UnitPrice <= 0)
+                    throw new InvalidOperationException("يجب إدخال مبلغ أو كمية وسعر أكبر من الصفر.");
+
                 if (string.IsNullOrWhiteSpace(expense.Name))
                 {
                     TempData["ErrorMessage"] = "يرجى تقديم اسم المصروف.";

@@ -78,10 +78,10 @@
 										<i class="fa-solid fa-pen"></i>
 									</button>
 
-									<form asp-action="Delete" method="post" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف المادة الخام؟');">
-										<input type="hidden" name="id" value="@item.Id" />
-										<button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
-									</form>
+									<button type="button" class="btn btn-sm btn-outline-danger"
+											onclick="confirmDelete(@item.Id, '@Url.Action("Delete", "Inventory")', 'هل أنت متأكد من حذف هذه المادة الخام &quot @item.MaterialType?.Name ؟')">
+										<i class="fa-solid fa-trash"></i>
+									</button>
 								</td>
 							</tr>
 						}
@@ -231,7 +231,7 @@
 			document.getElementById('stockUnitPrice').value = currentUnitPrice;
 			new bootstrap.Modal(document.getElementById('addStockModal')).show();
 		}
-		function openEditMaterialModal(id, typeName, unitId, quantity,unitprice) {
+		function openEditMaterialModal(id, typeName, unitId, quantity, unitprice) {
 			document.getElementById('editMaterialId').value = id;
 			document.getElementById('editMaterialTypeName').innerText = typeName;
 			document.getElementById('editMaterialUnitId').value = unitId;
