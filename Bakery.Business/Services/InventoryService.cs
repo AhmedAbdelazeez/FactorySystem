@@ -130,11 +130,27 @@ namespace Bakery.Business.Services
             var material = await _materialRepo.GetByIdAsync(rawMaterialId);
             if (material == null) throw new KeyNotFoundException("المادة الخام غير موجودة.");
 
-            material.CurrentQuantity += quantity;
-            material.UnitPrice = unitPrice > 0 ? unitPrice : material.UnitPrice;
-            material.TotalValue = material.CurrentQuantity * material.UnitPrice;
-            material.LastUpdatedDate = DateTime.Now;
+            //حساب قيمه التوريد الجديد
+            decimal newBatchValue=quantity * unitPrice;
 
+            //حساب اجمالى القيمه الجديده للمخزن (القيمه القديمه +قيمه التوريد الجديده
+            decimal newTotalValue=material.TotalValue + newBatchValue;
+
+            // حساب اجمالى الكميه الجديده للمخزن (الكميه القديمه + الكميه الجديده
+            decimal newTotalQuantity=material.CurrentQuantity + quantity;
+
+            // حساب متوسط سعر الوحده 
+            if (unitPrice > 0)
+            {
+                material.UnitPrice = newTotalQuantity > 0
+            ? Math.Round(newTotalValue / newTotalQuantity, 4)
+            : unitPrice;
+            }
+
+
+            material.CurrentQuantity = newTotalQuantity;
+            material.TotalValue = Math.Round(material.CurrentQuantity * material.UnitPrice, 2);
+            material.LastUpdatedDate = DateTime.Now;
             _materialRepo.Update(material);
 
             var transaction = new InventoryTransaction
@@ -143,7 +159,7 @@ namespace Bakery.Business.Services
                 TransactionType = TransactionType.Purchase,
                 Quantity = quantity,
                 UnitPrice = unitPrice,
-                TotalAmount = quantity * unitPrice,
+                TotalAmount = newBatchValue,
                 TransactionDate = DateTime.Now,
                 ExpenseId = expenseId,
                 Notes = notes ?? "إضافة / توريد مخزون"
