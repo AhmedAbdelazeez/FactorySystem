@@ -42,7 +42,13 @@
 						foreach (var emp in Model)
 						{
 							<tr>
-								<td class="fw-bold text-dark"><i class="fa-solid fa-user-tie text-secondary me-2"></i> @emp.Name</td>
+								<td class="fw-bold">
+								<a asp-action="Details"
+								   asp-route-id="@emp.Id"
+								   class="text-decoration-none text-primary fw-bold emp-link">
+									<i class="fa-solid fa-user-tie text-secondary me-2"></i>@emp.Name
+								</a>
+							</td>
 								<td><span class="badge bg-light text-dark border">@emp.JobTitle</span></td>
 								<td>@emp.Age سنة</td>
 								<td class="fw-bold text-success">@emp.MonthlySalary.ToString("N2") ج.م</td>
@@ -269,6 +275,13 @@
 							سيتم حساب صافي الراتب تلقائيًا بعد خصم أيام الغياب وأي سلف مصروفة هذا الشهر.
 						</div>
 					</div>
+
+					<div>
+						<div class="col-md-6">
+							<label class="form-label fw-bold">شهر الراتب<span class="text-danger">*</span></label>
+							<input type="month" name="targetMonth" id="salaryTargetMonth" required class="form-control" />
+						</div>
+					</div>
 					<div class="col-md-6">
 						<label class="form-label fw-bold">طريقة الدفع</label>
 						<select name="paymentMethod" class="form-select">
@@ -338,9 +351,15 @@
 
 @section Scripts {
 	<script>
-		function openPaySalaryModal(id, name, ) {
+		function openPaySalaryModal(id, name,) {
 			document.getElementById('salaryEmpId').value = id;
 			document.getElementById('salaryEmpName').innerText = name;
+
+			const now = new Date();
+			const yyyy = now.getFullYear();
+			const mm = String(now.getMonth() + 1).padStart(2, '0');
+			document.getElementById('salaryTargetMonth').value = `${yyyy}-${mm}`;
+
 			new bootstrap.Modal(document.getElementById('paySalaryModal')).show();
 		}
 
@@ -365,4 +384,16 @@
 		}
 
 	</script>
+
+	<style>
+		.emp-link {
+			color: var(--primary-hover) !important;
+			
+		}
+
+			.emp-link:hover {
+				color: var(--primary-hover) !important;
+				text-decoration: underline !important;
+			}
+	</style>
 }

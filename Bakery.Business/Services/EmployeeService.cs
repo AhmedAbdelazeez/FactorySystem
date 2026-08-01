@@ -16,7 +16,7 @@ namespace Bakery.Business.Services
     public interface IEmployeeService
     {
         Task<IEnumerable<EmployeeListItemDto>> GetAllEmployeesAsync(bool? activeOnly = null);
-        Task<Employee?> GetEmployeeByIdAsync(int id);
+        Task<EmployeeDetailsDto?> GetEmployeeByIdAsync(int id);
         Task AddEmployeeAsync(Employee employee);
         Task UpdateEmployeeAsync(Employee employee);
         Task DeleteEmployeeAsync(int id);
@@ -63,13 +63,49 @@ namespace Bakery.Business.Services
             if (!employees.Any()) return Enumerable.Empty<EmployeeListItemDto>();
             var employeeIds = employees.Select(e => e.Id).ToList();
 
-            var lastSalaryDates = await _context.Expenses
-                .AsNoTracking()
-                .Where(e => e.EmployeeId.HasValue && employeeIds.Contains(e.EmployeeId.Value) && e.Name.StartsWith("راتب العامل"))
-                .GroupBy(e => e.EmployeeId!.Value)
-                .Select(g => new { EmployeeId = g.Key, LastDate = g.Max(e => (DateTime?)e.Date) })
-                .ToDictionaryAsync(x => x.EmployeeId, x => x.LastDate);
+            var salaryExpenses = await _context.Expenses
+        .AsNoTracking()
+        .Where(e => e.EmployeeId.HasValue && employeeIds.Contains(e.EmployeeId.Value) && e.Name.StartsWith("راتب العامل"))
+        .Select(e => new { e.EmployeeId, e.Notes, e.Date })
+        .ToListAsync();
 
+            var lastPaidMonthCutoffs = new Dictionary<int, DateTime>();
+
+            foreach (var empId in employeeIds)
+            {
+                var empSalaries = salaryExpenses.Where(s => s.EmployeeId == empId).ToList();
+                if (empSalaries.Any())
+                {
+                    DateTime maxPaidMonthEnd = DateTime.MinValue;
+
+                    foreach (var salary in empSalaries)
+                    {
+                        var match = System.Text.RegularExpressions.Regex.Match(salary.Notes ?? "", @"\((?<month>\d{2})/(?<year>\d{4})\)");
+
+                        DateTime monthEnd;
+                        if (match.Success)
+                        {
+                            int m = int.Parse(match.Groups["month"].Value);
+                            int y = int.Parse(match.Groups["year"].Value);
+                            monthEnd = new DateTime(y, m, DateTime.DaysInMonth(y, m));
+                        }
+                        else
+                        {
+                            monthEnd = new DateTime(salary.Date.Year, salary.Date.Month, DateTime.DaysInMonth(salary.Date.Year, salary.Date.Month));
+                        }
+
+                        if (monthEnd > maxPaidMonthEnd)
+                        {
+                            maxPaidMonthEnd = monthEnd;
+                        }
+                    }
+
+                    if (maxPaidMonthEnd != DateTime.MinValue)
+                    {
+                        lastPaidMonthCutoffs[empId] = maxPaidMonthEnd;
+                    }
+                }
+            }
             var pendingAdvances = await _context.EmployeeAdvances
                 .AsNoTracking()
                 .Where(a => employeeIds.Contains(a.EmployeeId) && !a.IsPaid)
@@ -86,15 +122,16 @@ namespace Bakery.Business.Services
 
             foreach (var emp in employees)
             {
-                lastSalaryDates.TryGetValue(emp.Id, out var lastSalaryDate);
+                bool hasCutoff = lastPaidMonthCutoffs.TryGetValue(emp.Id, out DateTime lastPaidCutoff);
                 pendingAdvances.TryGetValue(emp.Id, out var pendingAdvanceAmount);
 
                 DayOfWeek? dayOff = DayNameMap.TryGetValue(emp.WeeklyDayOff ?? "", out var dow) ? dow : null;
 
                 var empAttendances = attendances.Where(a => a.EmployeeId == emp.Id);
-                if (lastSalaryDate.HasValue)
+
+                if (hasCutoff)
                 {
-                    empAttendances = empAttendances.Where(a => a.Date.Date > lastSalaryDate.Value.Date);
+                    empAttendances = empAttendances.Where(a => a.Date.Date > lastPaidCutoff.Date);
                 }
 
                 int absentDays = dayOff.HasValue
@@ -120,9 +157,100 @@ namespace Bakery.Business.Services
             return result;
         }
 
-        public async Task<Employee?> GetEmployeeByIdAsync(int id)
+        public async Task<EmployeeDetailsDto?> GetEmployeeByIdAsync(int id)
         {
-            return await _empRepo.GetByIdAsync(id);
+            var emp = await _empRepo.GetByIdAsync(id);
+            if (emp == null) return null;
+
+            // 1. جلب السُلف
+            var advances = await _context.EmployeeAdvances
+                .AsNoTracking()
+                .Where(a => a.EmployeeId == id)
+                .OrderByDescending(a => a.Date)
+                .Select(a => new AdvanceItemDto
+                {
+                    Id = a.Id,
+                    Amount = a.Amount,
+                    Date = a.Date,
+                    IsPaid = a.IsPaid,
+                    PaidDate = a.PaidDate,
+                    Notes = a.Notes
+                })
+                .ToListAsync();
+
+            // 2. جلب سجل المرتبات المصروفة
+            var salaryExpenses = await _context.Expenses
+                .AsNoTracking()
+                .Where(e => e.EmployeeId == id && e.Name.StartsWith("راتب العامل"))
+                .OrderByDescending(e => e.Date)
+                .Select(e => new SalaryExpenseItemDto
+                {
+                    Id = e.Id,
+                    Amount = e.TotalAmount,
+                    Date = e.Date,
+                    Notes = e.Notes
+                })
+                .ToListAsync();
+
+            // 3. تحديد آخر شهر مدفوع لحساب الغياب المتبقي
+            DateTime? lastPaidCutoff = null;
+            foreach (var salary in salaryExpenses)
+            {
+                var match = System.Text.RegularExpressions.Regex.Match(salary.Notes ?? "", @"\((?<month>\d{2})/(?<year>\d{4})\)");
+                if (match.Success)
+                {
+                    int m = int.Parse(match.Groups["month"].Value);
+                    int y = int.Parse(match.Groups["year"].Value);
+                    var monthEnd = new DateTime(y, m, DateTime.DaysInMonth(y, m));
+                    if (!lastPaidCutoff.HasValue || monthEnd > lastPaidCutoff.Value)
+                    {
+                        lastPaidCutoff = monthEnd;
+                    }
+                }
+            }
+
+            // 4. جلب سجلات الغياب
+            var attendances = await _context.EmployeeAttendances
+                .AsNoTracking()
+                .Where(a => a.EmployeeId == id && !a.IsPresent)
+                .OrderByDescending(a => a.Date)
+                .Select(a => new AttendanceItemDto
+                {
+                    Date = a.Date,
+                    IsPresent = a.IsPresent,
+                    Notes = a.Notes
+                })
+                .ToListAsync();
+
+            DayOfWeek? dayOff = DayNameMap.TryGetValue(emp.WeeklyDayOff ?? "", out var dow) ? dow : null;
+
+            var pendingAttendances = attendances.AsEnumerable();
+            if (lastPaidCutoff.HasValue)
+            {
+                pendingAttendances = pendingAttendances.Where(a => a.Date.Date > lastPaidCutoff.Value.Date);
+            }
+
+            int absentDaysCount = dayOff.HasValue
+                ? pendingAttendances.Count(a => a.Date.DayOfWeek != dayOff.Value)
+                : pendingAttendances.Count();
+
+            return new EmployeeDetailsDto
+            {
+                Id = emp.Id,
+                Name = emp.Name,
+                JobTitle = emp.JobTitle,
+                Age = emp.Age,
+                MonthlySalary = emp.MonthlySalary,
+                WeeklyDayOff = emp.WeeklyDayOff,
+                PhoneNumber = emp.PhoneNumber,
+                Notes = emp.Notes,
+                IsActive = emp.IsActive,
+                PendingAdvanceAmount = advances.Where(a => !a.IsPaid).Sum(a => a.Amount),
+                AbsentDaysCount = absentDaysCount,
+                Attendances = attendances,
+                Advances = advances,
+                SalaryExpenses = salaryExpenses
+            };
         }
 
         public async Task AddEmployeeAsync(Employee employee)
@@ -173,15 +301,34 @@ namespace Bakery.Business.Services
             var payPeriod = targetMonth ?? DateTime.Now;
             var now = DateTime.Now;
 
-            bool salaryPaid = await _context.Expenses
-                .AnyAsync(e => e.EmployeeId == employeeId
-                       && e.Date.Year == payPeriod.Year
-                       && e.Date.Month == payPeriod.Month
-                       && e.Name.StartsWith("راتب العامل"));
+            string targetMonthFormatted = payPeriod.ToString("MM/yyyy");
+
+            var empSalaries = await _context.Expenses
+                .AsNoTracking()
+                .Where(e => e.EmployeeId == employeeId && e.Name.StartsWith("راتب العامل"))
+                .Select(e => e.Notes)
+                .ToListAsync();
+
+            bool salaryPaid = empSalaries
+                .Any(n => n != null && n.Contains($"({targetMonthFormatted})"));
 
 
             if (salaryPaid)
-                throw new InvalidOperationException($"تم صرف راتب شهر ({payPeriod:MM/yyyy}) لهذا العامل بالفعل.");
+                throw new InvalidOperationException($"تم صرف راتب شهر ({targetMonthFormatted:MM/yyyy}) لهذا العامل بالفعل.");
+
+
+            var firstPossibleMonth = await GetFirstUnpaidMonthAsync(employeeId);
+
+            if (firstPossibleMonth.HasValue)
+            {
+                var requestedMonthStart = new DateTime(payPeriod.Year, payPeriod.Month, 1);
+
+                if (requestedMonthStart > firstPossibleMonth.Value)
+                {
+                    throw new InvalidOperationException(
+                        $"لا يمكن صرف راتب شهر ({payPeriod:MM/yyyy}) قبل صرف راتب شهر ({firstPossibleMonth.Value:MM/yyyy}) أولاً.");
+                }
+            }
 
             //int daysInMonth = DateTime.DaysInMonth(now.Year, now.Month);
             decimal dayValue = emp.MonthlySalary / 30m;
@@ -264,6 +411,8 @@ namespace Bakery.Business.Services
             } 
         }
 
+
+
         public async Task AddAdvanceAsync(int employeeId, decimal advanceAmount, PaymentMethod paymentMethod, string? notes = null)
         {
             if (advanceAmount <= 0)
@@ -314,6 +463,43 @@ namespace Bakery.Business.Services
             };
 
             await _expenseService.AddExpenseAsync(advanceExpense);
+        }
+
+
+        private async Task<DateTime?> GetFirstUnpaidMonthAsync(int employeeId)
+        {
+            // أول شهر لينا فيه سجل حضور للموظف (يعني بداية عمله الفعلية في النظام)
+            var firstAttendanceDate = await _context.EmployeeAttendances
+                .Where(a => a.EmployeeId == employeeId)
+                .OrderBy(a => a.Date)
+                .Select(a => (DateTime?)a.Date)
+                .FirstOrDefaultAsync();
+
+            if (!firstAttendanceDate.HasValue)
+                return null; // مفيش أي سجلات حضور خالص، مفيش قيد يمنع الصرف
+
+            var empSalaryNotes = await _context.Expenses
+        .AsNoTracking()
+        .Where(e => e.EmployeeId == employeeId && e.Name.StartsWith("راتب العامل"))
+        .Select(e => e.Notes)
+        .ToListAsync();
+
+            var cursor = new DateTime(firstAttendanceDate.Value.Year, firstAttendanceDate.Value.Month, 1);
+            var thisMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+
+            while (cursor <= thisMonth)
+            {
+                string monthFormatted = cursor.ToString("MM/yyyy");
+                bool paidThisMonth = empSalaryNotes
+                    .Any(n => n != null && n.Contains($"({monthFormatted})"));
+
+                if (!paidThisMonth)
+                    return cursor; // ده أول شهر معلّق لسه مصرفش
+
+                cursor = cursor.AddMonths(1);
+            }
+
+            return null; // كل الشهور اتصرفت لحد الشهر الحالي
         }
     }
 }

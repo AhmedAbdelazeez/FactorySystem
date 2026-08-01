@@ -27,6 +27,25 @@ namespace Test_DATA.Controllers
             return View(employees);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> Details(int id)
+        {
+            try
+            {
+                var employeeDetails = await _employeeService.GetEmployeeByIdAsync(id);
+                if (employeeDetails == null)
+                {
+                    TempData["ErrorMessage"] = "العامل غير موجود.";
+                    return RedirectToAction(nameof(Index));
+                }
+                return View(employeeDetails);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction(nameof(Index));
+            }
+        }
         [HttpPost]
         public async Task<IActionResult> Create(Employee employee)
         {
@@ -79,11 +98,11 @@ namespace Test_DATA.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> PaySalary(int employeeId, PaymentMethod paymentMethod, string? notes)
+        public async Task<IActionResult> PaySalary(int employeeId, PaymentMethod paymentMethod, string? notes, DateTime? targetMonth = null)
         {
             try
             {
-                await _employeeService.PaySalaryAsync(employeeId, paymentMethod, notes);
+                await _employeeService.PaySalaryAsync(employeeId, paymentMethod, notes,targetMonth);
                 TempData["SuccessMessage"] = $"تم صرف الراتب بنجاح ✅ | {notes}";
             }
             catch (Exception ex)
@@ -107,5 +126,6 @@ namespace Test_DATA.Controllers
             }
             return RedirectToAction(nameof(Index));
         }
+
     }
 }

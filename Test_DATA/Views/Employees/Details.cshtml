@@ -1,0 +1,186 @@
+﻿@model Bakery.Business.DTOs.EmployeeDetailsDto
+@{
+    ViewData["Title"] = $"تفاصيل العامل - {Model.Name}";
+}
+
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm mb-2">
+            <i class="fa-solid fa-arrow-right me-1"></i> العودة لقائمة العمال
+        </a>
+        <h2 class="fw-bold text-dark mb-1">
+            <i class="fa-solid fa-user-tie text-warning me-2"></i> @Model.Name
+            @if (Model.IsActive)
+            {
+                <span class="badge bg-success fs-6 ms-2">نشط</span>
+            }
+            else
+            {
+                <span class="badge bg-secondary fs-6 ms-2">غير نشط</span>
+            }
+        </h2>
+        <p class="text-muted mb-0">الكشف التفصيلي للحضور والغياب، السلف المصروفة، وسجل الرواتب</p>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-start border-primary border-4 shadow-sm">
+            <div class="text-muted small fw-bold">الوظيفة / السن</div>
+            <div class="fs-5 fw-bold text-dark">@Model.JobTitle (@Model.Age سنة)</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-start border-success border-4 shadow-sm">
+            <div class="text-muted small fw-bold">الراتب الشهري الأساسي</div>
+            <div class="fs-5 fw-bold text-success">@Model.MonthlySalary.ToString("N2") ج.م</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-start border-warning border-4 shadow-sm">
+            <div class="text-muted small fw-bold">السلف المعلقة حالياً</div>
+            <div class="fs-5 fw-bold text-warning">@Model.PendingAdvanceAmount.ToString("N2") ج.م</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-start border-danger border-4 shadow-sm">
+            <div class="text-muted small fw-bold">أيام الغياب المتبقية للخصم</div>
+            <div class="fs-5 fw-bold text-danger">@Model.AbsentDaysCount يوم</div>
+        </div>
+    </div>
+</div>
+
+<ul class="nav nav-tabs nav-tabs-custom mb-3" id="empTab" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active fw-bold" id="salary-tab" data-bs-toggle="tab" data-bs-target="#salaries" type="button">
+            <i class="fa-solid fa-money-bill-wave me-1"></i> سجل الرواتب
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link fw-bold" id="advances-tab" data-bs-toggle="tab" data-bs-target="#advances" type="button">
+            <i class="fa-solid fa-hand-holding-dollar me-1"></i> سجل السُلف
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link fw-bold" id="attendance-tab" data-bs-toggle="tab" data-bs-target="#attendance" type="button">
+            <i class="fa-solid fa-calendar-xmark me-1"></i> سجل الغياب
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="empTabContent">
+    <!-- 1. سجل الرواتب -->
+    <div class="tab-pane fade show active" id="salaries">
+        <div class="card card-custom p-0">
+            <div class="table-responsive">
+                <table class="table table-bakery mb-0">
+                    <thead>
+                        <tr>
+                            <th>تاريخ الصرف</th>
+                            <th>المبلغ الصافي المصروف</th>
+                            <th>الملاحظات وتفاصيل الحساب</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.SalaryExpenses.Any())
+                        {
+                            foreach (var s in Model.SalaryExpenses)
+                            {
+                                <tr>
+                                    <td>@s.Date.ToString("yyyy/MM/dd HH:mm")</td>
+                                    <td class="fw-bold text-success">@s.Amount.ToString("N2") ج.م</td>
+                                    <td>@s.Notes</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="3" class="text-center text-muted p-4">لا يوجد رواتب مصروفة لهذا العامل بعد.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. سجل السُلف -->
+    <div class="tab-pane fade" id="advances">
+        <div class="card card-custom p-0">
+            <div class="table-responsive">
+                <table class="table table-bakery mb-0">
+                    <thead>
+                        <tr>
+                            <th>تاريخ صرف السلفة</th>
+                            <th>المبلغ</th>
+                            <th>حالة الخصم</th>
+                            <th>تاريخ التسوية / الخصم</th>
+                            <th>ملاحظات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Advances.Any())
+                        {
+                            foreach (var adv in Model.Advances)
+                            {
+                                <tr>
+                                    <td>@adv.Date.ToString("yyyy/MM/dd")</td>
+                                    <td class="fw-bold">@adv.Amount.ToString("N2") ج.م</td>
+                                    <td>
+                                        @if (adv.IsPaid)
+                                        {
+                                            <span class="badge bg-success">تم الخصم من الراتب</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark">معلقة</span>
+                                        }
+                                    </td>
+                                    <td>@(adv.PaidDate.HasValue ? adv.PaidDate.Value.ToString("yyyy/MM/dd") : "-")</td>
+                                    <td>@adv.Notes</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="5" class="text-center text-muted p-4">لا يوجد سُلف مسجلة.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. سجل الغياب -->
+    <div class="tab-pane fade" id="attendance">
+        <div class="card card-custom p-0">
+            <div class="table-responsive">
+                <table class="table table-bakery mb-0">
+                    <thead>
+                        <tr>
+                            <th>تاريخ اليوم</th>
+                            <th>اليوم</th>
+                            <th>الملاحظات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Attendances.Any())
+                        {
+                            foreach (var att in Model.Attendances)
+                            {
+                                <tr>
+                                    <td>@att.Date.ToString("yyyy/MM/dd")</td>
+                                    <td>@att.Date.ToString("dddd", new System.Globalization.CultureInfo("ar-EG"))</td>
+                                    <td>@(string.IsNullOrEmpty(att.Notes) ? "غياب" : att.Notes)</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="3" class="text-center text-muted p-4">لا يوجد أيام غياب مسجلة لهذا العامل.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

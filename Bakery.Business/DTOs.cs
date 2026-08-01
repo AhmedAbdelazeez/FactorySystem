@@ -124,4 +124,49 @@ namespace Bakery.Business.DTOs
 
     }
 
+    public class EmployeeDetailsDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string JobTitle { get; set; } = string.Empty;
+        public int Age { get; set; }
+        public decimal MonthlySalary { get; set; }
+        public string WeeklyDayOff { get; set; } = string.Empty;
+        public string? PhoneNumber { get; set; }
+        public string? Notes { get; set; }
+        public bool IsActive { get; set; }
+
+        public decimal PendingAdvanceAmount { get; set; }
+        public int AbsentDaysCount { get; set; }
+
+        public List<AttendanceItemDto> Attendances { get; set; } = new();
+        public List<AdvanceItemDto> Advances { get; set; } = new();
+        public List<SalaryExpenseItemDto> SalaryExpenses { get; set; } = new();
+    }
+
+    public class AttendanceItemDto
+    {
+        public DateTime Date { get; set; }
+        public bool IsPresent { get; set; }
+        public string? Notes { get; set; }
+    }
+
+    public class AdvanceItemDto
+    {
+        public int Id { get; set; }
+        public decimal Amount { get; set; }
+        public DateTime Date { get; set; }
+        public bool IsPaid { get; set; }
+        public DateTime? PaidDate { get; set; }
+        public string? Notes { get; set; }
+    }
+
+    public class SalaryExpenseItemDto
+    {
+        public int Id { get; set; }
+        public decimal Amount { get; set; }
+        public DateTime Date { get; set; }
+        public string? Notes { get; set; }
+    }
+
 }
