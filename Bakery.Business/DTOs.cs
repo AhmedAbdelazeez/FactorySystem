@@ -121,7 +121,7 @@ namespace Bakery.Business.DTOs
         public int AbsentDaysSinceLastSalary { get; set; }
         public decimal PendingAdvanceAmount { get; set; }
 
-
+        public DateTime StartedDate { get; set; }
     }
 
     public class EmployeeDetailsDto
@@ -139,6 +139,7 @@ namespace Bakery.Business.DTOs
         public decimal PendingAdvanceAmount { get; set; }
         public int AbsentDaysCount { get; set; }
 
+        public DateTime StartedDate { get; set; }
         public List<AttendanceItemDto> Attendances { get; set; } = new();
         public List<AdvanceItemDto> Advances { get; set; } = new();
         public List<SalaryExpenseItemDto> SalaryExpenses { get; set; } = new();

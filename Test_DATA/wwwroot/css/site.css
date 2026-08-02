@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap');
 
 :root {
-    --primary-color: #d97706; /* Amber 600 */
+    --primary-color: #d97706; 
     --primary-hover: #b45309;
     --primary-light: #fef3c7;
     --secondary-color: #78350f;
@@ -30,37 +30,37 @@ body {
     min-height: 100vh;
 }
 
-/* Navbar */
+/*---Navbar --- */
 .bakery-navbar {
     background: linear-gradient(135deg, #78350f 0%, #b45309 100%);
     box-shadow: var(--shadow-lg);
     padding: 0.8rem 1.5rem;
 }
 
-.bakery-navbar .navbar-brand {
-    font-weight: 800;
-    font-size: 1.4rem;
-    color: #ffffff !important;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
+    .bakery-navbar .navbar-brand {
+        font-weight: 800;
+        font-size: 1.4rem;
+        color: #ffffff !important;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
 
-.bakery-navbar .nav-link {
-    color: rgba(255, 255, 255, 0.9) !important;
-    font-weight: 600;
-    padding: 0.5rem 1rem !important;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-}
+    .bakery-navbar .nav-link {
+        color: rgba(255, 255, 255, 0.9) !important;
+        font-weight: 600;
+        padding: 0.5rem 1rem !important;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
 
-.bakery-navbar .nav-link:hover,
-.bakery-navbar .nav-link.active {
-    background: rgba(255, 255, 255, 0.2);
-    color: #ffffff !important;
-}
+        .bakery-navbar .nav-link:hover,
+        .bakery-navbar .nav-link.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff !important;
+        }
 
-/* Cards & Layout */
+/* ---- Cards & Layout ---- */
 .card-custom {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
@@ -70,46 +70,91 @@ body {
     overflow: hidden;
 }
 
-.card-custom:hover {
-    box-shadow: var(--shadow-lg);
+    .card-custom:hover {
+        box-shadow: var(--shadow-lg);
+    }
+
+/* Page header box */
+.page-header-box {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    border: 1px solid #f1f3f5;
 }
 
+/* Stat card  */
 .stat-card {
-    border-radius: var(--radius);
+    border: none;
+    border-radius: 16px;
     padding: 1.25rem;
     color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: var(--shadow);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.stat-card .stat-icon {
-    font-size: 2.5rem;
-    opacity: 0.85;
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+    }
+
+    .stat-card .stat-icon {
+        font-size: 2.5rem;
+        opacity: 0.85;
+    }
+
+    .stat-card .stat-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        opacity: 0.9;
+    }
+
+    .stat-card .stat-value {
+        font-size: 1.6rem;
+        font-weight: 800;
+        margin: 0;
+    }
+
+/* Stat icon wrapper  */
+.stat-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
 }
 
-.stat-card .stat-title {
-    font-size: 0.9rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-    opacity: 0.9;
+.bg-amber {
+    background: linear-gradient(135deg, #d97706, #b45309);
 }
 
-.stat-card .stat-value {
-    font-size: 1.6rem;
-    font-weight: 800;
-    margin: 0;
+.bg-emerald {
+    background: linear-gradient(135deg, #10b981, #047857);
 }
 
-.bg-amber { background: linear-gradient(135deg, #d97706, #b45309); }
-.bg-emerald { background: linear-gradient(135deg, #10b981, #047857); }
-.bg-blue { background: linear-gradient(135deg, #0284c7, #0369a1); }
-.bg-rose { background: linear-gradient(135deg, #f43f5e, #be123c); }
-.bg-purple { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
-.bg-slate { background: linear-gradient(135deg, #475569, #334155); }
+.bg-blue {
+    background: linear-gradient(135deg, #0284c7, #0369a1);
+}
 
-/* Buttons */
+.bg-rose {
+    background: linear-gradient(135deg, #f43f5e, #be123c);
+}
+
+.bg-purple {
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+}
+
+.bg-slate {
+    background: linear-gradient(135deg, #475569, #334155);
+}
+
+/* ---- Buttons ---- */
 .btn-bakery {
     background-color: var(--primary-color);
     color: #ffffff;
@@ -120,37 +165,141 @@ body {
     transition: background 0.2s ease;
 }
 
-.btn-bakery:hover {
-    background-color: var(--primary-hover);
-    color: #ffffff;
+    .btn-bakery:hover {
+        background-color: var(--primary-hover);
+        color: #ffffff;
+    }
+
+.btn-action-sm {
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.4rem 0.8rem;
+    transition: all 0.2s;
 }
 
-/* Table */
+.btn-action-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+/* ---- Table  ---- */
 .table-bakery {
     border-collapse: separate;
     border-spacing: 0;
     width: 100%;
 }
 
-.table-bakery th {
-    background-color: #f1f5f9;
-    color: #334155;
+    .table-bakery th {
+        background-color: #f1f5f9;
+        color: #334155;
+        font-weight: 700;
+        border-bottom: 2px solid var(--border-color);
+        padding: 0.85rem 1rem;
+    }
+
+    .table-bakery td {
+        padding: 0.85rem 1rem;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+    }
+
+    .table-bakery tr:hover td {
+        background-color: #f8fafc;
+    }
+
+/* ---- Table  ---- */
+.table-custom thead th {
+    background-color: #f8f9fa;
+    color: #495057;
     font-weight: 700;
-    border-bottom: 2px solid var(--border-color);
-    padding: 0.85rem 1rem;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 1rem 0.75rem;
+    border-bottom: 2px solid #edf2f7;
+    white-space: nowrap;
 }
 
-.table-bakery td {
-    padding: 0.85rem 1rem;
-    border-bottom: 1px solid var(--border-color);
+.table-custom tbody td {
+    padding: 0.9rem 0.75rem;
     vertical-align: middle;
+    border-bottom: 1px solid #f1f3f5;
+    font-size: 0.92rem;
 }
 
-.table-bakery tr:hover td {
-    background-color: #f8fafc;
+.table-custom tbody tr:hover {
+    background-color: #fbfcfd;
 }
 
-/* Funny Bakery Loader Overlay */
+.tr-off-day {
+    background-color: #fafbfc !important;
+    opacity: 0.75;
+}
+
+/* Status badge  */
+.status-badge {
+    font-weight: 600;
+    font-size: 0.8rem;
+    padding: 0.45em 0.85em;
+    border-radius: 30px;
+}
+
+/* ---- Attendance & Employees Cards ---- */
+.attendance-card,
+.main-card {
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    background: #ffffff;
+}
+
+/* Employee name link - نسخة واحدة موحّدة */
+.emp-link {
+    color: #2b2d42;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+    .emp-link:hover {
+        color: #0d6efd !important; 
+        text-decoration: underline !important;
+    }
+
+/* ---- Modal ---- */
+.modal-content {
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.modal-header {
+    border-bottom: 1px solid #f1f3f5;
+    padding: 1.25rem 1.5rem;
+}
+
+/* ---- Forms ---- */
+.form-control,
+.form-select {
+    border-radius: 10px;
+    padding: 0.6rem 0.85rem;
+    border-color: #dee2e6;
+}
+
+    .form-control:focus,
+    .form-select:focus {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    }
+
+/* ---- Funny Bakery Loader Overlay ---- */
 #bakeryLoader {
     position: fixed;
     top: 0;
@@ -185,14 +334,29 @@ body {
 }
 
 @keyframes spinBakery {
-    0% { transform: rotate(0deg) scale(1); }
-    50% { transform: rotate(180deg) scale(1.1); }
-    100% { transform: rotate(360deg) scale(1); }
+    0% {
+        transform: rotate(0deg) scale(1);
+    }
+
+    50% {
+        transform: rotate(180deg) scale(1.1);
+    }
+
+    100% {
+        transform: rotate(360deg) scale(1);
+    }
 }
 
 @keyframes popIn {
-    from { opacity: 0; transform: scale(0.8); }
-    to { opacity: 1; transform: scale(1); }
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .loader-text {

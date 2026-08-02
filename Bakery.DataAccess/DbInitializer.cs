@@ -131,11 +131,11 @@ namespace Bakery.DataAccess
             {
                 var defaultEmployees = new List<Employee>
                 {
-                    new Employee { Name = "أحمد محمود علي", JobTitle = "خباز أول", Age = 35, MonthlySalary = 8000, WeeklyDayOff = "الجمعة", PhoneNumber = "01012345678", Notes = "خبرة 10 سنوات في العجائن والفرن", IsActive = true },
+                    new Employee { Name = "أحمد محمود علي", JobTitle = "خباز أول", Age = 35, MonthlySalary = 8000, WeeklyDayOff = "الجمعة", PhoneNumber = "01012345678", Notes = "خبرة 10 سنوات في العجائن والفرن", IsActive = true,StartedDate=new DateTime(2026, 7, 1)},
                     new Employee { Name = "محمد عبد السلام", JobTitle = "عامل إنتاج", Age = 28, MonthlySalary = 5500, WeeklyDayOff = "الجمعة", PhoneNumber = "01123456789", Notes = "وردية صباحية - قسم التشكيل", IsActive = true },
-                    new Employee { Name = "محمود حسن إبراهيم", JobTitle = "عامل تعبئة وتغليف", Age = 24, MonthlySalary = 4800, WeeklyDayOff = "الأحد", PhoneNumber = "01234567890", Notes = "مسؤول عن تعبئة الباسكيت والتغليف", IsActive = true },
-                    new Employee { Name = "إبراهيم السيد أحمد", JobTitle = "فني صيانة", Age = 40, MonthlySalary = 6500, WeeklyDayOff = "الجمعة", PhoneNumber = "01545678901", Notes = "صيانة الأفران والعجانات", IsActive = true },
-                    new Employee { Name = "السيد مصطفى حسين", JobTitle = "مشرف جودة", Age = 32, MonthlySalary = 7200, WeeklyDayOff = "الجمعة", PhoneNumber = "01098765432", Notes = "متابعة معايير الوزن والتصنيع", IsActive = true }
+                    new Employee { Name = "محمود حسن إبراهيم", JobTitle = "عامل تعبئة وتغليف", Age = 24, MonthlySalary = 4800, WeeklyDayOff = "الأحد", PhoneNumber = "01234567890", Notes = "مسؤول عن تعبئة الباسكيت والتغليف", IsActive = true,StartedDate=new DateTime(2026, 7, 1) },
+                    new Employee { Name = "إبراهيم السيد أحمد", JobTitle = "فني صيانة", Age = 40, MonthlySalary = 6500, WeeklyDayOff = "الجمعة", PhoneNumber = "01545678901", Notes = "صيانة الأفران والعجانات", IsActive = true,StartedDate=new DateTime(2026, 7, 1) },
+                    new Employee { Name = "السيد مصطفى حسين", JobTitle = "مشرف جودة", Age = 32, MonthlySalary = 7200, WeeklyDayOff = "الجمعة", PhoneNumber = "01098765432", Notes = "متابعة معايير الوزن والتصنيع", IsActive = true ,StartedDate=new DateTime(2026, 7, 1)}
                 };
 
                 foreach (var emp in defaultEmployees)

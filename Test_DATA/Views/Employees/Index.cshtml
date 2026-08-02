@@ -1,141 +1,207 @@
 @model IEnumerable<Bakery.Business.DTOs.EmployeeListItemDto>
 @{
-	ViewData["Title"] = "إدارة العاملين بالمخبز";
+	ViewData["Title"] = "إدارة العاملين ";
 	var weekdays = ViewBag.Weekdays as List<string> ?? new List<string>();
 	var jobTitles = ViewBag.JobTitles as List<string> ?? new List<string>();
+
+	var totalEmployees = Model.Count();
+	var activeEmployees = Model.Count(e => e.IsActive);
+	var totalAdvances = Model.Sum(e => e.PendingAdvanceAmount);
 }
 
-<div class="row mb-4 align-items-center">
-	<div class="col">
-		<h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-users text-warning me-2"></i> سجل العاملين بالفرن والمصنع</h2>
-		<p class="text-muted mb-0">بيانات العمال والموظفين، الإجازات الأسبوعية، وصرف المرتبات مباشرة لمصروفات العمالة</p>
-	</div>
-	<div class="col-auto">
-		<button class="btn btn-bakery" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
-			<i class="fa-solid fa-user-plus me-1"></i> إضافة عامل جديد
-		</button>
+
+<!-- Header Box -->
+<div class="page-header-box mb-4">
+	<div class="row align-items-center g-3">
+		<div class="col-md-7">
+			<div class="d-flex align-items-center">
+				<div class="stat-icon-wrapper bg-warning-subtle text-warning me-3">
+					<i class="fa-solid fa-users"></i>
+				</div>
+				<div>
+					<h3 class="fw-bold text-dark mb-1">سجل العاملين  </h3>
+					<p class="text-muted small mb-0">إدارة بيانات العمالة، متابعة السُلف الإجازات الأسبوعية، وصرف الراتب</p>
+				</div>
+			</div>
+		</div>
+		<div class="col-md-5 text-md-end">
+			<button class="btn btn-warning text-dark fw-bold px-3 py-2 rounded-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+				<i class="fa-solid fa-user-plus me-1"></i> إضافة عامل جديد
+			</button>
+		</div>
 	</div>
 </div>
 
-<div class="card card-custom">
-	<div class="card-body p-0">
-		<div class="table-responsive">
-			<table class="table table-bakery mb-0">
-				<thead>
-					<tr>
-						<th>اسم العامل</th>
-						<th>الوظيفة</th>
-						<th>السن</th>
-						<th>الراتب الشهري</th>
-						<th>يوم الإجازة الأسبوعية</th>
-						<th>أيام الغياب</th>
-						<th>سلف معلقة</th>
-						<th>رقم الهاتف</th>
-						<th>الحالة</th>
-						<th>ملاحظات</th>
-						<th class="text-center">الإجراءات وصرف الراتب</th>
-					</tr>
-				</thead>
-				<tbody>
-					@if (Model.Any())
-					{
-						foreach (var emp in Model)
-						{
-							<tr>
-								<td class="fw-bold">
-								<a asp-action="Details"
-								   asp-route-id="@emp.Id"
-								   class="text-decoration-none text-primary fw-bold emp-link">
-									<i class="fa-solid fa-user-tie text-secondary me-2"></i>@emp.Name
-								</a>
-							</td>
-								<td><span class="badge bg-light text-dark border">@emp.JobTitle</span></td>
-								<td>@emp.Age سنة</td>
-								<td class="fw-bold text-success">@emp.MonthlySalary.ToString("N2") ج.م</td>
-								<td><span class="badge bg-amber">@emp.WeeklyDayOff</span></td>
-								<td>
-									@if (emp.AbsentDaysSinceLastSalary > 0)
-									{
-										<span class="badge bg-danger">@emp.AbsentDaysSinceLastSalary يوم</span>
-									}
-									else
-									{
-										<span class="badge bg-success">لا يوجد</span>
-									}
-									)
-								</td>
-								<td>
-									@if (emp.PendingAdvanceAmount > 0)
-									{
-										<span class="badge bg-warning text-dark fw-bold">@emp.PendingAdvanceAmount.ToString("N2") ج.م</span>
-									}
-									else
-									{
-										<span class="text-muted">-</span>
-									}
-								</td>
-								<td>@(string.IsNullOrEmpty(emp.PhoneNumber) ? "-" : emp.PhoneNumber)</td>
-								<td>
-									@if (emp.IsActive)
-									{
-										<span class="badge bg-success">نشط</span>
-									}
-									else
-									{
-										<span class="badge bg-secondary">غير نشط</span>
-									}
-								</td>
-								<td class="small text-secondary">@emp.Notes</td>
+<!-- Quick Stats Summary -->
+<div class="row g-3 mb-4">
+	<div class="col-md-4">
+		<div class="card stat-card p-3">
+			<div class="d-flex align-items-center">
+				<div class="stat-icon-wrapper bg-primary-subtle text-primary me-3">
+					<i class="fa-solid fa-id-card"></i>
+				</div>
+				<div>
+					<span class="text-muted small d-block mb-1">إجمالي قوة العمالة</span>
+					<span class="fs-4 fw-bold text-dark">@totalEmployees <small class="fs-6 text-muted fw-normal">عامل</small></span>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-4">
+		<div class="card stat-card p-3">
+			<div class="d-flex align-items-center">
+				<div class="stat-icon-wrapper bg-success-subtle text-success me-3">
+					<i class="fa-solid fa-user-check"></i>
+				</div>
+				<div>
+					<span class="text-muted small d-block mb-1">العمالة النشطة</span>
+					<span class="fs-4 fw-bold text-success">@activeEmployees <small class="fs-6 text-muted fw-normal">عامل</small></span>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-4">
+		<div class="card stat-card p-3">
+			<div class="d-flex align-items-center">
+				<div class="stat-icon-wrapper bg-warning-subtle text-warning-emphasis me-3">
+					<i class="fa-solid fa-hand-holding-dollar"></i>
+				</div>
+				<div>
+					<span class="text-muted small d-block mb-1">إجمالي السلف المعلقة</span>
+					<span class="fs-4 fw-bold text-dark">@totalAdvances.ToString("N2") <small class="fs-6 text-muted fw-normal">ج.م</small></span>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
 
-								<td class="text-center">
-									<div class="d-flex align-items-center justify-content-center gap-1">
-										@if (emp.IsActive)
-										{
-											<button class="btn btn-sm btn-warning text-nowrap" onclick="openAdvanceModal(@emp.Id, '@emp.Name')">
-												<i class="fa-solid fa-hand-holding-dollar me-1"></i>صرف سلفة
-											</button>
-											<button class="btn btn-sm btn-success text-nowrap" onclick="openPaySalaryModal(@emp.Id, '@emp.Name', @emp.MonthlySalary)">
-												<i class="fa-solid fa-money-bill-wave me-1"></i>صرف الراتب
-											</button>
-										}
-
-										<button class="btn btn-sm btn-outline-primary" onclick="openEditEmployeeModal(@emp.Id, '@emp.Name', '@emp.JobTitle', @emp.Age, @emp.MonthlySalary, '@emp.WeeklyDayOff', '@emp.PhoneNumber', '@emp.Notes', @emp.IsActive.ToString().ToLower())">
-											<i class="fa-solid fa-pen"></i>
-										</button>
-
-										<button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDelete(@emp.Id, '@Url.Action("Delete", "Employees")', 'هل أنت متأكد من حذف العامل &quot;@emp.Name&quot;؟')">
-											<i class="fa-solid fa-trash"></i>
-										</button>
-									</div>
-								</td>
-							</tr>
-						}
-					}
-					else
+<!-- Main Table Card -->
+<div class="card-custom ">
+	<div class="table-responsive">
+		<table class="table table-custom  align-middle mb-0">
+			<thead>
+				<tr>
+					<th>اسم العامل</th>
+					<th>الوظيفة</th>
+					<th>السن</th>
+					<th>الراتب الشهري</th>
+					<th> الإجازة الأسبوعية</th>
+					<th>أيام الغياب</th>
+					<th>سلف معلقة</th>
+					<th>رقم الهاتف</th>
+					<th>الحالة</th>
+					<th>ملاحظات</th>
+					<th class="text-center" style="min-width: 200px;">الإجراءات والعمليات</th>
+				</tr>
+			</thead>
+			<tbody>
+				@if (Model.Any())
+				{
+					foreach (var emp in Model)
 					{
 						<tr>
-							<td colspan="9" class="text-center p-4 text-muted">لا يوجد عمال مسجلين بعد. اضغط على إضافة عامل جديد للبدء.</td>
+							<td class="fw-bold">
+								<a asp-action="Details"
+								   asp-route-id="@emp.Id"
+								   class="text-decoration-none emp-link d-inline-flex align-items-center">
+									<div class="avatar-sm rounded-circle bg-light d-flex align-items-center justify-content-center me-2 text-secondary" style="width: 32px; height: 32px; font-size: 0.85rem;">
+										<i class="fa-solid fa-user"></i>
+									</div>
+									@emp.Name
+								</a>
+							</td>
+							<td><span class="badge bg-light text-dark border rounded-2 px-2 py-1">@emp.JobTitle</span></td>
+							<td><span class="text-dark">@emp.Age</span> <small class="text-muted">سنة</small></td>
+							<td class="fw-bold text-success">@emp.MonthlySalary.ToString("N2") <small class="fw-normal text-muted">ج.م</small></td>
+							<td><span class="badge bg-warning-subtle text-warning-emphasis status-badge border border-warning-subtle">@emp.WeeklyDayOff</span></td>
+							<td>
+								@if (emp.AbsentDaysSinceLastSalary > 0)
+								{
+									<span class="badge bg-danger-subtle text-danger status-badge border border-danger-subtle"><i class="fa-solid fa-triangle-exclamation me-1"></i>@emp.AbsentDaysSinceLastSalary يوم</span>
+								}
+								else
+								{
+									<span class="badge bg-success-subtle text-success status-badge border border-success-subtle"><i class="fa-solid fa-check me-1"></i>لا يوجد</span>
+								}
+							</td>
+							<td>
+								@if (emp.PendingAdvanceAmount > 0)
+								{
+									<span class="badge bg-amber text-dark fw-bold px-2 py-1"><i class="fa-solid fa-coins me-1"></i>@emp.PendingAdvanceAmount.ToString("N2")</span>
+								}
+								else
+								{
+									<span class="text-muted small">-</span>
+								}
+							</td>
+							<td class="text-nowrap small"><i class="fa-solid fa-phone text-muted me-1 small"></i>@(string.IsNullOrEmpty(emp.PhoneNumber) ? "-" : emp.PhoneNumber)</td>
+							<td>
+								@if (emp.IsActive)
+								{
+									<span class="badge bg-success-subtle text-success status-badge border border-success-subtle">نشط</span>
+								}
+								else
+								{
+									<span class="badge bg-secondary-subtle text-secondary status-badge border border-secondary-subtle">غير نشط</span>
+								}
+							</td>
+							<td class="small text-secondary text-truncate" style="max-width: 120px;">@(string.IsNullOrEmpty(emp.Notes) ? "-" : emp.Notes)</td>
+
+							<td class="text-center">
+								<div class="d-flex align-items-center justify-content-center gap-1">
+									@if (emp.IsActive)
+									{
+										<button class="btn btn-sm btn-outline-warning text-dark fw-semibold rounded-2 text-nowrap px-2" onclick="openAdvanceModal(@emp.Id, '@emp.Name')" title="صرف سلفة">
+											<i class="fa-solid fa-hand-holding-dollar me-1"></i>سلفة
+										</button>
+										<button class="btn btn-sm btn-success fw-semibold rounded-2 text-nowrap px-2" onclick="openPaySalaryModal(@emp.Id, '@emp.Name', @emp.MonthlySalary)" title="صرف الراتب">
+											<i class="fa-solid fa-money-bill-wave me-1"></i> صرف الراتب
+										</button>
+									}
+
+									<button class="btn btn-action-icon btn-light text-primary border me-1" onclick="openEditEmployeeModal(@emp.Id, '@emp.Name', '@emp.JobTitle', @emp.Age, @emp.MonthlySalary, '@emp.WeeklyDayOff', '@emp.PhoneNumber', '@emp.Notes', @emp.IsActive.ToString().ToLower(), '@emp.StartedDate.ToString("yyyy-MM-dd")')" title="تعديل البيانات">
+										<i class="fa-solid fa-pen"></i>
+									</button>
+
+									<button type="button" class="btn btn-action-icon btn-light text-danger border" onclick="confirmDelete(@emp.Id, '@Url.Action("Delete", "Employees")', 'هل أنت متأكد من حذف العامل &quot;@emp.Name&quot;؟')" title="حذف العامل">
+										<i class="fa-solid fa-trash"></i>
+									</button>
+								</div>
+							</td>
 						</tr>
 					}
-				</tbody>
-			</table>
-		</div>
+				}
+				else
+				{
+					<tr>
+						<td colspan="11" class="text-center py-5 text-muted">
+							<i class="fa-solid fa-users-slash fs-1 d-block mb-3 opacity-25"></i>
+							لا يوجد عمال مسجلين بعد. اضغط على "إضافة عامل جديد" للبدء.
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
 	</div>
 </div>
 
 <!-- Modal Add Employee -->
 <div class="modal fade" id="addEmployeeModal" tabindex="-1">
-	<div class="modal-dialog">
+	<div class="modal-dialog modal-dialog-centered modal-lg">
 		<div class="modal-content">
-			<div class="modal-header bg-amber text-white">
-				<h5 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-1"></i> إضافة عامل جديد</h5>
-				<button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
+			<div class="modal-header bg-warning text-dark">
+				<h5 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-2"></i>إضافة عامل جديد</h5>
+				<button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
 			</div>
 			<form asp-action="Create" method="post">
-				<div class="modal-body row g-3">
-					<div class="col-12">
+				<div class="modal-body p-4 row g-3">
+					<div class="col-md-8">
 						<label class="form-label fw-bold">اسم العامل بالكامل <span class="text-danger">*</span></label>
 						<input type="text" name="Name" required class="form-control" placeholder="أدخل اسم العامل..." />
+					</div>
+					<div class="col-md-4">
+						<label class="form-label fw-bold">تاريخ بدء العمل <span class="text-danger">*</span></label>
+						<input type="date" name="StartedDate" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" required />
 					</div>
 					<div class="col-md-6">
 						<label class="form-label fw-bold">المسمى الوظيفي <span class="text-danger">*</span></label>
@@ -152,8 +218,10 @@
 						<input type="number" name="Age" min="1" max="100" value="25" class="form-control" />
 					</div>
 					<div class="col-md-6">
-						<label class="form-label fw-bold">الراتب الشهري (ج.م)</label>
-						<input type="number" step="0.01" min="1" max="1000000" name="MonthlySalary" value="0" class="form-control" />
+						<label class="form-label fw-bold">الراتب الشهري (ج.م) <span class="text-danger">*</span></label>
+						<input type="number" step="0.01" min="1" max="1000000" name="MonthlySalary" required class="form-control fw-bold text-success"
+							   oninvalid="this.setCustomValidity('يجب إدخال راتب شهري أكبر من الصفر')"
+							   oninput="this.setCustomValidity('')" placeholder="0.00" />
 					</div>
 					<div class="col-md-6">
 						<label class="form-label fw-bold">يوم الإجازة الأسبوعية <span class="text-danger">*</span></label>
@@ -171,56 +239,55 @@
 					<div class="col-md-6 d-flex align-items-end">
 						<div class="form-check form-switch mb-2">
 							<input class="form-check-input" type="checkbox" name="IsActive" value="true" checked id="isActiveSwitch">
-							<label class="form-check-label fw-bold ms-2" for="isActiveSwitch">حالة العامل: نشط بالشغل</label>
+							<label class="form-check-label fw-bold ms-2" for="isActiveSwitch">حالة العامل: نشط بالعمل</label>
 						</div>
 					</div>
 					<div class="col-12">
 						<label class="form-label fw-bold">ملاحظات إضافية</label>
-						<input type="text" name="Notes" class="form-control" placeholder="ملاحظات الشخصية أو الخبرة..." />
+						<input type="text" name="Notes" class="form-control" placeholder="أي ملاحظات تخص الموظف أو الخبرة..." />
 					</div>
 				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-					<button type="submit" class="btn btn-bakery">حفظ بيانات العامل</button>
+				<div class="modal-footer bg-light">
+					<button type="button" class="btn btn-outline-secondary rounded-3 px-4" data-bs-dismiss="modal">إلغاء</button>
+					<button type="submit" class="btn btn-warning text-dark fw-bold rounded-3 px-4 shadow-sm">حفظ بيانات العامل</button>
 				</div>
 			</form>
 		</div>
 	</div>
 </div>
 
-
 <!-- Modal Edit Employee -->
 <div class="modal fade" id="editEmployeeModal" tabindex="-1">
-	<div class="modal-dialog">
+	<div class="modal-dialog modal-dialog-centered modal-lg">
 		<div class="modal-content">
 			<div class="modal-header bg-primary text-white">
-				<h5 class="modal-title fw-bold"><i class="fa-solid fa-user-pen me-1"></i> تعديل بيانات العامل </h5>
+				<h5 class="modal-title fw-bold"><i class="fa-solid fa-user-pen me-2"></i>تعديل بيانات العامل</h5>
 				<button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
 			</div>
 			<form asp-action="Edit" method="post">
 				<input type="hidden" name="id" id="editEmpId" />
-				<div class="modal-body row g-3">
-					<div class="col-12">
+				<div class="modal-body p-4 row g-3">
+					<div class="col-md-8">
 						<label class="form-label fw-bold">اسم العامل بالكامل <span class="text-danger">*</span></label>
 						<input type="text" name="Name" id="editEmpName" required class="form-control" placeholder="أدخل اسم العامل..." />
+					</div>
+					<div class="col-md-4">
+						<label class="form-label fw-bold">تاريخ بدء العمل <span class="text-danger">*</span></label>
+						<input type="date" name="StartedDate" id="editEmpStartedDate" required class="form-control" />
 					</div>
 					<div class="col-md-6">
 						<label class="form-label fw-bold">المسمى الوظيفي <span class="text-danger">*</span></label>
 						<input type="text" name="JobTitle" id="editEmpJobTitle" list="jobTitlesList" required class="form-control" placeholder="اختر أو اكتب المسمى..." />
-						<datalist id="editjobTitlesList">
-							@foreach (var jt in jobTitles)
-							{
-								<option value="@jt"></option>
-							}
-						</datalist>
 					</div>
 					<div class="col-md-6">
-						<label class="form-label fw-bold"> (السن (بالسنوات</label>
+						<label class="form-label fw-bold">السن (بالسنوات)</label>
 						<input type="number" name="Age" min="1" max="100" id="editEmpAge" class="form-control" />
 					</div>
 					<div class="col-md-6">
-						<label class="form-label fw-bold">الراتب الشهري (ج.م)</label>
-						<input type="number" step="0.01" min="1" max="1000000" name="MonthlySalary" id="editEmpSalary" class="form-control" />
+						<label class="form-label fw-bold">الراتب الشهري (ج.م) <span class="text-danger">*</span></label>
+						<input type="number" step="0.01" min="1" max="1000000" name="MonthlySalary" id="editEmpSalary" required class="form-control fw-bold text-success"
+							   oninvalid="this.setCustomValidity('يجب إدخال راتب شهري أكبر من الصفر')"
+							   oninput="this.setCustomValidity('')" />
 					</div>
 					<div class="col-md-6">
 						<label class="form-label fw-bold">يوم الإجازة الأسبوعية <span class="text-danger">*</span></label>
@@ -238,7 +305,7 @@
 					<div class="col-md-6 d-flex align-items-end">
 						<div class="form-check form-switch mb-2">
 							<input class="form-check-input" type="checkbox" name="IsActive" value="true" id="editEmpIsActive">
-							<label class="form-check-label fw-bold ms-2" for="editEmpIsActive">حالة العامل: نشط بالشغل</label>
+							<label class="form-check-label fw-bold ms-2" for="editEmpIsActive">حالة العامل: نشط بالعمل</label>
 						</div>
 					</div>
 					<div class="col-12">
@@ -246,9 +313,9 @@
 						<input type="text" name="Notes" id="editEmpNotes" class="form-control" placeholder="ملاحظات الشخصية أو الخبرة..." />
 					</div>
 				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-					<button type="submit" class="btn btn-primary">حفظ بيانات العامل</button>
+				<div class="modal-footer bg-light">
+					<button type="button" class="btn btn-outline-secondary rounded-3 px-4" data-bs-dismiss="modal">إلغاء</button>
+					<button type="submit" class="btn btn-primary rounded-3 px-4 shadow-sm">حفظ التعديلات</button>
 				</div>
 			</form>
 		</div>
@@ -257,30 +324,28 @@
 
 <!-- Modal Pay Salary -->
 <div class="modal fade" id="paySalaryModal" tabindex="-1">
-	<div class="modal-dialog">
+	<div class="modal-dialog modal-dialog-centered">
 		<div class="modal-content">
 			<div class="modal-header bg-success text-white">
-				<h5 class="modal-title fw-bold"><i class="fa-solid fa-money-bill-wave me-1"></i> صرف راتب عامل</h5>
+				<h5 class="modal-title fw-bold"><i class="fa-solid fa-money-bill-wave me-2"></i>صرف راتب عامل</h5>
 				<button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
 			</div>
 			<form asp-action="PaySalary" method="post">
 				<input type="hidden" name="employeeId" id="salaryEmpId" />
-				<div class="modal-body row g-3">
-					<div class="col-12">
-						<p class="fw-bold mb-1">اسم العامل: <span id="salaryEmpName" class="text-primary fs-5"></span></p>
+				<div class="modal-body p-4 row g-3">
+					<div class="col-12 bg-light p-3 rounded-3 border">
+						<span class="text-muted small d-block mb-1">الموظف المستحق:</span>
+						<h5 id="salaryEmpName" class="fw-bold text-primary mb-0"></h5>
 					</div>
 					<div class="col-12">
-						<div class="alert alert-info py-2 mb-0 small">
+						<div class="alert alert-info border-0 bg-info-subtle text-info-emphasis rounded-3 py-2 mb-0 small">
 							<i class="fa-solid fa-circle-info me-1"></i>
 							سيتم حساب صافي الراتب تلقائيًا بعد خصم أيام الغياب وأي سلف مصروفة هذا الشهر.
 						</div>
 					</div>
-
-					<div>
-						<div class="col-md-6">
-							<label class="form-label fw-bold">شهر الراتب<span class="text-danger">*</span></label>
-							<input type="month" name="targetMonth" id="salaryTargetMonth" required class="form-control" />
-						</div>
+					<div class="col-md-6">
+						<label class="form-label fw-bold">شهر الراتب <span class="text-danger">*</span></label>
+						<input type="month" name="targetMonth" id="salaryTargetMonth" required class="form-control fw-bold" />
 					</div>
 					<div class="col-md-6">
 						<label class="form-label fw-bold">طريقة الدفع</label>
@@ -291,36 +356,36 @@
 					</div>
 					<div class="col-12">
 						<label class="form-label fw-bold">ملاحظات</label>
-						<input type="text" name="notes" class="form-control" placeholder="مثال: صرف راتب شهر 7" />
+						<input type="text" name="notes" class="form-control" placeholder="مثال: صرف راتب شهر سبتمبر" />
 					</div>
 				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-					<button type="submit" class="btn btn-success fw-bold">تأكيد الصرف والترحيل للخزينة</button>
+				<div class="modal-footer bg-light">
+					<button type="button" class="btn btn-outline-secondary rounded-3 px-3" data-bs-dismiss="modal">إلغاء</button>
+					<button type="submit" class="btn btn-success fw-bold rounded-3 px-4 shadow-sm">تأكيد الصرف والترحيل للخزينة</button>
 				</div>
 			</form>
 		</div>
 	</div>
 </div>
+
 <!-- Modal Add Advance -->
-
-
 <div class="modal fade" id="addAdvanceModal" tabindex="-1">
-	<div class="modal-dialog">
+	<div class="modal-dialog modal-dialog-centered">
 		<div class="modal-content">
 			<div class="modal-header bg-warning text-dark">
-				<h5 class="modal-title fw-bold"><i class="fa-solid fa-hand-holding-dollar me-1"></i> صرف سلفة لعامل</h5>
+				<h5 class="modal-title fw-bold"><i class="fa-solid fa-hand-holding-dollar me-2"></i>صرف سلفة لعامل</h5>
 				<button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
 			</div>
 			<form asp-action="AddAdvance" method="post">
 				<input type="hidden" name="employeeId" id="advanceEmpId" />
-				<div class="modal-body row g-3">
-					<div class="col-12">
-						<p class="fw-bold mb-1">اسم العامل: <span id="advanceEmpName" class="text-primary fs-5"></span></p>
+				<div class="modal-body p-4 row g-3">
+					<div class="col-12 bg-light p-3 rounded-3 border">
+						<span class="text-muted small d-block mb-1">الموظف:</span>
+						<h5 id="advanceEmpName" class="fw-bold text-dark mb-0"></h5>
 					</div>
 					<div class="col-md-6">
 						<label class="form-label fw-bold">قيمة السلفة (ج.م) <span class="text-danger">*</span></label>
-						<input type="number" step="0.01" name="advanceAmount" required class="form-control fw-bold" />
+						<input type="number" step="0.01" name="advanceAmount" required class="form-control fw-bold text-warning-emphasis fs-5" placeholder="0.00" />
 					</div>
 					<div class="col-md-6">
 						<label class="form-label fw-bold">طريقة الدفع</label>
@@ -334,15 +399,15 @@
 						<input type="text" name="notes" class="form-control" placeholder="سبب السلفة (اختياري)" />
 					</div>
 					<div class="col-12">
-						<div class="alert alert-warning py-2 mb-0 small">
+						<div class="alert alert-warning border-0 bg-warning-subtle text-warning-emphasis rounded-3 py-2 mb-0 small">
 							<i class="fa-solid fa-circle-info me-1"></i>
 							سيتم خصم قيمة السلفة فورًا من الخزينة، وستُخصم تلقائيًا من راتب هذا الشهر.
 						</div>
 					</div>
 				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-					<button type="submit" class="btn btn-warning fw-bold">تأكيد صرف السلفة</button>
+				<div class="modal-footer bg-light">
+					<button type="button" class="btn btn-outline-secondary rounded-3 px-3" data-bs-dismiss="modal">إلغاء</button>
+					<button type="submit" class="btn btn-warning fw-bold text-dark rounded-3 px-4 shadow-sm">تأكيد صرف السلفة</button>
 				</div>
 			</form>
 		</div>
@@ -351,7 +416,7 @@
 
 @section Scripts {
 	<script>
-		function openPaySalaryModal(id, name,) {
+		function openPaySalaryModal(id, name, salary) {
 			document.getElementById('salaryEmpId').value = id;
 			document.getElementById('salaryEmpName').innerText = name;
 
@@ -363,16 +428,17 @@
 			new bootstrap.Modal(document.getElementById('paySalaryModal')).show();
 		}
 
-		function openEditEmployeeModal(id, name, jobTitle, age, salary, dayOff, phone, notes, isActive) {
+		function openEditEmployeeModal(id, name, jobTitle, age, salary, dayOff, phone, notes, isActive, StartedDate) {
 			document.getElementById('editEmpId').value = id;
 			document.getElementById('editEmpName').value = name;
 			document.getElementById('editEmpJobTitle').value = jobTitle;
+			document.getElementById('editEmpStartedDate').value = StartedDate;
 			document.getElementById('editEmpAge').value = age;
 			document.getElementById('editEmpSalary').value = salary;
 			document.getElementById('editEmpDayOff').value = dayOff;
 			document.getElementById('editEmpPhone').value = phone === 'None' ? '' : phone;
 			document.getElementById('editEmpNotes').value = notes === 'None' ? '' : notes;
-			document.getElementById('editEmpIsActive').checked = isActive;
+			document.getElementById('editEmpIsActive').checked = (isActive === 'true' || isActive === true);
 
 			new bootstrap.Modal(document.getElementById('editEmployeeModal')).show();
 		}
@@ -382,18 +448,5 @@
 			document.getElementById('advanceEmpName').innerText = name;
 			new bootstrap.Modal(document.getElementById('addAdvanceModal')).show();
 		}
-
 	</script>
-
-	<style>
-		.emp-link {
-			color: var(--primary-hover) !important;
-			
-		}
-
-			.emp-link:hover {
-				color: var(--primary-hover) !important;
-				text-decoration: underline !important;
-			}
-	</style>
 }

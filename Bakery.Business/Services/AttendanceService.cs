@@ -19,7 +19,24 @@ namespace Bakery.Business.Services
     public class AttendanceService : IAttendanceService
     {
         private readonly BakeryDbContext _context;
+        private static bool IsEmployeeOffDay(string? weeklyDayOff, DayOfWeek currentDayOfWeek)
+        {
+            if (string.IsNullOrWhiteSpace(weeklyDayOff)) return false;
 
+            var dayName = weeklyDayOff.Trim();
+
+            return dayName switch
+            {
+                "السبت" => currentDayOfWeek == DayOfWeek.Saturday,
+                "الأحد" or "الاحد" => currentDayOfWeek == DayOfWeek.Sunday,
+                "الإثنين" or "الاثنين" => currentDayOfWeek == DayOfWeek.Monday,
+                "الثلاثاء" => currentDayOfWeek == DayOfWeek.Tuesday,
+                "الأربعاء" or "الاربعاء" => currentDayOfWeek == DayOfWeek.Wednesday,
+                "الخميس" => currentDayOfWeek == DayOfWeek.Thursday,
+                "الجمعة" => currentDayOfWeek == DayOfWeek.Friday,
+                _ => false
+            };
+        }
         public AttendanceService(BakeryDbContext context)
         {
             _context = context;
@@ -69,6 +86,10 @@ namespace Bakery.Business.Services
             var emp = await _context.Employees.FindAsync(employeeId);
             if (emp == null) throw new KeyNotFoundException("الموظف غير موجود.");
 
+            if (IsEmployeeOffDay(emp.WeeklyDayOff, targetDate.DayOfWeek))
+            {
+                throw new InvalidOperationException($"لا يمكن تسجيل حضور أو غياب للموظف ({emp.Name}) لأن يوم ({targetDate.ToString("dddd")}) هو يوم إجازته الأسبوعية.");
+            }
             var attendance = await _context.EmployeeAttendances
                 .FirstOrDefaultAsync(a => a.EmployeeId == employeeId && a.Date == targetDate);
 
@@ -109,6 +130,10 @@ namespace Bakery.Business.Services
 
             foreach (var emp in activeEmployees)
             {
+                if (IsEmployeeOffDay(emp.WeeklyDayOff, targetDate.DayOfWeek))
+                {
+                    continue;
+                }
                 bool isPresent = presentEmployeeIds.Contains(emp.Id);
                 var existing = existingAttendances.FirstOrDefault(a => a.EmployeeId == emp.Id);
 

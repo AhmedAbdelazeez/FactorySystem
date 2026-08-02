@@ -61,21 +61,23 @@ namespace Bakery.Business.Services
 
             var employees = await query.OrderBy(e => e.Name).ToListAsync();
             if (!employees.Any()) return Enumerable.Empty<EmployeeListItemDto>();
+
             var employeeIds = employees.Select(e => e.Id).ToList();
 
             var salaryExpenses = await _context.Expenses
-        .AsNoTracking()
-        .Where(e => e.EmployeeId.HasValue && employeeIds.Contains(e.EmployeeId.Value) && e.Name.StartsWith("راتب العامل"))
-        .Select(e => new { e.EmployeeId, e.Notes, e.Date })
-        .ToListAsync();
+                 .AsNoTracking()
+                 .Where(e => e.EmployeeId.HasValue && employeeIds
+                 .Contains(e.EmployeeId.Value) && e.Name.StartsWith("راتب العامل"))
+                 .Select(e => new { e.EmployeeId, e.Notes, e.Date })
+                 .ToListAsync();
 
             var lastPaidMonthCutoffs = new Dictionary<int, DateTime>();
 
             foreach (var empId in employeeIds)
             {
                 var empSalaries = salaryExpenses.Where(s => s.EmployeeId == empId).ToList();
-                if (empSalaries.Any())
-                {
+                if (!empSalaries.Any()) continue;
+                
                     DateTime maxPaidMonthEnd = DateTime.MinValue;
 
                     foreach (var salary in empSalaries)
@@ -104,7 +106,7 @@ namespace Bakery.Business.Services
                     {
                         lastPaidMonthCutoffs[empId] = maxPaidMonthEnd;
                     }
-                }
+                
             }
             var pendingAdvances = await _context.EmployeeAdvances
                 .AsNoTracking()
@@ -113,12 +115,9 @@ namespace Bakery.Business.Services
                 .Select(g => new { EmployeeId = g.Key, Total = g.Sum(a => a.Amount) })
                 .ToDictionaryAsync(x => x.EmployeeId, x => x.Total);
 
-            var attendances = await _context.EmployeeAttendances
-                .AsNoTracking()
-                .Where(a => employeeIds.Contains(a.EmployeeId) && !a.IsPresent)
-                .ToListAsync();
-
             var result = new List<EmployeeListItemDto>();
+
+            
 
             foreach (var emp in employees)
             {
@@ -127,16 +126,12 @@ namespace Bakery.Business.Services
 
                 DayOfWeek? dayOff = DayNameMap.TryGetValue(emp.WeeklyDayOff ?? "", out var dow) ? dow : null;
 
-                var empAttendances = attendances.Where(a => a.EmployeeId == emp.Id);
+                var periodStart = hasCutoff ? lastPaidCutoff.AddDays(1) : emp.StartedDate;
+                var periodEnd = DateTime.Today;
 
-                if (hasCutoff)
-                {
-                    empAttendances = empAttendances.Where(a => a.Date.Date > lastPaidCutoff.Date);
-                }
+                int absentDays = await CountAbsentDaysAsync(emp.Id, dayOff, periodStart, periodEnd);
 
-                int absentDays = dayOff.HasValue
-                    ? empAttendances.Count(a => a.Date.DayOfWeek != dayOff.Value)
-                    : empAttendances.Count();
+                
 
                 result.Add(new EmployeeListItemDto
                 {
@@ -149,6 +144,7 @@ namespace Bakery.Business.Services
                     PhoneNumber = emp.PhoneNumber,
                     Notes = emp.Notes,
                     IsActive = emp.IsActive,
+                    StartedDate=emp.StartedDate,
                     AbsentDaysSinceLastSalary = absentDays,
                     PendingAdvanceAmount = pendingAdvanceAmount
                 });
@@ -194,6 +190,7 @@ namespace Bakery.Business.Services
 
             // 3. تحديد آخر شهر مدفوع لحساب الغياب المتبقي
             DateTime? lastPaidCutoff = null;
+
             foreach (var salary in salaryExpenses)
             {
                 var match = System.Text.RegularExpressions.Regex.Match(salary.Notes ?? "", @"\((?<month>\d{2})/(?<year>\d{4})\)");
@@ -201,7 +198,9 @@ namespace Bakery.Business.Services
                 {
                     int m = int.Parse(match.Groups["month"].Value);
                     int y = int.Parse(match.Groups["year"].Value);
+
                     var monthEnd = new DateTime(y, m, DateTime.DaysInMonth(y, m));
+
                     if (!lastPaidCutoff.HasValue || monthEnd > lastPaidCutoff.Value)
                     {
                         lastPaidCutoff = monthEnd;
@@ -223,16 +222,10 @@ namespace Bakery.Business.Services
                 .ToListAsync();
 
             DayOfWeek? dayOff = DayNameMap.TryGetValue(emp.WeeklyDayOff ?? "", out var dow) ? dow : null;
+            var periodStart = lastPaidCutoff?.Date.AddDays(1) ?? emp.StartedDate.Date;
+            int absentDaysCount = await CountAbsentDaysAsync(id, dayOff, periodStart, DateTime.Today);
 
-            var pendingAttendances = attendances.AsEnumerable();
-            if (lastPaidCutoff.HasValue)
-            {
-                pendingAttendances = pendingAttendances.Where(a => a.Date.Date > lastPaidCutoff.Value.Date);
-            }
-
-            int absentDaysCount = dayOff.HasValue
-                ? pendingAttendances.Count(a => a.Date.DayOfWeek != dayOff.Value)
-                : pendingAttendances.Count();
+           
 
             return new EmployeeDetailsDto
             {
@@ -249,7 +242,8 @@ namespace Bakery.Business.Services
                 AbsentDaysCount = absentDaysCount,
                 Attendances = attendances,
                 Advances = advances,
-                SalaryExpenses = salaryExpenses
+                SalaryExpenses = salaryExpenses,
+                StartedDate = emp.StartedDate
             };
         }
 
@@ -257,6 +251,10 @@ namespace Bakery.Business.Services
         {
             if (employee.Age <= 0)
                 throw new InvalidOperationException("عمر العامل يجب أن يكون رقمًا موجبًا أكبر من الصفر.");
+            if (employee.MonthlySalary <= 0)
+                throw new InvalidOperationException("الراتب الشهري يجب أن يكون أكبر من الصفر.");
+            if (employee.StartedDate > DateTime.Today)
+                throw new InvalidOperationException("تاريخ بداية العمل لا يمكن أن يكون في المستقبل.");
 
             await _empRepo.AddAsync(employee);
             await _empRepo.SaveChangesAsync();
@@ -269,6 +267,19 @@ namespace Bakery.Business.Services
 
             if (employee.Age <= 0)
                 throw new InvalidOperationException("عمر العامل يجب أن يكون رقمًا موجبًا أكبر من الصفر.");
+            if (employee.MonthlySalary <= 0)
+                throw new InvalidOperationException("الراتب الشهري يجب أن يكون أكبر من الصفر.");
+            if (employee.StartedDate > DateTime.Today)
+                throw new InvalidOperationException("تاريخ بداية العمل لا يمكن أن يكون في المستقبل.");
+
+            if (existing.StartedDate.Date != employee.StartedDate.Date)
+            {
+                bool hasSalaryHistory = await _context.Expenses
+                    .AnyAsync(e => e.EmployeeId == employee.Id && e.Name.StartsWith("راتب العامل"));
+
+                if (hasSalaryHistory)
+                    throw new InvalidOperationException("لا يمكن تعديل تاريخ بداية العمل لأن هذا الموظف لديه رواتب مصروفة بالفعل.");
+            }
 
             existing.Name = employee.Name;
             existing.Age = employee.Age;
@@ -278,6 +289,7 @@ namespace Bakery.Business.Services
             existing.PhoneNumber = employee.PhoneNumber;
             existing.Notes = employee.Notes;
             existing.IsActive = employee.IsActive;
+            existing.StartedDate = employee.StartedDate;
 
             _empRepo.Update(existing);
             await _empRepo.SaveChangesAsync();
@@ -286,98 +298,112 @@ namespace Bakery.Business.Services
         public async Task DeleteEmployeeAsync(int id)
         {
             var existing = await _empRepo.GetByIdAsync(id);
-            if (existing != null)
-            {
-                _empRepo.Remove(existing);
-                await _empRepo.SaveChangesAsync();
-            }
+            if (existing == null) throw new KeyNotFoundException("العامل غير موجود.");
+            
+            _empRepo.Remove(existing);
+            await _empRepo.SaveChangesAsync();
+            
         }
 
         public async Task<string> PaySalaryAsync(int employeeId, PaymentMethod paymentMethod, string? notes = null, DateTime? targetMonth = null)
         {
             var emp = await _empRepo.GetByIdAsync(employeeId);
             if (emp == null) throw new KeyNotFoundException("العامل غير موجود.");
+            
+            if (!emp.IsActive) throw new InvalidOperationException("لا يمكن صرف راتب لموظف غير نشط.");
+            
+            if (emp.MonthlySalary <= 0)
+                throw new InvalidOperationException("الراتب الشهري لهذا الموظف غير صحيح، يرجى تحديثه أولاً.");
 
             var payPeriod = targetMonth ?? DateTime.Now;
-            var now = DateTime.Now;
+
+            var requestedMonth = new DateTime(payPeriod.Year, payPeriod.Month, 1);
+            var currentMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            if (requestedMonth > currentMonth)
+                throw new InvalidOperationException("لا يمكن صرف راتب لشهر لم يبدأ بعد.");
+
 
             string targetMonthFormatted = payPeriod.ToString("MM/yyyy");
 
-            var empSalaries = await _context.Expenses
+            var startDate = new DateTime(payPeriod.Year, payPeriod.Month, 1);
+            var endDate = startDate.AddMonths(1).AddDays(-1);
+
+            var empSalaryNotes = await _context.Expenses
                 .AsNoTracking()
                 .Where(e => e.EmployeeId == employeeId && e.Name.StartsWith("راتب العامل"))
                 .Select(e => e.Notes)
                 .ToListAsync();
 
-            bool salaryPaid = empSalaries
-                .Any(n => n != null && n.Contains($"({targetMonthFormatted})"));
+            bool salaryPaid = empSalaryNotes.Any(n => n != null && n.Contains($"({targetMonthFormatted})"));
 
 
             if (salaryPaid)
-                throw new InvalidOperationException($"تم صرف راتب شهر ({targetMonthFormatted:MM/yyyy}) لهذا العامل بالفعل.");
+                throw new InvalidOperationException($"تم صرف راتب شهر ({targetMonthFormatted}) لهذا العامل بالفعل.");
 
 
             var firstPossibleMonth = await GetFirstUnpaidMonthAsync(employeeId);
-
-            if (firstPossibleMonth.HasValue)
+            if (firstPossibleMonth.HasValue && requestedMonth > firstPossibleMonth.Value)
             {
-                var requestedMonthStart = new DateTime(payPeriod.Year, payPeriod.Month, 1);
+                throw new InvalidOperationException(
+                    $"لا يمكن صرف راتب شهر ({payPeriod:MM/yyyy}) قبل صرف راتب شهر ({firstPossibleMonth.Value:MM/yyyy}) أولاً.");
+            }
 
-                if (requestedMonthStart > firstPossibleMonth.Value)
+            if (emp.StartedDate.Date > endDate)
+                throw new InvalidOperationException("تاريخ تعيين الموظف أحدث من الشهر المطلوب صرفه.");
+
+            int totalDaysInMonth = DateTime.DaysInMonth(payPeriod.Year, payPeriod.Month);
+            decimal baseSalaryForMonth = emp.MonthlySalary;
+
+
+            if (emp.StartedDate.Year == payPeriod.Year && emp.StartedDate.Month == payPeriod.Month)
+            {
+                int workedDays = (endDate - emp.StartedDate.Date).Days + 1;
+                if (workedDays < totalDaysInMonth)
                 {
-                    throw new InvalidOperationException(
-                        $"لا يمكن صرف راتب شهر ({payPeriod:MM/yyyy}) قبل صرف راتب شهر ({firstPossibleMonth.Value:MM/yyyy}) أولاً.");
+                    decimal dailyRateForMonth = emp.MonthlySalary / totalDaysInMonth;
+                    baseSalaryForMonth = Math.Round(dailyRateForMonth * workedDays, 2);
                 }
             }
 
-            //int daysInMonth = DateTime.DaysInMonth(now.Year, now.Month);
             decimal dayValue = emp.MonthlySalary / 30m;
+            DayOfWeek? dayOff = DayNameMap.TryGetValue(emp.WeeklyDayOff ?? "", out var dow) ? dow : null;
 
-            var startDate = new DateTime(payPeriod.Year, payPeriod.Month, 1);
-            var endDate = startDate.AddMonths(1).AddDays(-1);
-
-            DayOfWeek? dayOff = DayNameMap.TryGetValue(emp.WeeklyDayOff, out var dow) ? dow : null;
-
-            var attendances = await _context.EmployeeAttendances
-               .Where(a => a.EmployeeId == employeeId
-                   && !a.IsPresent
-                   && a.Date >= startDate
-                   && a.Date <= endDate)
-               .ToListAsync();
-
-            if (dayOff.HasValue)
-            {
-                attendances = attendances
-                    .Where(a => a.Date.DayOfWeek != dayOff.Value)
-                    .ToList();
-            }
-
-            int absentDays = attendances.Count;
-
+            var absencePeriodStart = emp.StartedDate.Date > startDate ? emp.StartedDate.Date : startDate;
+         
+            int absentDays = await CountAbsentDaysAsync(employeeId, dayOff, absencePeriodStart, endDate);
             decimal absenceDeduction = Math.Round(absentDays * dayValue, 2);
 
+
             var unpaidAdvances = await _context.EmployeeAdvances
-                .Where(a => a.EmployeeId == employeeId && !a.IsPaid && a.Date <= endDate)
-                .ToListAsync();
+            .Where(a => a.EmployeeId == employeeId && !a.IsPaid && a.Date <= endDate)
+            .ToListAsync();
 
             decimal totalAdvanceDeduction = unpaidAdvances.Sum(a => a.Amount);
 
-            decimal netSalary = Math.Max(0, emp.MonthlySalary - absenceDeduction - totalAdvanceDeduction);
-            netSalary = Math.Round(netSalary, 2);
 
+            decimal netSalary = Math.Max(0, baseSalaryForMonth - absenceDeduction - totalAdvanceDeduction);
+            netSalary = Math.Round(netSalary, 2);
 
             var laborCategory = await _context.ExpenseCategories.FirstOrDefaultAsync(c => c.Name == "عمالة");
             int categoryId = laborCategory?.Id ?? 1;
 
+            // تجهيز تفاصيل نص الرسالة
             string detailsMessage = $"راتب شهر ({payPeriod:MM/yyyy}) | " +
-                              $"الأساسي: {emp.MonthlySalary:N2} ج.م | " +
-                              $"خصم غياب ({absentDays} يوم): {absenceDeduction:N2} ج.م | " +
-                              $"خصم سلف: {totalAdvanceDeduction:N2} ج.م | " +
-                              $"الصافي المصروف: {netSalary:N2} ج.م";
+                               $"الأساسي: {baseSalaryForMonth:N2} ج.م | " +
+                               $"خصم غياب ({absentDays} يوم): {absenceDeduction:N2} ج.م | " +
+                               $"خصم سلف: {totalAdvanceDeduction:N2} ج.م | " +
+                               $"الصافي المصروف: {netSalary:N2} ج.م";
+
+            if (netSalary == 0)
+                detailsMessage += " | ⚠️ تنبيه: الصافي المستحق صفر بسبب الخصومات (غياب/سلف تغطي كامل الراتب).";
+
 
             using var transaction = await _context.Database.BeginTransactionAsync();
-            try {
-                var expense = new Expense
+            try
+            {
+
+                // ب. تسجيل المصروف
+                var salaryExpense = new Expense
                 {
                     Name = $"راتب العامل: {emp.Name}",
                     ExpenseCategoryId = categoryId,
@@ -391,24 +417,40 @@ namespace Bakery.Business.Services
                     EmployeeId = emp.Id,
                     Notes = string.IsNullOrWhiteSpace(notes) ? detailsMessage : $"{notes} | {detailsMessage}"
                 };
+                await _expenseService.AddExpenseAsync(salaryExpense);
+                // await _context.SaveChangesAsync();
 
-                await _expenseService.AddExpenseAsync(expense);
 
+                // أ. تسوية وإغلاق السُلف المعلقة
                 foreach (var advance in unpaidAdvances)
                 {
                     advance.IsPaid = true;
                     advance.PaidDate = DateTime.Now;
                 }
 
+                // ج. الخصم من الخزينة
+                //var treasuryTransaction = new TreasuryTransaction
+                //{
+                //    Date = DateTime.Now,
+                //    Amount = netSalary,
+                //    Type = TransactionType.Expense,
+                //    ExpenseId = salaryExpense.Id,
+                //    Notes = $"صرف راتب للعامل: {emp.Name} - شهر ({payPeriod:MM/yyyy})"
+                //};
+                //_context.TreasuryTransactions.Add(treasuryTransaction);
+
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
+
                 return detailsMessage;
             }
             catch
             {
                 await transaction.RollbackAsync();
                 throw;
-            } 
+            }
+
+           
         }
 
 
@@ -420,6 +462,9 @@ namespace Bakery.Business.Services
 
             var emp = await _empRepo.GetByIdAsync(employeeId);
             if (emp == null) throw new KeyNotFoundException("العامل غير موجود.");
+
+            if (!emp.IsActive)
+                throw new InvalidOperationException("لا يمكن صرف سلفة لموظف غير نشط.");
 
             if (advanceAmount > emp.MonthlySalary)
                 throw new InvalidOperationException($"لا يمكن أن تتجاوز السلفة الراتب الشهري ({emp.MonthlySalary:N2} ج.م).");
@@ -469,22 +514,19 @@ namespace Bakery.Business.Services
         private async Task<DateTime?> GetFirstUnpaidMonthAsync(int employeeId)
         {
             // أول شهر لينا فيه سجل حضور للموظف (يعني بداية عمله الفعلية في النظام)
-            var firstAttendanceDate = await _context.EmployeeAttendances
-                .Where(a => a.EmployeeId == employeeId)
-                .OrderBy(a => a.Date)
-                .Select(a => (DateTime?)a.Date)
-                .FirstOrDefaultAsync();
+            var emp=await _empRepo.GetByIdAsync(employeeId);
+            if (emp == null) return null;
 
-            if (!firstAttendanceDate.HasValue)
-                return null; // مفيش أي سجلات حضور خالص، مفيش قيد يمنع الصرف
+
+            var startMonth = new DateTime(emp.StartedDate.Year, emp.StartedDate.Month, 1);
 
             var empSalaryNotes = await _context.Expenses
-        .AsNoTracking()
-        .Where(e => e.EmployeeId == employeeId && e.Name.StartsWith("راتب العامل"))
-        .Select(e => e.Notes)
-        .ToListAsync();
+               .AsNoTracking()
+               .Where(e => e.EmployeeId == employeeId && e.Name.StartsWith("راتب العامل"))
+               .Select(e => e.Notes)
+               .ToListAsync();
 
-            var cursor = new DateTime(firstAttendanceDate.Value.Year, firstAttendanceDate.Value.Month, 1);
+            var cursor = startMonth;
             var thisMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
 
             while (cursor <= thisMonth)
@@ -500,6 +542,35 @@ namespace Bakery.Business.Services
             }
 
             return null; // كل الشهور اتصرفت لحد الشهر الحالي
+        }
+
+
+        private async Task<int> CountAbsentDaysAsync(int employeeId, DayOfWeek? dayOff, DateTime periodStart, DateTime periodEnd)
+        {
+            var effectiveEnd = periodEnd > DateTime.Today ? DateTime.Today : periodEnd;
+            if (effectiveEnd < periodStart) return 0;
+
+            var presentDates = await _context.EmployeeAttendances
+                .Where(a => a.EmployeeId == employeeId
+                    && a.IsPresent
+                    && a.Date >= periodStart
+                    && a.Date <= effectiveEnd)
+                .Select(a => a.Date.Date)
+                .ToListAsync();
+
+            var presentSet = new HashSet<DateTime>(presentDates);
+
+            int absentCount = 0;
+            for (var d = periodStart.Date; d <= effectiveEnd.Date; d = d.AddDays(1))
+            {
+                if (dayOff.HasValue && d.DayOfWeek == dayOff.Value)
+                    continue;
+
+                if (!presentSet.Contains(d))
+                    absentCount++;
+            }
+
+            return absentCount;
         }
     }
 }

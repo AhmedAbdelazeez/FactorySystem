@@ -24,28 +24,63 @@
 </div>
 
 <div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card card-custom p-3 border-start border-primary border-4 shadow-sm">
-            <div class="text-muted small fw-bold">الوظيفة / السن</div>
-            <div class="fs-5 fw-bold text-dark">@Model.JobTitle (@Model.Age سنة)</div>
+    <!-- 1. الوظيفة والسن -->
+    <div class="col-12 col-sm-6 col-lg">
+        <div class="card card-custom h-100 p-3 border-start border-primary border-4 shadow-sm bg-white">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-muted small fw-bold">الوظيفة / السن</span>
+                <i class="fa-solid fa-briefcase text-primary opacity-50 fs-5"></i>
+            </div>
+            <div class="fs-5 fw-bold text-dark text-truncate">@Model.JobTitle</div>
+            <div class="small text-muted">@Model.Age سنة</div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card card-custom p-3 border-start border-success border-4 shadow-sm">
-            <div class="text-muted small fw-bold">الراتب الشهري الأساسي</div>
-            <div class="fs-5 fw-bold text-success">@Model.MonthlySalary.ToString("N2") ج.م</div>
+
+    <!-- 2. تاريخ التعيين -->
+    <div class="col-12 col-sm-6 col-lg">
+        <div class="card card-custom h-100 p-3 border-start border-info border-4 shadow-sm bg-white">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-muted small fw-bold">تاريخ التعيين</span>
+                <i class="fa-solid fa-calendar-check text-info opacity-50 fs-5"></i>
+            </div>
+            <div class="fs-5 fw-bold text-info">@Model.StartedDate.ToString("yyyy/MM/dd")</div>
+            <div class="small text-muted">تاريخ بدء العمل</div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card card-custom p-3 border-start border-warning border-4 shadow-sm">
-            <div class="text-muted small fw-bold">السلف المعلقة حالياً</div>
-            <div class="fs-5 fw-bold text-warning">@Model.PendingAdvanceAmount.ToString("N2") ج.م</div>
+
+    <!-- 3. الراتب الشهري الأساسي -->
+    <div class="col-12 col-sm-6 col-lg">
+        <div class="card card-custom h-100 p-3 border-start border-success border-4 shadow-sm bg-white">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-muted small fw-bold">الراتب الأساسي</span>
+                <i class="fa-solid fa-money-bill-wave text-success opacity-50 fs-5"></i>
+            </div>
+            <div class="fs-5 fw-bold text-success">@Model.MonthlySalary.ToString("N0") <span class="fs-6 fw-normal">ج.م</span></div>
+            <div class="small text-muted">شهرياً</div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card card-custom p-3 border-start border-danger border-4 shadow-sm">
-            <div class="text-muted small fw-bold">أيام الغياب المتبقية للخصم</div>
-            <div class="fs-5 fw-bold text-danger">@Model.AbsentDaysCount يوم</div>
+
+    <!-- 4. السلف المعلقة -->
+    <div class="col-12 col-sm-6 col-lg">
+        <div class="card card-custom h-100 p-3 border-start border-warning border-4 shadow-sm bg-white">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-muted small fw-bold">السلف المعلقة</span>
+                <i class="fa-solid fa-hand-holding-dollar text-warning opacity-50 fs-5"></i>
+            </div>
+            <div class="fs-5 fw-bold text-warning">@Model.PendingAdvanceAmount.ToString("N0") <span class="fs-6 fw-normal">ج.م</span></div>
+            <div class="small text-muted">تُخصم عند الصرف</div>
+        </div>
+    </div>
+
+    <!-- 5. أيام الغياب -->
+    <div class="col-12 col-sm-6 col-lg">
+        <div class="card card-custom h-100 p-3 border-start border-danger border-4 shadow-sm bg-white">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-muted small fw-bold">غياب للخصم</span>
+                <i class="fa-solid fa-user-xmark text-danger opacity-50 fs-5"></i>
+            </div>
+            <div class="fs-5 fw-bold text-danger">@Model.AbsentDaysCount <span class="fs-6 fw-normal">أيام</span></div>
+            <div class="small text-muted">غير مخصومة بعد</div>
         </div>
     </div>
 </div>

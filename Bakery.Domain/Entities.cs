@@ -171,6 +171,7 @@ namespace Bakery.Domain.Entities
         public string? PhoneNumber { get; set; }
         public string? Notes { get; set; }
         public bool IsActive { get; set; } = true;
+        public DateTime StartedDate { get; set; } = DateTime.Now;
 
         public ICollection<Expense> Expenses { get; set; } = new List<Expense>();
         public ICollection<EmployeeAttendance> Attendances { get; set; } = new List<EmployeeAttendance>();
