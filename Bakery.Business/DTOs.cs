@@ -81,6 +81,7 @@ namespace Bakery.Business.DTOs
 
     public class DashboardSummaryDto
     {
+        public DateTime SelectedDate { get; set; }
         public decimal TodayFlourSacks { get; set; }
         public int TodayTargetProduction { get; set; }
         public int TodayActualProduction { get; set; }

@@ -13,9 +13,10 @@ namespace Test_DATA.Controllers
             _treasuryService = treasuryService;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(DateTime?date)
         {
-            var summary = await _treasuryService.GetDashboardSummaryAsync();
+            var selectedDate = date ?? DateTime.Today;
+            var summary = await _treasuryService.GetDashboardSummaryAsync(selectedDate);
             return View(summary);
         }
 

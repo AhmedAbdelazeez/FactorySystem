@@ -14,7 +14,7 @@ namespace Bakery.Business.Services
     {
         Task<TreasurySummaryDto> GetTreasurySummaryAsync(DateTime? startDate = null, DateTime? endDate = null);
         Task<IEnumerable<TreasuryTransaction>> GetTransactionsAsync(DateTime? startDate = null, DateTime? endDate = null, TreasuryTransactionType? type = null);
-        Task<DashboardSummaryDto> GetDashboardSummaryAsync();
+        Task<DashboardSummaryDto> GetDashboardSummaryAsync(DateTime date);
     }
 
     public class TreasuryService : ITreasuryService
@@ -101,12 +101,14 @@ namespace Bakery.Business.Services
             return await query.OrderByDescending(t => t.Date).ThenByDescending(t => t.Id).ToListAsync();
         }
 
-        public async Task<DashboardSummaryDto> GetDashboardSummaryAsync()
+        public async Task<DashboardSummaryDto> GetDashboardSummaryAsync(DateTime date)
         {
-            var today = DateTime.Today;
+            var today = date.Date;
 
             var todayOrders = await _context.ProductionOrders
-                .Where(o => o.ProductionDate == today)
+                .Where(o => 
+                    o.ProductionDate >= today &&
+                    o.ProductionDate<today.AddDays(1))
                 .ToListAsync();
 
             decimal todaySacks = todayOrders.Sum(o => o.FlourSackCount);
@@ -133,6 +135,7 @@ namespace Bakery.Business.Services
 
             return new DashboardSummaryDto
             {
+                SelectedDate = today,
                 TodayFlourSacks = todaySacks,
                 TodayTargetProduction = todayTarget,
                 TodayActualProduction = todayActual,

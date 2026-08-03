@@ -6,16 +6,39 @@
 	var materialTypes = ViewBag.MaterialTypes as IEnumerable<Bakery.Domain.Entities.MaterialType> ?? new List<Bakery.Domain.Entities.MaterialType>();
 }
 
-<div class="row mb-4 align-items-center">
-	<div class="col">
-		<h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-boxes-stacked text-warning me-2"></i> مخزن المواد الخام واللوازم</h2>
-		<p class="text-muted mb-0">متابعة رصيد الدقيق والسكر والزبدة ومواد التغليف وإدارتها بكل سهولة</p>
-	</div>
-	<div class="col-auto d-flex gap-2">
-		<a asp-action="Transactions" class="btn btn-outline-secondary"><i class="fa-solid fa-clock-rotate-left me-1"></i> سجل حركة المخزن</a>
-		<button class="btn btn-bakery" data-bs-toggle="modal" data-bs-target="#addMaterialModal">
-			<i class="fa-solid fa-plus me-1"></i> إضافة مادة خام جديدة
-		</button>
+<div class="page-header-box mb-4 p-3 bg-white rounded-4 border shadow-sm">
+	<div class="row align-items-center gy-3">
+		<!-- العنوان والأيقونة على اليمين -->
+		<div class="col-md d-flex align-items-center gap-3">
+			<!-- مربع الأيقونة الأصفر -->
+			<div class="rounded-3 d-flex align-items-center justify-content-center"
+				 style="width: 52px; height: 52px; background-color: #fff3cd; color: #ffc107; flex-shrink: 0;">
+				<i class="fa-solid fa-boxes-stacked fs-3"></i>
+			</div>
+
+			<!-- النصوص -->
+			<div>
+				<h3 class="fw-bold text-dark mb-1 fs-4">مخزن المواد الخام واللوازم</h3>
+				<p class="text-muted mb-0 small">
+					متابعة رصيد الدقيق والسكر والزبدة ومواد التغليف وإدارتها بكل سهولة
+				</p>
+			</div>
+		</div>
+
+		<!-- الأزرار أقصى الشمال -->
+		<div class="col-md-auto ms-auto d-flex align-items-center gap-2">
+			<a asp-action="Transactions" class="btn btn-outline-secondary rounded-3 shadow-sm px-3 py-2 fw-semibold d-flex align-items-center gap-2">
+				<i class="fa-solid fa-clock-rotate-left"></i>
+				<span>سجل حركة المخزن</span>
+			</a>
+
+			<button class="btn btn-bakery rounded-3 shadow-sm px-3 py-2 fw-bold d-flex align-items-center gap-2"
+					data-bs-toggle="modal"
+					data-bs-target="#addMaterialModal">
+				<i class="fa-solid fa-plus"></i>
+				<span>إضافة مادة خام جديدة</span>
+			</button>
+		</div>
 	</div>
 </div>
 

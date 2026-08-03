@@ -4,18 +4,36 @@
 	var settings = ViewBag.Settings as Bakery.Domain.Entities.ProductionSetting ?? new Bakery.Domain.Entities.ProductionSetting();
 }
 
-<div class="row mb-4 align-items-center">
-	<div class="col">
-		<h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-industry text-warning me-2"></i> حركة الإنتاج اليومي والتصنيع</h2>
-		<p class="text-muted mb-0">حساب المستهدف تلقائياً بناءً على عدد الشكاير وتسجيل الناتج الفعلي وتأكيد الخصم من المخزن</p>
-	</div>
-	<div class="col-auto">
-		<button class="btn btn-bakery" data-bs-toggle="modal" data-bs-target="#newProductionModal">
-			<i class="fa-solid fa-plus me-1"></i> فتح أمر إنتاج جديد اليوم
-		</button>
+<div class="page-header-box mb-4 p-3 bg-white rounded-4 border shadow-sm">
+	<div class="row align-items-center gy-3">
+		<!-- العنوان والأيقونة على اليمين -->
+		<div class="col-md d-flex align-items-center gap-3">
+			<!-- مربع الأيقونة الأصفر -->
+			<div class="rounded-3 d-flex align-items-center justify-content-center"
+				 style="width: 52px; height: 52px; background-color: #fff3cd; color: #ffc107; flex-shrink: 0;">
+				<i class="fa-solid fa-industry fs-3"></i>
+			</div>
+
+			<!-- النصوص -->
+			<div>
+				<h3 class="fw-bold text-dark mb-1 fs-4">حركة الإنتاج اليومي والتصنيع</h3>
+				<p class="text-muted mb-0 small">
+					حساب المستهدف تلقائياً بناءً على عدد الشكاير وتسجيل الناتج الفعلي وتأكيد الخصم من المخزن
+				</p>
+			</div>
+		</div>
+
+		<!-- زر فتح أمر إنتاج أقصى الشمال -->
+		<div class="col-md-auto ms-auto">
+			<button class="btn btn-bakery rounded-3 shadow-sm px-3 py-2 fw-bold d-flex align-items-center gap-2"
+					data-bs-toggle="modal"
+					data-bs-target="#newProductionModal">
+				<i class="fa-solid fa-plus"></i>
+				<span>فتح أمر إنتاج جديد اليوم</span>
+			</button>
+		</div>
 	</div>
 </div>
-
 <!-- Config Banner -->
 <div class="card card-custom mb-4 p-3 bg-light">
 	<div class="d-flex flex-wrap justify-content-between align-items-center gap-2">

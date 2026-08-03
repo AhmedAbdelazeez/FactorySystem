@@ -3,16 +3,49 @@
     ViewData["Title"] = "لوحة التحكم الرئيسية";
 }
 
-<div class="row mb-4 align-items-center">
-    <div class="col">
-        <h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-chart-pie me-2 text-warning"></i> لوحة التحكم والإحصائيات</h2>
-        <p class="text-muted mb-0">نظرة عامة سريعة على حركة المصنع والإنتاج والمخزن اليوم</p>
-    </div>
-    <div class="col-auto">
-        <span class="badge bg-light text-dark p-2 fs-6 border"><i class="fa-solid fa-calendar-day text-primary me-1"></i> اليوم: @DateTime.Today.ToString("yyyy/MM/dd")</span>
+<div class="page-header-box mb-4 p-3 bg-white rounded-4 border shadow-sm">
+    <div class="row align-items-center gy-3">
+        <!-- العنوان والأيقونة على اليمين -->
+        <div class="col-md d-flex align-items-center gap-3">
+            <!-- مربع الأيقونة الأصفر -->
+            <div class="rounded-3 d-flex align-items-center justify-content-center"
+                 style="width: 52px; height: 52px; background-color: #fff3cd; color: #ffc107; flex-shrink: 0;">
+                <i class="fa-solid fa-chart-pie fs-3"></i>
+            </div>
+
+            <!-- النصوص -->
+            <div>
+                <h3 class="fw-bold text-dark mb-1 fs-4">لوحة التحكم والإحصائيات</h3>
+                <p class="text-muted mb-0 small">
+                    نظرة عامة سريعة على حركة المصنع والإنتاج والمخزن اليوم :
+                    <span class="fw-bold text-dark">@Model.SelectedDate.ToString("yyyy/MM/dd")</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- فلتر التاريخ على الشمال -->
+        <div class="col-md-auto">
+            <form method="get" class="d-flex align-items-center gap-2">
+                <span class="fw-bold text-secondary text-nowrap small">
+                    <i class="fa-regular fa-calendar ms-1"></i>اختر التاريخ:
+                </span>
+
+                <div class="d-flex align-items-center gap-2">
+                    <input type="date"
+                           name="date"
+                           value="@Model.SelectedDate.ToString("yyyy-MM-dd")"
+                           class="form-control rounded-3 border-secondary-subtle shadow-sm text-center fw-bold"
+                           style="width: 150px;"
+                           onchange="this.form.submit()" />
+
+                    <button type="submit" class="btn btn-primary rounded-3 shadow-sm px-3 py-2" title="تصفية">
+                        <i class="fa-solid fa-filter"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
-
 <!-- Dashboard Stat Cards Row 1 -->
 <div class="row g-3 mb-4">
     <div class="col-md-3">
@@ -25,7 +58,7 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="stat-card bg-blue">
+        <div class="stat-card bg-slate">
             <div>
                 <div class="stat-title">الإنتاج المستهدف</div>
                 <div class="stat-value">@Model.TodayTargetProduction <small class="fs-6">قطعة</small></div>
@@ -34,7 +67,7 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="stat-card bg-emerald">
+        <div class="stat-card bg-purple">
             <div>
                 <div class="stat-title">الإنتاج الفعلي</div>
                 <div class="stat-value">@Model.TodayActualProduction <small class="fs-6">قطعة</small></div>
@@ -43,7 +76,7 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="stat-card bg-purple">
+        <div class="stat-card bg-blue">
             <div>
                 <div class="stat-title">عدد الباسكيت اليوم</div>
                 <div class="stat-value">@Model.TodayActualBaskets <small class="fs-6">من @Model.TodayExpectedBaskets</small></div>
@@ -56,7 +89,7 @@
 <!-- Dashboard Stat Cards Row 2 -->
 <div class="row g-3 mb-4">
     <div class="col-md-3">
-        <div class="stat-card bg-slate">
+        <div class="stat-card bg-teal">
             <div>
                 <div class="stat-title">قيمة المخزن الحالية</div>
                 <div class="stat-value">@Model.InventoryTotalValue.ToString("N2") <small class="fs-6">ج.م</small></div>
@@ -83,7 +116,7 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="stat-card @(Model.TodayNetProfit >= 0 ? "bg-emerald" : "bg-rose")">
+        <div class="stat-card @(Model.TodayNetProfit >= 0 ? "bg-orange" : "bg-rose")">
             <div>
                 <div class="stat-title">صافي ربح اليوم</div>
                 <div class="stat-value">@Model.TodayNetProfit.ToString("N2") <small class="fs-6">ج.م</small></div>

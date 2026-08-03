@@ -57,15 +57,15 @@ namespace Bakery.DataAccess
                     context.SaveChanges();
                     rawMaterials.Add(mat);
                 }
-                else if (mat.CurrentQuantity <= 0)
-                {
-                    mat.CurrentQuantity = defaultQty;
-                    mat.UnitPrice = unitPrice;
-                    mat.TotalValue = defaultQty * unitPrice;
-                    mat.LastUpdatedDate = DateTime.Now;
-                    context.RawMaterials.Update(mat);
-                    context.SaveChanges();
-                }
+                //else if (mat.CurrentQuantity <= 0)
+                //{
+                //    mat.CurrentQuantity = defaultQty;
+                //    mat.UnitPrice = unitPrice;
+                //    mat.TotalValue = defaultQty * unitPrice;
+                //    mat.LastUpdatedDate = DateTime.Now;
+                //    context.RawMaterials.Update(mat);
+                //    context.SaveChanges();
+                //}
                 return mat;
             }
 

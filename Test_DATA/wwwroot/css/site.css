@@ -154,6 +154,14 @@ body {
     background: linear-gradient(135deg, #475569, #334155);
 }
 
+.bg-teal {
+    background: linear-gradient(135deg, #6366f1, #4338ca);
+}
+
+.bg-orange {
+    background: linear-gradient(135deg, #a3e635, #65a30d);
+}
+
 /* ---- Buttons ---- */
 .btn-bakery {
     background-color: var(--primary-color);
