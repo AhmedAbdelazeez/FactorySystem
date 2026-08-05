@@ -14,7 +14,7 @@ namespace Bakery.Business.Services
     {
         Task<IEnumerable<Expense>> GetAllExpensesAsync(DateTime? startDate = null, DateTime? endDate = null, int? categoryId = null);
         Task<Expense?> GetExpenseByIdAsync(int id);
-        Task AddExpenseAsync(Expense expense, int? linkedRawMaterialId = null);
+        Task AddExpenseAsync(Expense expense);//, int? linkedRawMaterialId = null);
         Task UpdateExpenseAsync(Expense expense);
         Task DeleteExpenseAsync(int id);
         Task PayRemainingAsync(int expenseId, decimal amountPaidNow, PaymentMethod paymentMethod);
@@ -66,9 +66,11 @@ namespace Bakery.Business.Services
                 .FirstOrDefaultAsync(e => e.Id == id);
         }
 
-        public async Task AddExpenseAsync(Expense expense, int? linkedRawMaterialId = null)
-        {
+        public async Task AddExpenseAsync(Expense expense)//, int? linkedRawMaterialId = null)
+         {
+            //expense.TotalAmount = expense.Quantity * expense.UnitPrice;
             expense.TotalAmount = expense.Quantity * expense.UnitPrice;
+
 
             if (expense.PaymentMethod == PaymentMethod.Cash || expense.PaymentMethod == PaymentMethod.BankTransfer)
             {
@@ -111,16 +113,19 @@ namespace Bakery.Business.Services
             await _treasuryRepo.SaveChangesAsync();
 
             // If raw material linked, update stock
-            if (linkedRawMaterialId.HasValue && linkedRawMaterialId.Value > 0)
-            {
-                await _inventoryService.AddStockAsync(
-                    linkedRawMaterialId.Value,
-                    expense.Quantity,
-                    expense.UnitPrice,
-                    $"توريد بموجب مصروف: {expense.Name}",
-                    expense.Id
-                );
-            }
+            //if (linkedRawMaterialId.HasValue && linkedRawMaterialId.Value > 0)
+            //{
+            //    await _inventoryService.AddStockAsync(
+            //        linkedRawMaterialId.Value,
+            //        expense.Quantity,
+            //        expense.UnitPrice,
+            //         expense.PaymentMethod,   // ← ضفنا ده
+            //         expense.PaidAmount,
+            //        $"توريد بموجب مصروف: {expense.Name}",
+                    
+            //        expense.Id
+            //    );
+            //}
         }
 
         public async Task UpdateExpenseAsync(Expense expense)
@@ -191,7 +196,17 @@ namespace Bakery.Business.Services
                 var expense = await _context.Expenses.FindAsync(expenseId);
                 if (expense == null) throw new KeyNotFoundException("المصروف غير موجود.");
 
-              
+                //منع حذف مصروفات التوريد من هنا خالص
+                bool isLinkedToInventory = await _context.InventoryTransactions
+             .AnyAsync(t => t.ExpenseId == expenseId);
+
+                if (isLinkedToInventory)
+                {
+                    throw new InvalidOperationException(
+                        "هذا المصروف ناتج عن عملية توريد مخزون، لا يمكن حذفه من هنا. يرجى حذفه أو تعديله من صفحة \"سجل حركة المخزن\" فقط.");
+                }
+
+
                 // 1. التعامل مع مصروفات العمالة (الرواتب والسُلف)
                 if (expense.EmployeeId.HasValue)
                 {
@@ -226,7 +241,27 @@ namespace Bakery.Business.Services
                     }
                 }
 
-              
+                //var stockTx = await _context.InventoryTransactions
+                //         .FirstOrDefaultAsync(t => t.ExpenseId == expenseId);
+
+                //if (stockTx != null)
+                //{
+                //    var rawMaterial = await _context.RawMaterials.FindAsync(stockTx.RawMaterialId);
+                //    if (rawMaterial != null)
+                //    {
+                //        // خصم الكمية التي تم توريدها من المخزن
+                //        rawMaterial.CurrentQuantity -= stockTx.Quantity;
+
+                //        if (rawMaterial.CurrentQuantity < 0)
+                //        {
+                //            rawMaterial.CurrentQuantity = 0;
+                //        }
+                //    }
+
+                //    // حذف سجل حركة المخزن نفسه
+                //    _context.InventoryTransactions.Remove(stockTx);
+                //}
+
                 // 2. حذف حركة الخزينة المرتبطة بالمصروف (سواء كانت سداد أصلي أو سداد متبقيات
                 var relatedTreasuryTxs = await _context.TreasuryTransactions
                     .Where(t => t.ExpenseId == expenseId)

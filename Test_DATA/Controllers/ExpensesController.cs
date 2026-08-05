@@ -40,7 +40,7 @@ namespace Test_DATA.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(Expense expense, decimal? TotalAmountOperating, int? linkedRawMaterialId)
+        public async Task<IActionResult> Create(Expense expense, decimal? TotalAmountOperating)//, int? linkedRawMaterialId)
         {
             try
             {
@@ -59,7 +59,7 @@ namespace Test_DATA.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                await _expenseService.AddExpenseAsync(expense, linkedRawMaterialId);
+                await _expenseService.AddExpenseAsync(expense);//, linkedRawMaterialId);
                 TempData["SuccessMessage"] = "تم إضافة المصروف بنجاح وترحيله للخزينة!";
             }
             catch (Exception ex)

@@ -1,8 +1,9 @@
-using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 using Bakery.Business.Services;
 using Bakery.Domain.Entities;
+using Bakery.Domain.Enums;
+using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Threading.Tasks;
 
 namespace Test_DATA.Controllers
 {
@@ -28,7 +29,7 @@ namespace Test_DATA.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(RawMaterial material)
+        public async Task<IActionResult> Create(RawMaterial material , PaymentMethod paymentMethod,decimal paidAmount=0,string? notes=null)
         {
             try
             {
@@ -38,7 +39,7 @@ namespace Test_DATA.Controllers
                 //    return RedirectToAction(nameof(Index));
                 //}
 
-                await _inventoryService.AddRawMaterialAsync(material);
+                await _inventoryService.AddRawMaterialAsync(material, paymentMethod, paidAmount, notes);
                 TempData["SuccessMessage"] = "تم إضافة المادة الخام للمخزن بنجاح!";
             }
             catch (Exception ex)
@@ -48,20 +49,20 @@ namespace Test_DATA.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Edit(RawMaterial material)
-        {
-            try
-            {
-                await _inventoryService.UpdateRawMaterialAsync(material);
-                TempData["SuccessMessage"] = "تم تعديل المادة الخام بنجاح!";
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = ex.Message;
-            }
-            return RedirectToAction(nameof(Index));
-        }
+        //[HttpPost]
+        //public async Task<IActionResult> Edit(RawMaterial material)
+        //{
+        //    try
+        //    {
+        //        await _inventoryService.UpdateRawMaterialAsync(material);
+        //        TempData["SuccessMessage"] = "تم تعديل المادة الخام بنجاح!";
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        TempData["ErrorMessage"] = ex.Message;
+        //    }
+        //    return RedirectToAction(nameof(Index));
+        //}
 
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
@@ -79,11 +80,11 @@ namespace Test_DATA.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddStock(int rawMaterialId, decimal quantity, decimal unitPrice, string? notes)
+        public async Task<IActionResult> AddStock(int rawMaterialId, decimal quantity, decimal unitPrice,PaymentMethod paymentMethod, decimal paidAmount = 0, string? notes=null)
         {
             try
             {
-                await _inventoryService.AddStockAsync(rawMaterialId, quantity, unitPrice, notes);
+                await _inventoryService.AddStockAsync(rawMaterialId, quantity, unitPrice, paymentMethod, paidAmount, notes);
                 TempData["SuccessMessage"] = "تم إضافة الكمية الموردة إلى المخزن بنجاح!";
             }
             catch (Exception ex)
@@ -101,5 +102,37 @@ namespace Test_DATA.Controllers
             var transactions = await _inventoryService.GetTransactionsAsync(rawMaterialId);
             return View(transactions);
         }
+
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateTransaction(int transactionId, decimal newQuantity, decimal newUnitPrice, PaymentMethod paymentMethod, decimal paidAmount, string? notes = null)
+        {
+            try
+            {
+                await _inventoryService.UpdateTransactionAsync( transactionId, newQuantity, newUnitPrice,paymentMethod,paidAmount, notes);
+                TempData["SuccessMessage"] = "تم تعديل المعاملة بنجاح!";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+            return RedirectToAction(nameof(Transactions));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteTransaction(int transactionId)
+        {
+            try
+            {
+                await _inventoryService.DeleteTransactionAsync(transactionId);
+                TempData["SuccessMessage"] = "تم حذف المعاملة بنجاح.";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+            return RedirectToAction(nameof(Transactions));
+        }
+
     }
 }
