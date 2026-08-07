@@ -69,14 +69,14 @@ namespace Bakery.DataAccess
                 return mat;
             }
 
-            var matFlour = GetOrAddMaterial(matFlourType, unitSack.Id, 50, 450);
-            var matOil = GetOrAddMaterial(matOilType, unitBottle.Id, 100, 60);
-            var matSugar = GetOrAddMaterial(matSugarType, unitKg.Id, 200, 35);
-            var matButter = GetOrAddMaterial(matButterType, unitKg.Id, 150, 120);
-            var matPreservatives = GetOrAddMaterial(matPreservativesType, unitGram.Id, 15000, 0.5m);
-            var matPackaging = GetOrAddMaterial(matPackagingType, unitRoll.Id, 100, 25);
-            var matImprover = GetOrAddMaterial(matImproverType, unitPiece.Id, 200, 15);
-            var matYeast = GetOrAddMaterial(matYeastType, unitPiece.Id, 100, 20);
+            var matFlour = GetOrAddMaterial(matFlourType, unitSack.Id, 0, 450);
+            var matOil = GetOrAddMaterial(matOilType, unitBottle.Id, 0, 60);
+            var matSugar = GetOrAddMaterial(matSugarType, unitKg.Id, 0, 35);
+            var matButter = GetOrAddMaterial(matButterType, unitKg.Id, 0, 120);
+            var matPreservatives = GetOrAddMaterial(matPreservativesType, unitGram.Id, 0, 0.5m);
+            var matPackaging = GetOrAddMaterial(matPackagingType, unitRoll.Id, 0, 25);
+            var matImprover = GetOrAddMaterial(matImproverType, unitPiece.Id, 0, 15);
+            var matYeast = GetOrAddMaterial(matYeastType, unitPiece.Id, 0, 20);
 
             // 3. Seed Recipe Items for Flour Sack
             var recipe = await context.ProductionRecipes

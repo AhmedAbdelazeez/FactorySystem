@@ -12,7 +12,13 @@ namespace Bakery.Business.Services
         Task<IEnumerable<ExpenseCategory>> GetExpenseCategoriesAsync();
         Task AddExpenseCategoryAsync(string name);
         Task<IEnumerable<MeasurementUnit>> GetMeasurementUnitsAsync();
+        Task<MeasurementUnit?> GetMeasurementUnitByIdAsync(int id);
+        Task UpdateMeasurementUnitAsync(MeasurementUnit unit);
+        Task DeleteMeasurementUnitAsync(int id);
         Task<IEnumerable<MaterialType>> GetMaterialTypesAsync();
+        Task<MaterialType> GetMatrialByIdAsync(int id);
+        Task UpdateMaterialAsync(MaterialType mType);
+        Task DeleteMaterialAsync(int id);
         Task AddMeasurementUnitAsync(string name);
         Task AddMaterialTypeAsync(string name);
         List<string> GetWeekdays();
@@ -81,6 +87,68 @@ namespace Bakery.Business.Services
         public List<string> GetDefaultJobTitles()
         {
             return new List<string> { "عجان", "فرّان", "عامل تعبئة وتغليف", "مشرف إنتاج", "سائق نقل", "عامل نظافة", "مدير المخبز" };
+        }
+
+        public async Task<MaterialType?> GetMatrialByIdAsync(int id)
+        {
+            return await _context.MaterialTypes.FirstOrDefaultAsync(m => m.Id == id);
+            
+        }
+
+        public async Task UpdateMaterialAsync(MaterialType mType)
+        {
+            var existing = await GetMatrialByIdAsync(mType.Id);
+
+            if (existing == null)
+                throw new KeyNotFoundException("الماده غير موجوده.");
+            existing.Name = mType.Name;
+            _context.MaterialTypes.Update(existing);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteMaterialAsync(int id)
+        {
+            var mat = await _context.MaterialTypes.FindAsync(id);
+            var hasRelatedRecords = await _context.RawMaterials.AnyAsync(r => r.MaterialTypeId == id);
+
+            if (hasRelatedRecords)
+                throw new InvalidOperationException("لا يمكن حذف هذه المادة الخام لأنها مستخدمة في عمليات مخزنية قائمة.");
+
+            _context.MaterialTypes.Remove(mat);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<MeasurementUnit?> GetMeasurementUnitByIdAsync(int id)
+        {
+            return await _context.MeasurementUnits.FirstOrDefaultAsync(u => u.Id == id);
+        }
+
+        public async Task UpdateMeasurementUnitAsync(MeasurementUnit unit)
+        {
+            var existing = await GetMeasurementUnitByIdAsync(unit.Id);
+
+            if (existing == null)
+                throw new KeyNotFoundException("وحدة القياس غير موجودة.");
+
+            existing.Name = unit.Name;
+            _context.MeasurementUnits.Update(existing);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteMeasurementUnitAsync(int id)
+        {
+            var unit = await _context.MeasurementUnits.FindAsync(id);
+            if (unit == null)
+                throw new KeyNotFoundException("وحدة القياس غير موجودة.");
+
+            // التحقق من أن وحدة القياس غير مرتبطة بأي مواد خام في المخزن
+            var hasRelatedRecords = await _context.RawMaterials.AnyAsync(r => r.MeasurementUnitId == id);
+
+            if (hasRelatedRecords)
+                throw new InvalidOperationException("لا يمكن حذف وحدة القياس هذه لأنها مستخدمة في أصناف مخزنية قائمة.");
+
+            _context.MeasurementUnits.Remove(unit);
+            await _context.SaveChangesAsync();
         }
     }
 }

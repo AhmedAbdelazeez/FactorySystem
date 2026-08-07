@@ -72,7 +72,21 @@
 					{
 						<li class="list-group-item d-flex justify-content-between align-items-center p-3">
 							<span class="fw-bold text-dark">@u.Name</span>
-							<span class="badge bg-light text-dark border">وحدة مسجلة</span>
+							<div class="d-flex align-items-center gap-2">
+								<button class="btn btn-sm btn-outline-secondary py-1 px-2"
+										data-bs-toggle="modal"
+										data-bs-target="#editUnitModal-@u.Id"
+										title="تعديل">
+									<i class="fa-solid fa-pen-to-square"></i>
+								</button>
+
+								<button type="button"
+										class="btn btn-sm btn-outline-danger py-1 px-2"
+										onclick="confirmDelete('@u.Id', '@Url.Action("DeleteUnit", "Lookups")', 'هل أنت متأكد من حذف وحدة القياس (@u.Name)؟')"
+										title="حذف">
+									<i class="fa-solid fa-trash-can"></i>
+								</button>
+							</div>
 						</li>
 					}
 				</ul>
@@ -80,13 +94,13 @@
 		</div>
 	</div>
 
-	<!-- matrial card-->
+	<!-- Material Card -->
 	<div class="col-md-4">
 		<div class="card card-custom h-100">
 			<div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center py-3">
-				<span><i class="fa-solid fa-wheat-awn text-warning me-2"></i> المواد الخام)</span>
+				<span><i class="fa-solid fa-wheat-awn text-warning me-2"></i> المواد الخام</span>
 				<button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#addMaterialTypeModal">
-					<i class="fa-solid fa-plus me-1"></i> إضافة ماده
+					<i class="fa-solid fa-plus me-1"></i> إضافة مادة
 				</button>
 			</div>
 			<div class="card-body p-0">
@@ -95,7 +109,21 @@
 					{
 						<li class="list-group-item d-flex justify-content-between align-items-center p-3">
 							<span class="fw-bold text-dark">@type.Name</span>
-							<span class="badge bg-light text-dark border">ماده مسجلة</span>
+							<div class="d-flex align-items-center gap-2">
+								<button class="btn btn-sm btn-outline-secondary py-1 px-2"
+										data-bs-toggle="modal"
+										data-bs-target="#editMaterialTypeModal-@type.Id"
+										title="تعديل">
+									<i class="fa-solid fa-pen-to-square"></i>
+								</button>
+
+								<button type="button"
+										class="btn btn-sm btn-outline-danger py-1 px-2"
+										onclick="confirmDelete('@type.Id', '@Url.Action("DeleteMaterialType", "Lookups")', 'هل أنت متأكد من حذف المادة الخام (@type.Name)؟')"
+										title="حذف">
+									<i class="fa-solid fa-trash-can"></i>
+								</button>
+							</div>
 						</li>
 					}
 				</ul>
@@ -137,7 +165,7 @@
 			<form asp-action="AddUnit" method="post">
 				<div class="modal-body">
 					<label class="form-label fw-bold">اسم وحدة القياس <span class="text-danger">*</span></label>
-					<input type="text" name="name" required class="form-control" placeholder="مثال: عبوة / جافال / كرتونة..." />
+					<input type="text" name="name" required class="form-control" placeholder="مثال: عبوة / شوال / كرتونة..." />
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
@@ -148,24 +176,84 @@
 	</div>
 </div>
 
+<!-- Modals Edit Measurement Units -->
+@foreach (var u in units)
+{
+	<div class="modal fade" id="editUnitModal-@u.Id" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header bg-success text-white">
+					<h5 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-1"></i> تعديل وحدة القياس</h5>
+					<button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
+				</div>
+				<form asp-action="EditUnit" method="post">
+					<div class="modal-body">
+						<!-- Hidden ID -->
+						<input type="hidden" name="Id" value="@u.Id" />
+
+						<div class="mb-3 text-start">
+							<label class="form-label fw-bold">اسم وحدة القياس <span class="text-danger">*</span></label>
+							<input type="text" name="Name" value="@u.Name" required class="form-control" />
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+						<button type="submit" class="btn btn-success fw-bold">حفظ التعديلات</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+}
+
 <!-- Modal Add material -->
 <div class="modal fade" id="addMaterialTypeModal" tabindex="-1">
 	<div class="modal-dialog">
 		<div class="modal-content">
 			<div class="modal-header bg-warning text-dark">
-				<h5 class="modal-title fw-bold"><i class="fa-solid fa-plus me-1"></i> إضافة مادة خام جديده</h5>
-				<button type="button" class="btn-close btn-close-warning ms-0 me-auto" data-bs-dismiss="modal"></button>
+				<h5 class="modal-title fw-bold"><i class="fa-solid fa-plus me-1"></i> إضافة مادة خام جديدة</h5>
+				<button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
 			</div>
 			<form asp-action="AddMaterialType" method="post">
 				<div class="modal-body">
-					<label class="form-label fw-bold">اسم الماده الخام <span class="text-danger">*</span></label>
-					<input type="text" name="name" required class="form-control" placeholder="مثال: دقيق  / سكر  / زبدة ..." />
+					<label class="form-label fw-bold">اسم المادة الخام <span class="text-danger">*</span></label>
+					<input type="text" name="name" required class="form-control" placeholder="مثال: دقيق / سكر / زبدة..." />
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-					<button type="submit" class="btn btn-warning ">إضافة الماده</button>
+					<button type="submit" class="btn btn-warning">إضافة المادة</button>
 				</div>
 			</form>
 		</div>
 	</div>
 </div>
+
+<!-- Modals Edit Material Types -->
+@foreach (var type in materialTypes)
+{
+	<div class="modal fade" id="editMaterialTypeModal-@type.Id" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header bg-warning text-dark">
+					<h5 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-1"></i> تعديل المادة الخام</h5>
+					<button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+				</div>
+				<form asp-action="EditMaterialType" method="post">
+					<div class="modal-body">
+						<!-- Hidden ID -->
+						<input type="hidden" name="Id" value="@type.Id" />
+
+						<div class="mb-3 text-start">
+							<label class="form-label fw-bold">اسم المادة الخام <span class="text-danger">*</span></label>
+							<input type="text" name="Name" value="@type.Name" required class="form-control" />
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+						<button type="submit" class="btn btn-warning fw-bold">حفظ التعديلات</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+}

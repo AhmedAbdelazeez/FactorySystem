@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Bakery.Business.Services;
+using Bakery.Domain.Entities;
 
 namespace Test_DATA.Controllers
 {
@@ -38,6 +39,39 @@ namespace Test_DATA.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> EditMaterialType(MaterialType mtype)
+        {
+            try
+            {
+                await _lookupService.UpdateMaterialAsync(mtype);
+                TempData["SuccessMessage"] = "تم تعديل نوع المادة الخام بنجاح.";
+
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+         
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteMaterialType(int id)
+        {
+            try
+            {
+                await _lookupService.DeleteMaterialAsync(id);
+                TempData["SuccessMessage"] = "تم حذف نوع المادة الخام بنجاح.";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+
+        [HttpPost]
         public async Task<IActionResult> AddCategory(string name)
         {
             try
@@ -59,6 +93,36 @@ namespace Test_DATA.Controllers
             {
                 await _lookupService.AddMeasurementUnitAsync(name);
                 TempData["SuccessMessage"] = "تم إضافة وحدة القياس بنجاح!";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> EditUnit(MeasurementUnit unit)
+        {
+            try
+            {
+                await _lookupService.UpdateMeasurementUnitAsync(unit);
+                TempData["SuccessMessage"] = "تم تعديل وحدة القياس بنجاح.";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteUnit(int id)
+        {
+            try
+            {
+                await _lookupService.DeleteMeasurementUnitAsync(id);
+                TempData["SuccessMessage"] = "تم حذف وحدة القياس بنجاح.";
             }
             catch (Exception ex)
             {
