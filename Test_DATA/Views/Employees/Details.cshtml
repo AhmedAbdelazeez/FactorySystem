@@ -3,26 +3,38 @@
     ViewData["Title"] = $"تفاصيل العامل - {Model.Name}";
 }
 
-<div class="row mb-4 align-items-center">
-    <div class="col">
-        <a asp-action="Index" class="btn btn-outline-secondary btn-sm mb-2">
-            <i class="fa-solid fa-arrow-right me-1"></i> العودة لقائمة العمال
-        </a>
-        <h2 class="fw-bold text-dark mb-1">
-            <i class="fa-solid fa-user-tie text-warning me-2"></i> @Model.Name
-            @if (Model.IsActive)
-            {
-                <span class="badge bg-success fs-6 ms-2">نشط</span>
-            }
-            else
-            {
-                <span class="badge bg-secondary fs-6 ms-2">غير نشط</span>
-            }
-        </h2>
-        <p class="text-muted mb-0">الكشف التفصيلي للحضور والغياب، السلف المصروفة، وسجل الرواتب</p>
+<!-- Header Box (تفاصيل الموظف) -->
+<div class="page-header-box mb-4 p-3 bg-white rounded-4 border shadow-sm">
+    <div class="row align-items-center g-3">
+        <div class="col-md-7">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon-wrapper bg-warning-subtle text-warning me-3 d-flex align-items-center justify-content-center rounded-3" style="width: 52px; height: 52px; flex-shrink: 0;">
+                    <i class="fa-solid fa-user-tie fs-3"></i>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <h3 class="fw-bold text-dark mb-0 fs-4">@Model.Name</h3>
+                        @if (Model.IsActive)
+                        {
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2">نشط</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2">غير نشط</span>
+                        }
+                    </div>
+                    <p class="text-muted small mb-0">الكشف التفصيلي للحضور والغياب، السلف المصروفة، وسجل الرواتب</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-5 text-md-end">
+            <a asp-action="Index" class="btn btn-outline-primary rounded-3 shadow-sm px-3 py-2 fw-bold d-inline-flex align-items-center gap-2">
+                <i class="fa-solid fa-arrow-right"></i>
+                <span>العودة لقائمة العمال</span>
+            </a>
+        </div>
     </div>
 </div>
-
 <div class="row g-3 mb-4">
     <!-- 1. الوظيفة والسن -->
     <div class="col-12 col-sm-6 col-lg">

@@ -69,8 +69,29 @@ namespace Bakery.Business.Services
         public async Task AddExpenseAsync(Expense expense)//, int? linkedRawMaterialId = null)
          {
             //expense.TotalAmount = expense.Quantity * expense.UnitPrice;
-            expense.TotalAmount = expense.Quantity * expense.UnitPrice;
+            //expense.TotalAmount = expense.Quantity * expense.UnitPrice;
+            if (expense.Quantity <= 0)
+            {
+                expense.Quantity = 1;
+            }
 
+            if (expense.UnitPrice <= 0 && expense.TotalAmount > 0)
+            {
+                expense.UnitPrice = expense.TotalAmount;
+            }
+            else
+            {
+                expense.TotalAmount = expense.Quantity * expense.UnitPrice;
+            }
+            if (expense.ExpenseCategoryId <= 0)
+            {
+                var defaultCategory = await _context.ExpenseCategories.FirstOrDefaultAsync();
+                if (defaultCategory == null)
+                {
+                    throw new InvalidOperationException("لا يوجد تصنيفات مصاريف مسجلة بالنظام. يرجى إضافة تصنيف أولاً.");
+                }
+                expense.ExpenseCategoryId = defaultCategory.Id;
+            }
 
             if (expense.PaymentMethod == PaymentMethod.Cash || expense.PaymentMethod == PaymentMethod.BankTransfer)
             {
@@ -133,17 +154,23 @@ namespace Bakery.Business.Services
             var existing = await _expenseRepo.GetByIdAsync(expense.Id);
             if (existing == null) throw new KeyNotFoundException("المصروف غير موجود.");
 
+            // 1. حماية القيود الآلية (رواتب وتوريدات)
+            if (existing.Name.StartsWith("راتب العامل") || existing.Name.StartsWith("توريد خامات"))
+            {
+                throw new InvalidOperationException("لا يمكن تعديل المصروفات الناتجة عن عمليات التوريد أو رواتب العمالة مباشرةً.");
+            }
+
+            // 2. تحديث الحقول الأساسية
             existing.Name = expense.Name;
             existing.ExpenseCategoryId = expense.ExpenseCategoryId;
-            existing.Quantity = expense.Quantity;
-            existing.UnitPrice = expense.UnitPrice;
-            existing.TotalAmount = expense.Quantity * expense.UnitPrice;
+            existing.Quantity = expense.Quantity <= 0 ? 1 : expense.Quantity;
+            existing.UnitPrice = expense.UnitPrice <= 0 ? expense.TotalAmount : expense.UnitPrice;
+            existing.TotalAmount = expense.TotalAmount > 0 ? expense.TotalAmount : (existing.Quantity * existing.UnitPrice);
             existing.Date = expense.Date;
             existing.PaymentMethod = expense.PaymentMethod;
-            existing.PaidAmount = expense.PaidAmount;
-            existing.EmployeeId = expense.EmployeeId;
             existing.Notes = expense.Notes;
 
+            // 3. ضبط المبالغ بناءً على طريقة الدفع
             if (existing.PaymentMethod == PaymentMethod.Cash || existing.PaymentMethod == PaymentMethod.BankTransfer)
             {
                 existing.PaidAmount = existing.TotalAmount;
@@ -154,21 +181,21 @@ namespace Bakery.Business.Services
                 existing.PaidAmount = 0;
                 existing.RemainingAmount = existing.TotalAmount;
             }
-            else
+            else // PartiallyPaid
             {
-                if (existing.PaidAmount > existing.TotalAmount)
-                    existing.PaidAmount = existing.TotalAmount;
+                existing.PaidAmount = expense.PaidAmount > existing.TotalAmount ? existing.TotalAmount : expense.PaidAmount;
                 existing.RemainingAmount = existing.TotalAmount - existing.PaidAmount;
             }
 
             _expenseRepo.Update(existing);
             await _expenseRepo.SaveChangesAsync();
 
-            // Update associated Treasury Transaction
+            // 4. تحديث حركة الخزينة المرتبطة تلقائياً
             var treasuryTx = await _context.TreasuryTransactions.FirstOrDefaultAsync(t => t.ExpenseId == expense.Id);
             if (treasuryTx != null)
             {
                 var category = await _context.ExpenseCategories.FindAsync(existing.ExpenseCategoryId);
+
                 treasuryTx.Date = existing.Date;
                 treasuryTx.TransactionName = existing.Name;
                 treasuryTx.Category = category?.Name ?? "مصروفات";
@@ -177,12 +204,13 @@ namespace Bakery.Business.Services
                 treasuryTx.PaidAmount = existing.PaidAmount;
                 treasuryTx.RemainingAmount = existing.RemainingAmount;
                 treasuryTx.Notes = existing.Notes;
+
                 _treasuryRepo.Update(treasuryTx);
                 await _treasuryRepo.SaveChangesAsync();
             }
         }
 
-        
+
         public async Task DeleteExpenseAsync(int expenseId)
         {
             // التأكد من وجود Transaction مفتوح حالياً أو إنشاء جديد
@@ -241,26 +269,7 @@ namespace Bakery.Business.Services
                     }
                 }
 
-                //var stockTx = await _context.InventoryTransactions
-                //         .FirstOrDefaultAsync(t => t.ExpenseId == expenseId);
-
-                //if (stockTx != null)
-                //{
-                //    var rawMaterial = await _context.RawMaterials.FindAsync(stockTx.RawMaterialId);
-                //    if (rawMaterial != null)
-                //    {
-                //        // خصم الكمية التي تم توريدها من المخزن
-                //        rawMaterial.CurrentQuantity -= stockTx.Quantity;
-
-                //        if (rawMaterial.CurrentQuantity < 0)
-                //        {
-                //            rawMaterial.CurrentQuantity = 0;
-                //        }
-                //    }
-
-                //    // حذف سجل حركة المخزن نفسه
-                //    _context.InventoryTransactions.Remove(stockTx);
-                //}
+                
 
                 // 2. حذف حركة الخزينة المرتبطة بالمصروف (سواء كانت سداد أصلي أو سداد متبقيات
                 var relatedTreasuryTxs = await _context.TreasuryTransactions

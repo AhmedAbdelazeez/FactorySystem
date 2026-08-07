@@ -5,10 +5,17 @@
 	ViewData["Title"] = "سجل حركة المخزن";
 	var rawMaterials = ViewBag.RawMaterials as IEnumerable<Bakery.Domain.Entities.RawMaterial> ?? new List<Bakery.Domain.Entities.RawMaterial>();
 
-	var totalTransactions = Model?.Count() ?? 0;
-	var totalPurchaseAmount = Model?.Where(t => t.TransactionType == TransactionType.Purchase).Sum(t => t.TotalAmount) ?? 0;
-	var totalPaidAmount = Model?.Where(t => t.TransactionType == TransactionType.Purchase && t.Expense != null).Sum(t => t.Expense?.PaidAmount) ?? 0;
-	var totalRemainingAmount = Model?.Where(t => t.TransactionType == TransactionType.Purchase && t.Expense != null).Sum(t => t.Expense?.RemainingAmount) ?? 0;
+	var allTransactions = Model ?? new List<Bakery.Domain.Entities.InventoryTransaction>();
+
+	// 1. التقسيم إلى تابين
+	var purchaseTransactions = allTransactions.Where(t => t.TransactionType == TransactionType.Purchase);
+	var deductionTransactions = allTransactions.Where(t => t.TransactionType == TransactionType.ProductionDeduction );
+
+	// 2. حساب الإحصائيات
+	var totalTransactions = allTransactions.Count();
+	var totalPurchaseAmount = purchaseTransactions.Sum(t => t.TotalAmount);
+	var totalPaidAmount = purchaseTransactions.Where(t => t.Expense != null).Sum(t => t.Expense?.PaidAmount) ?? 0;
+	var totalRemainingAmount = purchaseTransactions.Where(t => t.Expense != null).Sum(t => t.Expense?.RemainingAmount) ?? 0;
 }
 
 <!-- Header Box -->
@@ -21,7 +28,7 @@
 				</div>
 				<div>
 					<h3 class="fw-bold text-dark mb-1">سجل حركة المخزن والتوريدات</h3>
-					<p class="text-muted small mb-0">بيان تفصيلي لجميع عمليات الإضافة، التوريدات، والخصم الآلي للمواد الخام</p>
+					<p class="text-muted small mb-0">بيان تفصيلي لجميع عمليات الإضافة والتوريدات والخصم الآلي للمواد الخام</p>
 				</div>
 			</div>
 		</div>
@@ -106,7 +113,7 @@
 			</select>
 		</div>
 		<div class="col-md-4 d-flex gap-2">
-			<button type="submit" class="btn btn-warning text-dark fw-bold w-100 rounded-3 shadow-sm">
+			<button type="submit" class="btn btn-primary text-white fw-bold w-100 rounded-3 shadow-sm">
 				<i class="fa-solid fa-filter me-1"></i> عرض الحركات
 			</button>
 			<a asp-action="Transactions" class="btn btn-outline-secondary rounded-3">
@@ -116,223 +123,332 @@
 	</form>
 </div>
 
-<!-- Main Table Card -->
-<div class="card-custom">
-	<div class="table-responsive">
-		<table class="table table-custom align-middle mb-0">
-			<thead>
-				<tr>
-					<th>التاريخ والوقت</th>
-					<th>المادة الخام</th>
-					<th>نوع الحركة</th>
-					<th>الكمية</th>
-					<th>سعر الوحدة</th>
-					<th>الإجمالي</th>
-					<th>طريقة الدفع</th>
-					<th>المدفوع</th>
-					<th>المتبقي</th>
-					<th>البيان والتفاصيل</th>
-					<th class="text-center" style="min-width: 130px;">الإجراءات والعمليات</th>
-				</tr>
-			</thead>
-			<tbody>
-				@if (Model != null && Model.Any())
-				{
-					foreach (var tx in Model)
-					{
+<!-- Tabs Navigation -->
+<ul class="nav nav-tabs nav-tabs-custom mb-3" id="inventoryTabs" role="tablist">
+	<li class="nav-item">
+		<button class="nav-link active fw-bold" id="purchases-tab" data-bs-toggle="tab" data-bs-target="#purchases" type="button">
+			<i class="fa-solid fa-cart-plus me-1"></i> توريدات وإضافة المخزون (@purchaseTransactions.Count())
+		</button>
+	</li>
+	<li class="nav-item">
+		<button class="nav-link fw-bold" id="deductions-tab" data-bs-toggle="tab" data-bs-target="#deductions" type="button">
+			<i class="fa-solid fa-industry me-1"></i> خصم استهلاك الإنتاج والتسويات (@deductionTransactions.Count())
+		</button>
+	</li>
+</ul>
+
+<!-- Tabs Content -->
+<div class="tab-content" id="inventoryTabsContent">
+
+	<!-- Tab 1: توريدات وإضافة المخزون -->
+	<div class="tab-pane fade show active" id="purchases">
+		<div class="card-custom">
+			<div class="table-responsive">
+				<table class="table table-custom align-middle mb-0">
+					<thead>
 						<tr>
-							<td class="small text-muted fw-bold">@tx.TransactionDate.ToString("yyyy/MM/dd HH:mm")</td>
-							<td class="fw-bold">@(tx.RawMaterial?.MaterialType?.Name ?? "-")</td>
-							<td>
-								@switch (tx.TransactionType)
-								{
-									case TransactionType.Purchase:
+							<th>التاريخ والوقت</th>
+							<th>المادة الخام</th>
+							<th>نوع الحركة</th>
+							<th>الكمية</th>
+							<th>سعر الوحدة</th>
+							<th>الإجمالي</th>
+							<th>طريقة الدفع</th>
+							<th>المدفوع</th>
+							<th>المتبقي</th>
+							<th>البيان والتفاصيل</th>
+							<th class="text-center" style="min-width: 130px;">الإجراءات والعمليات</th>
+						</tr>
+					</thead>
+					<tbody>
+						@if (purchaseTransactions.Any())
+						{
+							foreach (var tx in purchaseTransactions)
+							{
+								<tr>
+									<td class="small text-muted fw-bold">@tx.TransactionDate.ToString("yyyy/MM/dd HH:mm")</td>
+									<td class="fw-bold">@(tx.RawMaterial?.MaterialType?.Name ?? "-")</td>
+									<td>
 										<span class="badge bg-success-subtle text-success status-badge border border-success-subtle">
 											<i class="fa-solid fa-plus me-1"></i> توريد / إضافة
 										</span>
-										break;
-									case TransactionType.ProductionDeduction:
-										<span class="badge bg-danger-subtle text-danger status-badge border border-danger-subtle">
-											<i class="fa-solid fa-minus me-1"></i> خصم استهلاك إنتاج
-										</span>
-										break;
-									default:
-										<span class="badge bg-secondary-subtle text-secondary status-badge border border-secondary-subtle">تسوية</span>
-										break;
-								}
-							</td>
-							<td class="fw-bold fs-6 @(tx.Quantity > 0 ? "text-success" : "text-danger")">
-								@(tx.Quantity > 0 ? "+" : "")@tx.Quantity.ToString("0.###") <small class="fw-normal text-muted">@(tx.RawMaterial?.MeasurementUnit?.Name)</small>
-							</td>
-							<td class="fw-semibold">@tx.UnitPrice.ToString("N2") <small class="text-muted">ج.م</small></td>
-							<td class="fw-bold text-success">@tx.TotalAmount.ToString("N2") <small class="fw-normal text-muted">ج.م</small></td>
-							<td>
-								@if (tx.Expense != null)
-								{
-									@switch (tx.Expense.PaymentMethod)
-									{
-										case PaymentMethod.Cash:
-											<span class="badge bg-success-subtle text-success border border-success-subtle">كاش</span>
-											break;
-										case PaymentMethod.BankTransfer:
-											<span class="badge bg-primary-subtle text-primary border border-primary-subtle">تحويل بنكي</span>
-											break;
-										case PaymentMethod.PartiallyPaid:
-											<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">مدفوع جزئياً</span>
-											break;
-										case PaymentMethod.Unpaid:
-											<span class="badge bg-danger-subtle text-danger border border-danger-subtle">آجل</span>
-											break;
-									}
-								}
-								else
-								{
-									<span class="text-muted small">-</span>
-								}
-							</td>
-							<td class="fw-bold text-success">
-								@(tx.Expense != null ? tx.Expense.PaidAmount.ToString("N2") : "-")
-							</td>
-							<td>
-								@if (tx.Expense != null && tx.Expense.RemainingAmount > 0)
-								{
-									<span class="badge bg-amber text-dark fw-bold px-2 py-1"><i class="fa-solid fa-coins me-1"></i>@tx.Expense.RemainingAmount.ToString("N2")</span>
-								}
-								else
-								{
-									<span class="text-muted small">-</span>
-								}
-							</td>
-							<td class="small text-secondary text-truncate" style="max-width: 150px;">@(string.IsNullOrWhiteSpace(tx.Notes) ? "-" : tx.Notes)</td>
-							<td class="text-center">
-								@if (tx.TransactionType == TransactionType.Purchase)
-								{
-									<div class="d-flex align-items-center justify-content-center gap-1">
-										<button type="button" class="btn btn-action-icon btn-light text-primary border me-1"
-												data-bs-toggle="modal"
-												data-bs-target="#editModal-@tx.Id"
-												title="تعديل الحركة">
-											<i class="fa-solid fa-pen"></i>
-										</button>
+									</td>
+									<td class="fw-bold fs-6 text-success">
+										+@tx.Quantity.ToString("0.###") <small class="fw-normal text-muted">@(tx.RawMaterial?.MeasurementUnit?.Name)</small>
+									</td>
+									<td class="fw-semibold">@tx.UnitPrice.ToString("N2") <small class="text-muted">ج.م</small></td>
+									<td class="fw-bold text-success">@tx.TotalAmount.ToString("N2") <small class="fw-normal text-muted">ج.م</small></td>
+									<td>
+										@if (tx.Expense != null)
+										{
+											@switch (tx.Expense.PaymentMethod)
+											{
+												case PaymentMethod.Cash:
+													<span class="badge bg-success-subtle text-success border border-success-subtle">كاش</span>
+													break;
+												case PaymentMethod.BankTransfer:
+													<span class="badge bg-primary-subtle text-primary border border-primary-subtle">تحويل بنكي</span>
+													break;
+												case PaymentMethod.PartiallyPaid:
+													<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">مدفوع جزئياً</span>
+													break;
+												case PaymentMethod.Unpaid:
+													<span class="badge bg-danger-subtle text-danger border border-danger-subtle">آجل</span>
+													break;
+											}
+										}
+										else
+										{
+											<span class="text-muted small">-</span>
+										}
+									</td>
+									<td class="fw-bold text-success">
+										@(tx.Expense != null ? tx.Expense.PaidAmount.ToString("N2") : "-")
+									</td>
+									<td>
+										@if (tx.Expense != null && tx.Expense.RemainingAmount > 0)
+										{
+											<span class="badge bg-amber text-dark fw-bold px-2 py-1"><i class="fa-solid fa-coins me-1"></i>@tx.Expense.RemainingAmount.ToString("N2")</span>
+										}
+										else
+										{
+											<span class="text-muted small">-</span>
+										}
+									</td>
+									<td class="small text-secondary text-truncate" style="max-width: 150px;">@(string.IsNullOrWhiteSpace(tx.Notes) ? "-" : tx.Notes)</td>
+									<td class="text-center">
+										<div class="d-flex align-items-center justify-content-center gap-1">
+											@if (tx.Expense?.RemainingAmount > 0)
+											{
+												<button type="button"
+														class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1"
+														onclick="openPayModal(@tx.ExpenseId, '@tx.Expense.Name', @(tx.Expense?.RemainingAmount ?? 0))"
+														title="سداد المتبقي">
+													<i class="fa-solid fa-hand-holding-dollar"></i>
+													<span>سداد</span>
+												</button>
+											}
 
-										<button type="button" class="btn btn-action-icon btn-light text-danger border"
-												data-bs-toggle="modal"
-												data-bs-target="#deleteModal-@tx.Id"
-												title="حذف الحركة">
-											<i class="fa-solid fa-trash"></i>
-										</button>
-									</div>
+											<button type="button"
+													class="btn btn-action-icon btn-light text-primary border"
+													data-bs-toggle="modal"
+													data-bs-target="#editModal-@tx.Id"
+													title="تعديل الحركة">
+												<i class="fa-solid fa-pen"></i>
+											</button>
 
-									<!-- Modal Edit Transaction -->
-									<div class="modal fade text-start" id="editModal-@tx.Id" tabindex="-1" aria-hidden="true">
-										<div class="modal-dialog modal-dialog-centered modal-lg">
-											<div class="modal-content">
-												<div class="modal-header bg-primary text-white">
-													<h5 class="modal-title fw-bold">
-														<i class="fa-solid fa-pen-to-square me-2"></i>تعديل حركة التوريد رقم #@tx.Id
-													</h5>
-													<button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button>
-												</div>
-												<form asp-action="UpdateTransaction" method="post">
-													<div class="modal-body p-4 row g-3">
-														<input type="hidden" name="transactionId" value="@tx.Id" />
+											<button type="button"
+													class="btn btn-action-icon btn-light text-danger border"
+													data-bs-toggle="modal"
+													data-bs-target="#deleteModal-@tx.Id"
+													title="حذف الحركة">
+												<i class="fa-solid fa-trash"></i>
+											</button>
+										</div>
 
-														<div class="col-12 bg-light p-3 rounded-3 border">
-															<span class="text-muted small d-block mb-1">المادة الخام:</span>
-															<h5 class="fw-bold text-primary mb-0">@tx.RawMaterial?.MaterialType?.Name</h5>
-														</div>
+										<!-- Modal Edit Transaction -->
+										<div class="modal fade text-start" id="editModal-@tx.Id" tabindex="-1" aria-hidden="true">
+											<div class="modal-dialog modal-dialog-centered modal-lg">
+												<div class="modal-content">
+													<div class="modal-header bg-primary text-white">
+														<h5 class="modal-title fw-bold">
+															<i class="fa-solid fa-pen-to-square me-2"></i>تعديل حركة التوريد رقم #@tx.Id
+														</h5>
+														<button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+													</div>
+													<form asp-action="UpdateTransaction" method="post">
+														<div class="modal-body p-4 row g-3">
+															<input type="hidden" name="transactionId" value="@tx.Id" />
 
-														<div class="col-md-6">
-															<label class="form-label fw-bold">الكمية الجديدة <span class="text-danger">*</span></label>
-															<input type="number" step="0.001" name="newQuantity" id="qty-@tx.Id" class="form-control fw-bold" value="@tx.Quantity" required oninput="calculateEditTotal(@tx.Id)" />
-														</div>
+															<div class="col-12 bg-light p-3 rounded-3 border">
+																<span class="text-muted small d-block mb-1">المادة الخام:</span>
+																<h5 class="fw-bold text-primary mb-0">@tx.RawMaterial?.MaterialType?.Name</h5>
+															</div>
 
-														<div class="col-md-6">
-															<label class="form-label fw-bold">سعر الوحدة (ج.م) <span class="text-danger">*</span></label>
-															<input type="number" step="0.01" name="newUnitPrice" id="price-@tx.Id" class="form-control fw-bold text-success" value="@tx.UnitPrice" required oninput="calculateEditTotal(@tx.Id)" />
-														</div>
+															<div class="col-md-6">
+																<label class="form-label fw-bold">الكمية الجديدة <span class="text-danger">*</span></label>
+																<input type="number" step="0.001" name="newQuantity" id="qty-@tx.Id" class="form-control fw-bold" value="@tx.Quantity" required oninput="calculateEditTotal(@tx.Id)" />
+															</div>
 
-														<div class="col-md-6">
-															<label class="form-label fw-bold">طريقة الدفع <span class="text-danger">*</span></label>
-															<select name="paymentMethod" id="payMethod-@tx.Id" class="form-select" onchange="togglePaidAmountEdit(@tx.Id)">
-																<option value="@PaymentMethod.Cash" selected="@(tx.Expense?.PaymentMethod == PaymentMethod.Cash)">كاش</option>
-																<option value="@PaymentMethod.BankTransfer" selected="@(tx.Expense?.PaymentMethod == PaymentMethod.BankTransfer)">تحويل بنكي</option>
-																<option value="@PaymentMethod.PartiallyPaid" selected="@(tx.Expense?.PaymentMethod == PaymentMethod.PartiallyPaid)">مدفوع جزئياً</option>
-																<option value="@PaymentMethod.Unpaid" selected="@(tx.Expense?.PaymentMethod == PaymentMethod.Unpaid)">آجل (غير مدفوع)</option>
-															</select>
-														</div>
+															<div class="col-md-6">
+																<label class="form-label fw-bold">سعر الوحدة (ج.م) <span class="text-danger">*</span></label>
+																<input type="number" step="0.01" name="newUnitPrice" id="price-@tx.Id" class="form-control fw-bold text-success" value="@tx.UnitPrice" required oninput="calculateEditTotal(@tx.Id)" />
+															</div>
 
-														<div class="col-md-6 @(tx.Expense?.PaymentMethod == PaymentMethod.PartiallyPaid ? "" : "d-none")" id="paidAmountContainer-@tx.Id">
-															<label class="form-label fw-bold">المبلغ المدفوع حالياً (ج.م)</label>
-															<input type="number" step="0.01" name="paidAmount" id="paidAmount-@tx.Id" class="form-control fw-bold text-success" value="@(tx.Expense?.PaidAmount ?? 0)" />
-														</div>
+															<div class="col-md-6">
+																<label class="form-label fw-bold">طريقة الدفع <span class="text-danger">*</span></label>
+																<select name="paymentMethod" id="payMethod-@tx.Id" class="form-select" onchange="togglePaidAmountEdit(@tx.Id)">
+																	<option value="@PaymentMethod.Cash" selected="@(tx.Expense?.PaymentMethod == PaymentMethod.Cash)">كاش</option>
+																	<option value="@PaymentMethod.BankTransfer" selected="@(tx.Expense?.PaymentMethod == PaymentMethod.BankTransfer)">تحويل بنكي</option>
+																	<option value="@PaymentMethod.PartiallyPaid" selected="@(tx.Expense?.PaymentMethod == PaymentMethod.PartiallyPaid)">مدفوع جزئياً</option>
+																	<option value="@PaymentMethod.Unpaid" selected="@(tx.Expense?.PaymentMethod == PaymentMethod.Unpaid)">آجل (غير مدفوع)</option>
+																</select>
+															</div>
 
-														<div class="col-12">
-															<div class="alert alert-info border-0 bg-info-subtle text-info-emphasis rounded-3 py-2 mb-0 small">
-																<i class="fa-solid fa-calculator me-1"></i>
-																الإجمالي الجديد المتوقع: <span id="totalDisplay-@tx.Id" class="fw-bold text-primary fs-6">@tx.TotalAmount.ToString("N2")</span> ج.م
+															<div class="col-md-6 @(tx.Expense?.PaymentMethod == PaymentMethod.PartiallyPaid ? "" : "d-none")" id="paidAmountContainer-@tx.Id">
+																<label class="form-label fw-bold">المبلغ المدفوع حالياً (ج.م)</label>
+																<input type="number" step="0.01" name="paidAmount" id="paidAmount-@tx.Id" class="form-control fw-bold text-success" value="@(tx.Expense?.PaidAmount ?? 0)" />
+															</div>
+
+															<div class="col-12">
+																<div class="alert alert-info border-0 bg-info-subtle text-info-emphasis rounded-3 py-2 mb-0 small">
+																	<i class="fa-solid fa-calculator me-1"></i>
+																	الإجمالي الجديد المتوقع: <span id="totalDisplay-@tx.Id" class="fw-bold text-primary fs-6">@tx.TotalAmount.ToString("N2")</span> ج.م
+																</div>
+															</div>
+
+															<div class="col-12">
+																<label class="form-label fw-bold">ملاحظات / بيان</label>
+																<input type="text" name="notes" class="form-control" value="@tx.Notes" placeholder="أدخل أية ملاحظات تخص الحركة..." />
 															</div>
 														</div>
-
-														<div class="col-12">
-															<label class="form-label fw-bold">ملاحظات / بيان</label>
-															<input type="text" name="notes" class="form-control" value="@tx.Notes" placeholder="أدخل أية ملاحظات تخص الحركة..." />
+														<div class="modal-footer bg-light">
+															<button type="button" class="btn btn-outline-secondary rounded-3 px-4" data-bs-dismiss="modal">إلغاء</button>
+															<button type="submit" class="btn btn-primary rounded-3 px-4 shadow-sm">حفظ التعديلات</button>
 														</div>
-													</div>
-													<div class="modal-footer bg-light">
-														<button type="button" class="btn btn-outline-secondary rounded-3 px-4" data-bs-dismiss="modal">إلغاء</button>
-														<button type="submit" class="btn btn-primary rounded-3 px-4 shadow-sm">حفظ التعديلات</button>
-													</div>
-												</form>
-											</div>
-										</div>
-									</div>
-
-									<!-- Modal Delete Transaction (ينزل من أعلى الصفحة) -->
-									<div class="modal fade text-start" id="deleteModal-@tx.Id" tabindex="-1" aria-hidden="true">
-										<div class="modal-dialog">
-											
-											<div class="modal-content border-0 shadow-lg rounded-4">
-												<div class="modal-header bg-danger text-white border-0">
-													<h5 class="modal-title fw-bold">
-														<i class="fa-solid fa-triangle-exclamation me-2"></i>تأكيد الحذف
-													</h5>
-													<button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+													</form>
 												</div>
-												<form asp-action="DeleteTransaction" method="post">
-													<input type="hidden" name="transactionId" value="@tx.Id" />
-													<div class="modal-body p-4 text-center">
-														
-															 هل أنت متأكد من حذف حركة توريد ماده   <strong>(@tx.RawMaterial?.MaterialType?.Name)</strong>؟  سيتم خصم الكمية  <strong>(@tx.Quantity)</strong> من المخزون وحذف كافة حركات الخزينة والمصروفات المرتبطة بها.
-													</div>
-													<div class="modal-footer bg-light border-0 justify-content-center gap-2 p-3">
-														<button type="button" class="btn btn-outline-secondary rounded-3 px-4 fw-semibold" data-bs-dismiss="modal">إلغاء</button>
-														<button type="submit" class="btn btn-danger rounded-3 px-4 shadow-sm fw-bold">تأكيد الحذف</button>
-													</div>
-												</form>
 											</div>
 										</div>
-									</div>
-								}
-								else
-								{
-									<span class="text-muted small">-</span>
-								}
-							</td>
+
+										<!-- Modal Delete Transaction -->
+										<div class="modal fade text-start" id="deleteModal-@tx.Id" tabindex="-1" aria-hidden="true">
+											<div class="modal-dialog">
+												<div class="modal-content border-0 shadow-lg rounded-4">
+													<div class="modal-header bg-danger text-white border-0">
+														<h5 class="modal-title fw-bold">
+															<i class="fa-solid fa-triangle-exclamation me-2"></i>تأكيد الحذف
+														</h5>
+														<button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+													</div>
+													<form asp-action="DeleteTransaction" method="post">
+														<input type="hidden" name="transactionId" value="@tx.Id" />
+														<div class="modal-body p-4 text-center">
+															هل أنت متأكد من حذف حركة توريد مادة <strong>(@tx.RawMaterial?.MaterialType?.Name)</strong>؟ سيتم خصم الكمية <strong>(@tx.Quantity)</strong> من المخزون وحذف كافة حركات الخزينة والمصروفات المرتبطة بها.
+														</div>
+														<div class="modal-footer bg-light border-0 justify-content-center gap-2 p-3">
+															<button type="button" class="btn btn-outline-secondary rounded-3 px-4 fw-semibold" data-bs-dismiss="modal">إلغاء</button>
+															<button type="submit" class="btn btn-danger rounded-3 px-4 shadow-sm fw-bold">تأكيد الحذف</button>
+														</div>
+													</form>
+												</div>
+											</div>
+										</div>
+									</td>
+								</tr>
+							}
+						}
+						else
+						{
+							<tr>
+								<td colspan="11" class="text-center py-5 text-muted">
+									<i class="fa-solid fa-boxes-packing fs-1 d-block mb-3 opacity-25"></i>
+									لا توجد حركات توريد أو إضافة مسجلة.
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+	<!-- Tab 2: خصم استهلاك الإنتاج والتسويات -->
+	<div class="tab-pane fade" id="deductions">
+		<div class="card-custom">
+			<div class="table-responsive">
+				<table class="table table-custom align-middle mb-0">
+					<thead>
+						<tr>
+							<th>التاريخ والوقت</th>
+							<th>المادة الخام</th>
+							<th>نوع الحركة</th>
+							<th>الكمية المستهلكة</th>
+							<th>تكلفة الوحدة</th>
+							<th>إجمالي التكلفة</th>
+							<th>البيان والتفاصيل</th>
 						</tr>
-					}
-				}
-				else
-				{
-					<tr>
-						<td colspan="11" class="text-center py-5 text-muted">
-							<i class="fa-solid fa-boxes-packing fs-1 d-block mb-3 opacity-25"></i>
-							لا توجد حركات مخزنية مسجلة بعد.
-						</td>
-					</tr>
-				}
-			</tbody>
-		</table>
+					</thead>
+					<tbody>
+						@if (deductionTransactions.Any())
+						{
+							foreach (var tx in deductionTransactions)
+							{
+								<tr>
+									<td class="small text-muted fw-bold">@tx.TransactionDate.ToString("yyyy/MM/dd HH:mm")</td>
+									<td class="fw-bold">@(tx.RawMaterial?.MaterialType?.Name ?? "-")</td>
+									<td>
+										@if (tx.TransactionType == TransactionType.ProductionDeduction)
+										{
+											<span class="badge bg-danger-subtle text-danger status-badge border border-danger-subtle">
+												<i class="fa-solid fa-minus me-1"></i> خصم استهلاك إنتاج
+											</span>
+										}
+										else
+										{
+											<span class="badge bg-secondary-subtle text-secondary status-badge border border-secondary-subtle">تسوية</span>
+										}
+									</td>
+									<td class="fw-bold fs-6 text-danger">
+										@tx.Quantity.ToString("0.###") <small class="fw-normal text-muted">@(tx.RawMaterial?.MeasurementUnit?.Name)</small>
+									</td>
+									<td class="fw-semibold">@tx.UnitPrice.ToString("N2") <small class="text-muted">ج.م</small></td>
+									<td class="fw-bold text-dark">@tx.TotalAmount.ToString("N2") <small class="fw-normal text-muted">ج.م</small></td>
+									<td class="small text-secondary">@(string.IsNullOrWhiteSpace(tx.Notes) ? "-" : tx.Notes)</td>
+								</tr>
+							}
+						}
+						else
+						{
+							<tr>
+								<td colspan="7" class="text-center py-5 text-muted">
+									<i class="fa-solid fa-industry fs-1 d-block mb-3 opacity-25"></i>
+									لا توجد حركات استهلاك إنتاج أو تسويات مسجلة.
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+</div>
+
+<!-- Modal Pay Remaining -->
+<div class="modal fade" id="payModal" tabindex="-1">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header bg-success text-white">
+				<h5 class="modal-title fw-bold"><i class="fa-solid fa-hand-holding-dollar me-1"></i> سداد متبقي مصروف</h5>
+				<button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
+			</div>
+			<form asp-action="PayExpenseRemaining" asp-controller="Inventory" method="post">
+				<input type="hidden" name="expenseId" id="payExpenseId" />
+				<div class="modal-body g-3">
+					<p class="fw-bold mb-2">اسم المصروف: <span id="payExpenseName" class="text-primary"></span></p>
+					<div class="mb-3">
+						<label class="form-label fw-bold">المبلغ المتبقي المستحق</label>
+						<input type="text" id="payRemainingDisp" readonly class="form-control bg-light fw-bold text-danger" />
+					</div>
+					<div class="mb-3">
+						<label class="form-label fw-bold">المبلغ المدفوع الآن <span class="text-danger">*</span></label>
+						<input type="number" step="0.01" name="amountPaidNow" id="payNowVal" required class="form-control fw-bold" />
+					</div>
+					<div class="mb-3">
+						<label class="form-label fw-bold">طريقة السداد</label>
+						<select name="paymentMethod" class="form-select">
+							<option value="1">كاش</option>
+							<option value="2">تحويل بنكي</option>
+						</select>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+					<button type="submit" class="btn btn-success fw-bold">تأكيد السداد</button>
+				</div>
+			</form>
+		</div>
 	</div>
 </div>
 
@@ -346,13 +462,40 @@
 		}
 
 		function togglePaidAmountEdit(id) {
-			const method = document.getElementById(`payMethod-${id}`).value;
+			const methodSelect = document.getElementById(`payMethod-${id}`);
+			const method = methodSelect.value;
 			const container = document.getElementById(`paidAmountContainer-${id}`);
-			if (method === "@PaymentMethod.PartiallyPaid") {
+			const paidInput = document.getElementById(`paidAmount-${id}`);
+
+			const cashVal = "@PaymentMethod.Cash.ToString()";
+			const bankVal = "@PaymentMethod.BankTransfer.ToString()";
+			const partialVal = "@PaymentMethod.PartiallyPaid.ToString()";
+			const unpaidVal = "@PaymentMethod.Unpaid.ToString()";
+
+			const qty = parseFloat(document.getElementById(`qty-${id}`).value) || 0;
+			const price = parseFloat(document.getElementById(`price-${id}`).value) || 0;
+			const total = qty * price;
+
+			if (method === partialVal) {
 				container.classList.remove('d-none');
 			} else {
 				container.classList.add('d-none');
+
+				if (method === unpaidVal) {
+					paidInput.value = 0;
+				} else if (method === cashVal || method === bankVal) {
+					paidInput.value = total;
+				}
 			}
+		}
+
+		function openPayModal(id, name, remaining) {
+			document.getElementById('payExpenseId').value = id;
+			document.getElementById('payExpenseName').innerText = name;
+			document.getElementById('payRemainingDisp').value = remaining.toFixed(2) + " ج.م";
+			document.getElementById('payNowVal').value = remaining.toFixed(2);
+			document.getElementById('payNowVal').max = remaining;
+			new bootstrap.Modal(document.getElementById('payModal')).show();
 		}
 	</script>
 }

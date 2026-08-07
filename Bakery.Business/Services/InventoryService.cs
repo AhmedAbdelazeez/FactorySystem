@@ -107,33 +107,8 @@ namespace Bakery.Business.Services
                 await _materialRepo.AddAsync(material);
                 await _materialRepo.SaveChangesAsync();
             }
-            //        material.TotalValue = material.CurrentQuantity * material.UnitPrice;
-            //        material.LastUpdatedDate = DateTime.Now;
-            //        await _materialRepo.AddAsync(material);
-            //        await _materialRepo.SaveChangesAsync();
+               await _materialRepo.SaveChangesAsync();
         }
-
-        //public async Task UpdateRawMaterialAsync(RawMaterial material)
-        //{
-        //    var existing = await _materialRepo.GetByIdAsync(material.Id);
-        //    if (existing == null) throw new KeyNotFoundException("المادة الخام غير موجودة.");
-
-        //    if (material.CurrentQuantity < 0)
-        //        throw new InvalidOperationException("لا يمكن أن تكون كمية المخزون بالسالب.");
-
-        //    if (material.UnitPrice < 0)
-        //        throw new InvalidOperationException("لا يمكن أن يكون السعر بالسالب.");
-
-        //    // نوع المادة (MaterialTypeId) ثابت ومايتغيرش بعد الإضافة
-        //    existing.MeasurementUnitId = material.MeasurementUnitId;
-        //    existing.CurrentQuantity = material.CurrentQuantity;
-        //    existing.UnitPrice = material.UnitPrice;
-        //    existing.TotalValue = existing.CurrentQuantity * existing.UnitPrice;
-        //    existing.LastUpdatedDate = DateTime.Now;
-
-        //    _materialRepo.Update(existing);
-        //    await _materialRepo.SaveChangesAsync();
-        //}
 
         public async Task DeleteRawMaterialAsync(int id)
         {
@@ -146,7 +121,7 @@ namespace Bakery.Business.Services
 
             if (hasTransactions)
 
-                throw new InvalidOperationException("لا يمكن حذف هذه المادة لوجود حركات مسجلة عليها في سجل المخزن. يمكنك بدلاً من ذلك تصفير الكمية.");
+                throw new InvalidOperationException("لا يمكن حذف هذه المادة لوجود حركات مسجلة عليها في سجل المخزن. يجب حذفها من سجل حركه المخزن اولا .");
 
             bool usedInRecipes = await _context.ProductionRecipeItems
                 .AnyAsync(r => r.RawMaterialId == id);
@@ -285,45 +260,7 @@ namespace Bakery.Business.Services
 
 
 
-    //حساب قيمه التوريد الجديد
-    //decimal newBatchValue=quantity * unitPrice;
-
-    ////حساب اجمالى القيمه الجديده للمخزن (القيمه القديمه +قيمه التوريد الجديده
-    //decimal newTotalValue=material.TotalValue + newBatchValue;
-
-    //// حساب اجمالى الكميه الجديده للمخزن (الكميه القديمه + الكميه الجديده
-    //decimal newTotalQuantity=material.CurrentQuantity + quantity;
-
-    //// حساب متوسط سعر الوحده 
-    //if (unitPrice > 0)
-    //{
-    //    material.UnitPrice = newTotalQuantity > 0
-    //? Math.Round(newTotalValue / newTotalQuantity, 4)
-    //: unitPrice;
-    //}
-
-
-    //material.CurrentQuantity = newTotalQuantity;
-    //        material.TotalValue = Math.Round(material.CurrentQuantity * material.UnitPrice, 2);
-    //        material.LastUpdatedDate = DateTime.Now;
-    //        _materialRepo.Update(material);
-
-    //        var transaction = new InventoryTransaction
-    //        {
-    //            RawMaterialId = rawMaterialId,
-    //            TransactionType = TransactionType.Purchase,
-    //            Quantity = quantity,
-    //            UnitPrice = unitPrice,
-    //            TotalAmount = newBatchValue,
-    //            TransactionDate = DateTime.Now,
-    //            ExpenseId = expenseId,
-    //            Notes = notes ?? "إضافة / توريد مخزون"
-    //        };
-
-    //        await _transactionRepo.AddAsync(transaction);
-    //        await _context.SaveChangesAsync();
-    //    }
-
+   
         // خصم استهلاك انتج
         public async Task DeductStockAsync(int rawMaterialId, decimal quantity, int productionOrderId, string? notes = null)
         {
@@ -436,25 +373,26 @@ namespace Bakery.Business.Services
                     var expense = await _context.Expenses.FirstOrDefaultAsync(e => e.Id == tx.ExpenseId.Value);
                     if (expense != null)
                     {
-                        bool wasFullyPaid = expense.RemainingAmount == 0;
-
                         expense.Quantity = newQuantity;
                         expense.UnitPrice = newUnitPrice;
                         expense.TotalAmount = newBatchValue;
                         expense.PaymentMethod = paymentMethod;
-                        expense.PaidAmount = paidAmount;
-                        expense.RemainingAmount =expense.TotalAmount - paidAmount;
-                        if (wasFullyPaid)
+
+                        if (paymentMethod == PaymentMethod.Cash || paymentMethod == PaymentMethod.BankTransfer)
                         {
                             expense.PaidAmount = newBatchValue;
                             expense.RemainingAmount = 0;
                         }
-                        else
+                        else if (paymentMethod == PaymentMethod.Unpaid)
                         {
-                            expense.RemainingAmount = newBatchValue - expense.PaidAmount;
-                            if (expense.RemainingAmount < 0) expense.RemainingAmount = 0;
+                            expense.PaidAmount = 0;
+                            expense.RemainingAmount = newBatchValue;
                         }
-
+                        else // PartiallyPaid
+                        {
+                            expense.PaidAmount = paidAmount > newBatchValue ? newBatchValue : paidAmount;
+                            expense.RemainingAmount = newBatchValue - expense.PaidAmount;
+                        }
 
                         _context.Expenses.Update(expense);
 
@@ -522,13 +460,6 @@ namespace Bakery.Business.Services
                 _materialRepo.Update(material);
 
 
-                //// تحديث المادة: نطرح قيمة وكمية الحركة المحذوفة
-                //decimal materialValueWithoutBatch = material.TotalValue - (tx.Quantity * tx.UnitPrice);
-                //material.CurrentQuantity = projectedQuantity;
-                //material.UnitPrice = projectedQuantity > 0 ? Math.Round(materialValueWithoutBatch / projectedQuantity, 4) : 0;
-                //material.TotalValue = Math.Round(material.CurrentQuantity * material.UnitPrice, 2);
-                //material.LastUpdatedDate = DateTime.Now;
-                //_materialRepo.Update(material);
 
                 // حذف الـ Expense والـ TreasuryTransaction المرتبطين (لو موجودين)
                 if (tx.ExpenseId.HasValue)

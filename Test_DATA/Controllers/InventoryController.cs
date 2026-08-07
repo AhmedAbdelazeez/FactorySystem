@@ -11,11 +11,13 @@ namespace Test_DATA.Controllers
     {
         private readonly IInventoryService _inventoryService;
         private readonly ILookupService _lookupService;
+        private readonly IExpenseService _expenseService;
 
-        public InventoryController(IInventoryService inventoryService, ILookupService lookupService)
+        public InventoryController(IInventoryService inventoryService, ILookupService lookupService, IExpenseService expenseService)
         {
             _inventoryService = inventoryService;
             _lookupService = lookupService;
+            _expenseService = expenseService;
         }
 
         public async Task<IActionResult> Index()
@@ -134,5 +136,13 @@ namespace Test_DATA.Controllers
             return RedirectToAction(nameof(Transactions));
         }
 
+        [HttpPost]
+        public async Task<IActionResult> PayExpenseRemaining(int expenseId, decimal amountPaidNow, PaymentMethod paymentMethod)
+        {
+            await _expenseService.PayRemainingAsync(expenseId, amountPaidNow, paymentMethod);
+
+            // العودة مباشرة لشاشة حركات المخزن
+            return RedirectToAction(nameof(Transactions));
+        }
     }
 }

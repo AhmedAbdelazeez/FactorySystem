@@ -25,7 +25,7 @@
 			</div>
 		</div>
 		<div class="col-md-5 text-md-end">
-			<button class="btn btn-warning text-dark fw-bold px-3 py-2 rounded-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+			<button class="btn btn-bakery text-white fw-bold px-3 py-2 rounded-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
 				<i class="fa-solid fa-user-plus me-1"></i> إضافة عامل جديد
 			</button>
 		</div>
@@ -86,7 +86,7 @@
 					<th>السن</th>
 					<th>الراتب الشهري</th>
 					<th> الإجازة الأسبوعية</th>
-					<th>أيام الغياب</th>
+					<th>أيام الحضور</th>
 					<th>سلف معلقة</th>
 					<th>رقم الهاتف</th>
 					<th>الحالة</th>
@@ -115,14 +115,9 @@
 							<td class="fw-bold text-success">@emp.MonthlySalary.ToString("N2") <small class="fw-normal text-muted">ج.م</small></td>
 							<td><span class="badge bg-warning-subtle text-warning-emphasis status-badge border border-warning-subtle">@emp.WeeklyDayOff</span></td>
 							<td>
-								@if (emp.AbsentDaysSinceLastSalary > 0)
-								{
-									<span class="badge bg-danger-subtle text-danger status-badge border border-danger-subtle"><i class="fa-solid fa-triangle-exclamation me-1"></i>@emp.AbsentDaysSinceLastSalary يوم</span>
-								}
-								else
-								{
-									<span class="badge bg-success-subtle text-success status-badge border border-success-subtle"><i class="fa-solid fa-check me-1"></i>لا يوجد</span>
-								}
+								<span class="badge bg-info-subtle text-info-emphasis status-badge border border-info-subtle">
+									<i class="fa-solid fa-briefcase me-1"></i>@emp.WorkedDays يوم
+								</span>
 							</td>
 							<td>
 								@if (emp.PendingAdvanceAmount > 0)
@@ -145,7 +140,7 @@
 									<span class="badge bg-secondary-subtle text-secondary status-badge border border-secondary-subtle">غير نشط</span>
 								}
 							</td>
-							<td class="small text-secondary text-truncate" style="max-width: 120px;">@(string.IsNullOrEmpty(emp.Notes) ? "-" : emp.Notes)</td>
+							<td class="small text-secondary text-truncate" title="@(string.IsNullOrEmpty(emp.Notes) ? "-" : emp.Notes)" style="max-width: 120px;">@(string.IsNullOrEmpty(emp.Notes) ? "-" : emp.Notes)</td>
 
 							<td class="text-center">
 								<div class="d-flex align-items-center justify-content-center gap-1">
@@ -189,9 +184,9 @@
 <div class="modal fade" id="addEmployeeModal" tabindex="-1">
 	<div class="modal-dialog modal-dialog-centered modal-lg">
 		<div class="modal-content">
-			<div class="modal-header bg-warning text-dark">
+			<div class="modal-header bg-amber text-white">
 				<h5 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-2"></i>إضافة عامل جديد</h5>
-				<button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal"></button>
+				<button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
 			</div>
 			<form asp-action="Create" method="post">
 				<div class="modal-body p-4 row g-3">
@@ -249,7 +244,7 @@
 				</div>
 				<div class="modal-footer bg-light">
 					<button type="button" class="btn btn-outline-secondary rounded-3 px-4" data-bs-dismiss="modal">إلغاء</button>
-					<button type="submit" class="btn btn-warning text-dark fw-bold rounded-3 px-4 shadow-sm">حفظ بيانات العامل</button>
+					<button type="submit" class="btn btn-bakery text-white fw-bold rounded-3 px-4 shadow-sm">حفظ بيانات العامل</button>
 				</div>
 			</form>
 		</div>

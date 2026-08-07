@@ -31,17 +31,6 @@ namespace Bakery.Business.Services
         private readonly BakeryDbContext _context;
         private readonly IRepository<Employee> _empRepo;
         private readonly IExpenseService _expenseService;
-
-        private static readonly Dictionary<string, DayOfWeek> DayNameMap = new()
-        {
-            { "الأحد", DayOfWeek.Sunday },
-            { "الاثنين", DayOfWeek.Monday },
-            { "الثلاثاء", DayOfWeek.Tuesday },
-            { "الأربعاء", DayOfWeek.Wednesday },
-            { "الخميس", DayOfWeek.Thursday },
-            { "الجمعة", DayOfWeek.Friday },
-            { "السبت", DayOfWeek.Saturday }
-        };
         public EmployeeService(BakeryDbContext context, IRepository<Employee> empRepo, IExpenseService expenseService)
         {
             _context = context;
@@ -124,14 +113,15 @@ namespace Bakery.Business.Services
                 bool hasCutoff = lastPaidMonthCutoffs.TryGetValue(emp.Id, out DateTime lastPaidCutoff);
                 pendingAdvances.TryGetValue(emp.Id, out var pendingAdvanceAmount);
 
-                DayOfWeek? dayOff = DayNameMap.TryGetValue(emp.WeeklyDayOff ?? "", out var dow) ? dow : null;
+                //DayOfWeek? dayOff = DayNameMap.TryGetValue(emp.WeeklyDayOff ?? "", out var dow) ? dow : null;
 
                 var periodStart = hasCutoff ? lastPaidCutoff.AddDays(1) : emp.StartedDate;
                 var periodEnd = DateTime.Today;
 
-                int absentDays = await CountAbsentDaysAsync(emp.Id, dayOff, periodStart, periodEnd);
+                int totalPeriodDays = (periodEnd - periodStart).Days + 1;
+                int absentDays = await CountAbsentDaysAsync(emp.Id, periodStart, periodEnd);
 
-                
+                int workedDays = Math.Max(0, totalPeriodDays - absentDays);
 
                 result.Add(new EmployeeListItemDto
                 {
@@ -146,7 +136,9 @@ namespace Bakery.Business.Services
                     IsActive = emp.IsActive,
                     StartedDate=emp.StartedDate,
                     AbsentDaysSinceLastSalary = absentDays,
-                    PendingAdvanceAmount = pendingAdvanceAmount
+                    WorkedDays = workedDays,
+                    PendingAdvanceAmount = pendingAdvanceAmount,
+                    
                 });
             }
 
@@ -209,9 +201,12 @@ namespace Bakery.Business.Services
             }
 
             // 4. جلب سجلات الغياب
+            //DayOfWeek? dayOff = DayNameMap.TryGetValue(emp.WeeklyDayOff ?? "", out var dow) ? dow : null;
+            var periodStart = lastPaidCutoff?.Date.AddDays(1) ?? emp.StartedDate.Date;
+
             var attendances = await _context.EmployeeAttendances
                 .AsNoTracking()
-                .Where(a => a.EmployeeId == id && !a.IsPresent)
+                .Where(a => a.EmployeeId == id && !a.IsPresent && a.Date.Date>=periodStart.Date)
                 .OrderByDescending(a => a.Date)
                 .Select(a => new AttendanceItemDto
                 {
@@ -221,10 +216,9 @@ namespace Bakery.Business.Services
                 })
                 .ToListAsync();
 
-            DayOfWeek? dayOff = DayNameMap.TryGetValue(emp.WeeklyDayOff ?? "", out var dow) ? dow : null;
-            var periodStart = lastPaidCutoff?.Date.AddDays(1) ?? emp.StartedDate.Date;
-            int absentDaysCount = await CountAbsentDaysAsync(id, dayOff, periodStart, DateTime.Today);
-
+           
+            // int absentDaysCount = await CountAbsentDaysAsync(id, dayOff, periodStart, DateTime.Today);
+            int absentDaysCount = attendances.Count;
            
 
             return new EmployeeDetailsDto
@@ -305,6 +299,8 @@ namespace Bakery.Business.Services
             
         }
 
+
+
         public async Task<string> PaySalaryAsync(int employeeId, PaymentMethod paymentMethod, string? notes = null, DateTime? targetMonth = null)
         {
             var emp = await _empRepo.GetByIdAsync(employeeId);
@@ -319,8 +315,21 @@ namespace Bakery.Business.Services
 
             var requestedMonth = new DateTime(payPeriod.Year, payPeriod.Month, 1);
             var currentMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+
+            // 1. يمنع تحديد شهور مستقبليّة (شرطك الأصلي)
             if (requestedMonth > currentMonth)
                 throw new InvalidOperationException("لا يمكن صرف راتب لشهر لم يبدأ بعد.");
+
+            // 2. يمنع صرف راتب الشهر الحالي طالما لم ينتهِ بعد
+            int totalDaysInMonth = DateTime.DaysInMonth(payPeriod.Year, payPeriod.Month);
+            var lastDayOfRequestedMonth = new DateTime(payPeriod.Year, payPeriod.Month, totalDaysInMonth);
+
+            if (DateTime.Now.Date < lastDayOfRequestedMonth)
+            {
+                throw new InvalidOperationException(
+                    $"لا يمكن صرف راتب شهر ({payPeriod:MM/yyyy}) قبل انتهاء الشهر في تاريخ ({lastDayOfRequestedMonth:yyyy/MM/dd}). " +
+                    $"إذا كان العامل يحتاج مبلغاً مقدماً يمكنك إعطاؤه سلفة وسيتم خصمها تلقائياً عند صرف الراتب.");
+            }
 
 
             string targetMonthFormatted = payPeriod.ToString("MM/yyyy");
@@ -351,7 +360,7 @@ namespace Bakery.Business.Services
             if (emp.StartedDate.Date > endDate)
                 throw new InvalidOperationException("تاريخ تعيين الموظف أحدث من الشهر المطلوب صرفه.");
 
-            int totalDaysInMonth = DateTime.DaysInMonth(payPeriod.Year, payPeriod.Month);
+            
             decimal baseSalaryForMonth = emp.MonthlySalary;
 
 
@@ -366,11 +375,11 @@ namespace Bakery.Business.Services
             }
 
             decimal dayValue = emp.MonthlySalary / 30m;
-            DayOfWeek? dayOff = DayNameMap.TryGetValue(emp.WeeklyDayOff ?? "", out var dow) ? dow : null;
+            //DayOfWeek? dayOff = DayNameMap.TryGetValue(emp.WeeklyDayOff ?? "", out var dow) ? dow : null;
 
             var absencePeriodStart = emp.StartedDate.Date > startDate ? emp.StartedDate.Date : startDate;
          
-            int absentDays = await CountAbsentDaysAsync(employeeId, dayOff, absencePeriodStart, endDate);
+            int absentDays = await CountAbsentDaysAsync(employeeId, absencePeriodStart, endDate);
             decimal absenceDeduction = Math.Round(absentDays * dayValue, 2);
 
 
@@ -428,16 +437,7 @@ namespace Bakery.Business.Services
                     advance.PaidDate = DateTime.Now;
                 }
 
-                // ج. الخصم من الخزينة
-                //var treasuryTransaction = new TreasuryTransaction
-                //{
-                //    Date = DateTime.Now,
-                //    Amount = netSalary,
-                //    Type = TransactionType.Expense,
-                //    ExpenseId = salaryExpense.Id,
-                //    Notes = $"صرف راتب للعامل: {emp.Name} - شهر ({payPeriod:MM/yyyy})"
-                //};
-                //_context.TreasuryTransactions.Add(treasuryTransaction);
+               
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -545,32 +545,20 @@ namespace Bakery.Business.Services
         }
 
 
-        private async Task<int> CountAbsentDaysAsync(int employeeId, DayOfWeek? dayOff, DateTime periodStart, DateTime periodEnd)
+       
+
+        private async Task<int> CountAbsentDaysAsync(int employeeId, DateTime periodStart, DateTime periodEnd)
         {
             var effectiveEnd = periodEnd > DateTime.Today ? DateTime.Today : periodEnd;
             if (effectiveEnd < periodStart) return 0;
 
-            var presentDates = await _context.EmployeeAttendances
+            return await _context.EmployeeAttendances
+                .AsNoTracking()
                 .Where(a => a.EmployeeId == employeeId
-                    && a.IsPresent
+                    && !a.IsPresent
                     && a.Date >= periodStart
                     && a.Date <= effectiveEnd)
-                .Select(a => a.Date.Date)
-                .ToListAsync();
-
-            var presentSet = new HashSet<DateTime>(presentDates);
-
-            int absentCount = 0;
-            for (var d = periodStart.Date; d <= effectiveEnd.Date; d = d.AddDays(1))
-            {
-                if (dayOff.HasValue && d.DayOfWeek == dayOff.Value)
-                    continue;
-
-                if (!presentSet.Contains(d))
-                    absentCount++;
-            }
-
-            return absentCount;
+                .CountAsync();
         }
     }
 }
