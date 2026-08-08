@@ -6,25 +6,26 @@
 
 <div class="page-header-box mb-4 p-3 bg-white rounded-4 border shadow-sm">
 	<div class="row align-items-center gy-3">
-		<!-- العنوان والأيقونة على اليمين -->
 		<div class="col-md d-flex align-items-center gap-3">
-			<!-- مربع الأيقونة الأصفر -->
 			<div class="rounded-3 d-flex align-items-center justify-content-center"
 				 style="width: 52px; height: 52px; background-color: #fff3cd; color: #ffc107; flex-shrink: 0;">
 				<i class="fa-solid fa-industry fs-3"></i>
 			</div>
-
-			<!-- النصوص -->
 			<div>
 				<h3 class="fw-bold text-dark mb-1 fs-4">حركة الإنتاج اليومي والتصنيع</h3>
 				<p class="text-muted mb-0 small">
-					حساب المستهدف تلقائياً بناءً على عدد الشكاير وتسجيل الناتج الفعلي وتأكيد الخصم من المخزن
+					حساب المستهدف تلقائياً بناءً على عدد الشكاير ونوع المنتج، وتسجيل الناتج الفعلي وتأكيد الخصم من المخزن
 				</p>
 			</div>
 		</div>
+		<div class="col-md-auto ms-auto d-flex gap-2">
+			<!-- زر الانتقال لصفحة المبيعات -->
+			<a asp-controller="Production" asp-action="Sales" class="btn btn-outline-primary rounded-3 px-3 py-2 fw-bold d-flex align-items-center gap-2">
+				<i class="fa-solid fa-cart-shopping"></i>
+				<span>شاشة وسجل المبيعات</span>
+			</a>
 
-		<!-- زر فتح أمر إنتاج أقصى الشمال -->
-		<div class="col-md-auto ms-auto">
+			<!-- زر فتح أمر إنتاج جديد -->
 			<button class="btn btn-bakery rounded-3 shadow-sm px-3 py-2 fw-bold d-flex align-items-center gap-2"
 					data-bs-toggle="modal"
 					data-bs-target="#newProductionModal">
@@ -34,15 +35,16 @@
 		</div>
 	</div>
 </div>
+
 <!-- Config Banner -->
 <div class="card card-custom mb-4 p-3 bg-light">
 	<div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
 		<div class="d-flex align-items-center gap-3">
-			<span class="badge bg-amber fs-6">معايير الشكارة الراهنة:</span>
-			<span class="small fw-bold">مبروم: @settings.MabroumPiecesPerSack قطعة</span> |
-			<span class="small fw-bold">بانيه: @settings.PanePiecesPerSack قطعة</span> |
-			<span class="small fw-bold">ساندوتش: @settings.SandwichPiecesPerSack قطعة</span> |
-			<span class="small fw-bold">الباسكيت: @settings.PiecesPerBasket قطعة</span>
+			<span class="badge bg-amber fs-6">معايير الشكارة الراهنة (بالباسكيت):</span>
+			<span class="small fw-bold">مبروم: @(settings.PiecesPerBasket > 0 ? (settings.MabroumPiecesPerSack / (decimal)settings.PiecesPerBasket).ToString("0.##") : 0) باسكت</span> |
+			<span class="small fw-bold">بانيه: @(settings.PiecesPerBasket > 0 ? (settings.PanePiecesPerSack / (decimal)settings.PiecesPerBasket).ToString("0.##") : 0) باسكت</span> |
+			<span class="small fw-bold">ساندوتش: @(settings.PiecesPerBasket > 0 ? (settings.SandwichPiecesPerSack / (decimal)settings.PiecesPerBasket).ToString("0.##") : 0) باسكت</span> |
+			<span class="small fw-bold">قطع الباسكيت: @settings.PiecesPerBasket قطعة</span>
 			<span class="badge bg-success fs-6"><i class="fa-solid fa-tag me-1"></i> سعر الباسكيت: @settings.BasketSellingPrice ج.م</span>
 		</div>
 		<div>
@@ -50,7 +52,6 @@
 		</div>
 	</div>
 </div>
-
 <!-- Production Orders Table -->
 <div class="card card-custom">
 	<div class="card-body p-0">
@@ -59,6 +60,7 @@
 				<thead>
 					<tr>
 						<th>رقم الأمر / التاريخ</th>
+						<th>النوع</th>
 						<th>عدد الشكاير</th>
 						<th>المستهدف (قطع / باسيكت)</th>
 						<th>الفعلي (قطع / باسيكت)</th>
@@ -78,6 +80,7 @@
 									<div class="fw-bold text-primary">#@order.Id</div>
 									<div class="small text-muted">@order.ProductionDate.ToString("yyyy/MM/dd")</div>
 								</td>
+								<td><span class="badge bg-amber">@order.SelectedProductTypeName</span></td>
 								<td class="fw-bold fs-5">@order.FlourSackCount <small class="fs-6 text-muted">شكارة</small></td>
 								<td>
 									<div class="fw-bold text-dark">@order.TotalTargetPieces <small>قطعة</small></div>
@@ -91,7 +94,7 @@
 									}
 									else
 									{
-										<span class="text-muted italic">لم يسجل بعد</span>
+										<span class="text-muted fst-italic">لم يسجل بعد</span>
 									}
 								</td>
 								<td>@order.TotalExpectedSalesValue.ToString("N2") ج.م</td>
@@ -121,8 +124,6 @@
 												onclick="confirmDelete(@order.Id, '@Url.Action("Delete", "Production")', 'هل أنت متأكد من حذف هذا الأمر؟')">
 											<i class="fa-solid fa-trash"></i>
 										</button>
-
-                                       
 									}
 								</td>
 							</tr>
@@ -131,7 +132,7 @@
 					else
 					{
 						<tr>
-							<td colspan="8" class="text-center p-4 text-muted">لا توجد أاوامر إنتاج سابقة. اضغط على فتح أمر إنتاج جديد للبدء.</td>
+							<td colspan="9" class="text-center p-4 text-muted">لا توجد أوامر إنتاج سابقة. اضغط على فتح أمر إنتاج جديد للبدء.</td>
 						</tr>
 					}
 				</tbody>
@@ -151,6 +152,14 @@
 			<form asp-action="Create" method="post">
 				<div class="modal-body row g-3">
 					<div class="col-md-6">
+						<label class="form-label fw-bold">نوع المنتج <span class="text-danger">*</span></label>
+						<select name="productType" id="inputProductType" required class="form-select form-select-lg fw-bold" onchange="calculateTargetsLive()">
+							<option value="1">مبروم</option>
+							<option value="2">بانيه</option>
+							<option value="3">ساندوتش</option>
+						</select>
+					</div>
+					<div class="col-md-6">
 						<label class="form-label fw-bold">عدد شكاير الدقيق <span class="text-danger">*</span></label>
 						<input type="number" step="0.5" name="flourSackCount" id="inputSackCount" required class="form-control form-control-lg fw-bold text-primary" placeholder="مثال: 10" oninput="calculateTargetsLive()" />
 					</div>
@@ -168,22 +177,10 @@
 						<div class="card p-3 bg-light border-primary">
 							<h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-calculator me-1"></i> الحسابات التلقائية للمستهدف:</h6>
 							<div class="row text-center g-2 mb-3">
-								<div class="col-4">
-									<div class="p-2 bg-white rounded border">
-										<small class="text-muted d-block">مبروم مستهدف</small>
-										<span class="fw-bold text-dark fs-5" id="liveMabroum">0</span> قطعة
-									</div>
-								</div>
-								<div class="col-4">
-									<div class="p-2 bg-white rounded border">
-										<small class="text-muted d-block">بانيه مستهدف</small>
-										<span class="fw-bold text-dark fs-5" id="livePane">0</span> قطعة
-									</div>
-								</div>
-								<div class="col-4">
-									<div class="p-2 bg-white rounded border">
-										<small class="text-muted d-block">ساندوتش مستهدف</small>
-										<span class="fw-bold text-dark fs-5" id="liveSandwich">0</span> قطعة
+								<div class="col-12">
+									<div class="p-3 bg-white rounded border">
+										<small class="text-muted d-block mb-1">النوع المختار</small>
+										<span class="fw-bold text-dark fs-4" id="liveProductTypeName">-</span>
 									</div>
 								</div>
 							</div>
@@ -207,7 +204,6 @@
 									</div>
 								</div>
 							</div>
-							<!-- Live Required Raw Materials -->
 							<h6 class="fw-bold text-dark mt-3 mb-2"><i class="fa-solid fa-boxes-stacked me-1"></i> الخامات المطلوبة ومدى توافرها بالمخزن:</h6>
 							<div id="liveMaterialsTableContainer"></div>
 						</div>
@@ -251,6 +247,7 @@
 		function calculateTargetsLive() {
 			const sacks = parseFloat(document.getElementById('inputSackCount').value) || 0;
 			const price = parseFloat(document.getElementById('inputBasketPrice').value) || 0;
+			const productType = document.getElementById('inputProductType').value;
 			const calcCard = document.getElementById('liveCalcCard');
 
 			if (sacks <= 0) {
@@ -260,14 +257,12 @@
 
 			calcCard.style.display = 'block';
 
-			fetch(`/Production/CalculateApi?flourSackCount=${sacks}&customBasketPrice=${price}`)
+			fetch(`/Production/CalculateApi?flourSackCount=${sacks}&productType=${productType}&customBasketPrice=${price}`)
 				.then(res => res.json())
 				.then(res => {
 					if (res.success) {
 						const d = res.data;
-						document.getElementById('liveMabroum').innerText = d.targetMabroum;
-						document.getElementById('livePane').innerText = d.targetPane;
-						document.getElementById('liveSandwich').innerText = d.targetSandwich;
+						document.getElementById('liveProductTypeName').innerText = d.productTypeName;
 						document.getElementById('liveTotalPieces').innerText = d.totalTargetPieces;
 						document.getElementById('liveBaskets').innerText = d.expectedBaskets + " باسيكت (" + d.remainingPieces + " قطعة متبقية)";
 						document.getElementById('liveSalesVal').innerText = d.totalExpectedSalesValue.toFixed(2);
@@ -310,72 +305,58 @@
 
 			document.getElementById('modalOrderId').value = order.Id;
 
+			const isConfirmed = order.Status === 2;
+			const readonlyAttr = isConfirmed ? "readonly" : "";
+			const result = order.OrderResults[0];
+
 			let html = `
-								<div class="row g-3 mb-3">
-									<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>عدد الشكاير:</strong> ${order.FlourSackCount} شكارة</div></div>
-									<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>سعر الباسكيت:</strong> ${order.BasketSellingPrice} ج.م</div></div>
-									<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>الحالة:</strong> ${order.StatusName}</div></div>
-								</div>
+						<div class="row g-3 mb-3">
+							<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>النوع:</strong> ${order.SelectedProductTypeName}</div></div>
+							<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>عدد الشكاير:</strong> ${order.FlourSackCount} شكارة</div></div>
+							<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>الحالة:</strong> ${order.StatusName}</div></div>
+						</div>
 
-								<h6 class="fw-bold text-primary mb-2">مقارنة المستهدف بالفعلي للأنواع الثلاثة:</h6>
-								<div class="table-responsive">
-									<table class="table table-bordered align-middle text-center">
-										<thead class="table-dark">
-											<tr>
-												<th>نوع المنتج</th>
-												<th>الكمية المستهدفة</th>
-												<th>الكمية الفعلية المُنتجة</th>
-												<th>الفرق</th>
-												<th>نسبة الإنجاز</th>
-											</tr>
-										</thead>
-										<tbody>
-							`;
-
-			let actualMabroum = 0, actualPane = 0, actualSandwich = 0;
-
-			order.OrderResults.forEach(r => {
-				let inpName = "";
-				if (r.ProductType === 1) { inpName = "actualMabroum"; actualMabroum = r.ActualQuantity; }
-				else if (r.ProductType === 2) { inpName = "actualPane"; actualPane = r.ActualQuantity; }
-				else if (r.ProductType === 3) { inpName = "actualSandwich"; actualSandwich = r.ActualQuantity; }
-
-				const isConfirmed = order.Status === 2;
-				const readonlyAttr = isConfirmed ? "readonly" : "";
-
-				html += `
+						<h6 class="fw-bold text-primary mb-2">المستهدف مقابل الفعلي:</h6>
+						<div class="table-responsive mb-3">
+							<table class="table table-bordered align-middle text-center">
+								<thead class="table-dark">
 									<tr>
-										<td class="fw-bold">${r.ProductTypeName}</td>
-										<td class="fw-bold text-primary">${r.TargetQuantity} قطعة</td>
-										<td>
-											<input type="number" name="${inpName}" value="${r.ActualQuantity}" ${readonlyAttr} class="form-control form-control-sm text-center fw-bold text-success" style="max-width: 120px; margin: 0 auto;" />
-										</td>
-										<td class="fw-bold ${r.Difference >= 0 ? 'text-success' : 'text-danger'}">${r.Difference} قطعة</td>
-										<td><span class="badge ${r.AchievementPercentage >= 100 ? 'bg-success' : 'bg-warning text-dark'}">${r.AchievementPercentage}%</span></td>
+										<th>النوع</th>
+										<th>الكمية المستهدفة</th>
+										<th>الكمية الفعلية المُنتجة</th>
+										<th>الفرق</th>
+										<th>نسبة الإنجاز</th>
 									</tr>
-								`;
-			});
+								</thead>
+								<tbody>
+									<tr>
+										<td class="fw-bold">${result.ProductTypeName}</td>
+										<td class="fw-bold text-primary">${result.TargetQuantity} قطعة</td>
+										<td>
+											<input type="number" name="actualQuantity" value="${result.ActualQuantity}" ${readonlyAttr} class="form-control form-control-sm text-center fw-bold text-success" style="max-width: 120px; margin: 0 auto;" />
+										</td>
+										<td class="fw-bold ${result.Difference >= 0 ? 'text-success' : 'text-danger'}">${result.Difference} قطعة</td>
+										<td><span class="badge ${result.AchievementPercentage >= 100 ? 'bg-success' : 'bg-warning text-dark'}">${result.AchievementPercentage}%</span></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
 
-			html += `
-										</tbody>
-									</table>
-								</div>
+						<div class="row g-2 mt-2 bg-light p-3 rounded">
+							<div class="col-md-6"><strong>الباسكيت المستهدف:</strong> ${order.ExpectedBaskets} باسيكت</div>
+							<div class="col-md-6"><strong>الباسكيت الفعلي:</strong> <span class="fw-bold text-success">${order.ActualBaskets} باسيكت</span></div>
+							<div class="col-md-6"><strong>قيمة المبيعات المتوقعة:</strong> ${order.TotalExpectedSalesValue.toFixed(2)} ج.م</div>
+							<div class="col-md-6"><strong>قيمة المبيعات الفعلية:</strong> <span class="fw-bold text-success">${order.TotalActualSalesValue.toFixed(2)} ج.م</span></div>
+						</div>
 
-								<div class="row g-2 mt-2 bg-light p-3 rounded">
-									<div class="col-md-6"><strong>الباسكيت المستهدف:</strong> ${order.ExpectedBaskets} باسيكت</div>
-									<div class="col-md-6"><strong>الباسكيت الفعلي:</strong> <span class="fw-bold text-success">${order.ActualBaskets} باسيكت</span></div>
-									<div class="col-md-6"><strong>قيمة المبيعات المتوقعة:</strong> ${order.TotalExpectedSalesValue.toFixed(2)} ج.م</div>
-									<div class="col-md-6"><strong>قيمة المبيعات الفعلية:</strong> <span class="fw-bold text-success">${order.TotalActualSalesValue.toFixed(2)} ج.م</span></div>
-								</div>
-
-								<div class="mt-3">
-									<label class="form-label fw-bold">ملاحظات أخرى:</label>
-									<input type="text" name="notes" value="${order.Notes || ''}" ${order.Status === 2 ? 'readonly' : ''} class="form-control" />
-								</div>
-							`;
+						<div class="mt-3">
+							<label class="form-label fw-bold">ملاحظات أخرى:</label>
+							<input type="text" name="notes" value="${order.Notes || ''}" ${isConfirmed ? 'readonly' : ''} class="form-control" />
+						</div>
+					`;
 
 			document.getElementById('modalOrderContent').innerHTML = html;
-			document.getElementById('saveActualBtn').style.display = order.Status === 2 ? 'none' : 'inline-block';
+			document.getElementById('saveActualBtn').style.display = isConfirmed ? 'none' : 'inline-block';
 			new bootstrap.Modal(document.getElementById('orderDetailsModal')).show();
 		}
 	</script>

@@ -107,6 +107,7 @@ namespace Bakery.Domain.Entities
         public int Id { get; set; }
         public DateTime ProductionDate { get; set; } = DateTime.Today;
         public decimal FlourSackCount { get; set; }
+        public ProductType SelectedProductType { get; set; }
         public decimal BasketSellingPrice { get; set; }
         public ProductionStatus Status { get; set; } = ProductionStatus.Draft;
 

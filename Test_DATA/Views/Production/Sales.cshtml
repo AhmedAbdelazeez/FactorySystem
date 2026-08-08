@@ -1,0 +1,324 @@
+﻿@using Bakery.Domain.Enums
+@model IEnumerable<Bakery.Business.DTOs.ProductOrderSalesHistoryDto>
+@{
+    ViewData["Title"] = "شاشة وسجل المبيعات";
+    var availableOrders = ViewBag.AvailableOrders as IEnumerable<Bakery.Business.DTOs.ProductionOrderDto> ?? new List<Bakery.Business.DTOs.ProductionOrderDto>();
+
+    // حساب إحصائيات الكروت
+    decimal totalSales = Model?.Sum(s => s.TotalAmount) ?? 0;
+    decimal totalPaid = Model?.Sum(s => s.PaidAmount) ?? 0;
+    decimal totalRemaining = Model?.Sum(s => s.RemainingAmount) ?? 0;
+}
+
+<!-- Header -->
+<div class="page-header-box mb-4 p-3 bg-white rounded-4 border shadow-sm">
+    <div class="row align-items-center gy-3">
+        <div class="col-md d-flex align-items-center gap-3">
+            <div class="rounded-3 d-flex align-items-center justify-content-center"
+                 style="width: 52px; height: 52px; background-color: #e3f2fd; color: #0d6efd; flex-shrink: 0;">
+                <i class="fa-solid fa-cart-shopping fs-3"></i>
+            </div>
+            <div>
+                <h3 class="fw-bold text-dark mb-1 fs-4">شاشة مبيعات الإنتاج</h3>
+                <p class="text-muted mb-0 small">
+                    تسجيل حركات البيع المباشرة والآجلة وتفريغ رصيد الباسكيت وتحصيل المتبقي
+                </p>
+            </div>
+        </div>
+        <div class="col-md-auto ms-auto d-flex gap-2">
+            <a asp-action="Index" class="btn btn-outline-secondary rounded-3 px-3 py-2 fw-bold">
+                <i class="fa-solid fa-industry me-1"></i> أوامر الإنتاج
+            </a>
+            <button class="btn btn-primary rounded-3 shadow-sm px-3 py-2 fw-bold d-flex align-items-center gap-2"
+                    data-bs-toggle="modal"
+                    data-bs-target="#newSaleModal">
+                <i class="fa-solid fa-cart-plus"></i>
+                <span>تسجيل حركة بيع جديدة</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 📊 Summary Cards (الكروت الإحصائية) -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm bg-primary text-white p-3 rounded-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="d-block text-white-50 small fw-bold">إجمالي المبيعات</span>
+                    <h3 class="fw-bold mb-0">@totalSales.ToString("N2") <small class="fs-6">ج.م</small></h3>
+                </div>
+                <div class="fs-1 text-white-50"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm bg-success text-white p-3 rounded-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="d-block text-white-50 small fw-bold">المحصل فعلياً بالخزينة</span>
+                    <h3 class="fw-bold mb-0">@totalPaid.ToString("N2") <small class="fs-6">ج.م</small></h3>
+                </div>
+                <div class="fs-1 text-white-50"><i class="fa-solid fa-cash-register"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm bg-danger text-white p-3 rounded-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="d-block text-white-50 small fw-bold">المتبقي (الديون/الآجل)</span>
+                    <h3 class="fw-bold mb-0">@totalRemaining.ToString("N2") <small class="fs-6">ج.م</small></h3>
+                </div>
+                <div class="fs-1 text-white-50"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sales History Table -->
+<div class="card card-custom">
+    <div class="card-header bg-white py-3">
+        <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-history me-1 text-primary"></i> سجل حركات البيع والتسليم</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bakery mb-0 align-middle text-center">
+                <thead>
+                    <tr>
+                        <th>رقم الحركة / التاريخ</th>
+                        <th>أمر الإنتاج</th>
+                        <th>المنتج</th>
+                        <th>الكمية المباعة</th>
+                        <th>سعر الباسكيت</th>
+                        <th>الإجمالي</th>
+                        <th>طريقة الدفع</th>
+                        <th>المبلغ المدفوع</th>
+                        <th>المتبقي (آجل)</th>
+                        <th class="text-center">الإجراءات والتحصيل</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var sale in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-bold text-primary">#@sale.Id</div>
+                                    <div class="small text-muted">@sale.ProductSoldAt.ToString("yyyy/MM/dd HH:mm")</div>
+                                </td>
+                                <td><span class="badge bg-light text-dark border">أمر #@sale.ProductionOrderId</span></td>
+                                <td><span class="badge bg-amber">@sale.SelectedProductTypeName</span></td>
+                                <!--  ضبط تقريب الأرقام للكمية -->
+                                <td class="fw-bold fs-6">@sale.SoldBaskets.ToString("0.##") <small class="text-muted">باسكت</small></td>
+                                <td>@sale.BasketSellingPrice.ToString("N2") ج.م</td>
+                                <td class="fw-bold text-dark">@sale.TotalAmount.ToString("N2") ج.م</td>
+                                <td><span class="badge bg-info text-dark">@sale.PaymentMethod</span></td>
+                                <td><span class="fw-bold text-success">@sale.PaidAmount.ToString("N2") ج.م</span></td>
+                                <td>
+                                    <span class="fw-bold @(sale.RemainingAmount > 0 ? "text-danger" : "text-muted")">
+                                        @sale.RemainingAmount.ToString("N2") ج.م
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-flex justify-content-center gap-1">
+                                        @if (sale.RemainingAmount > 0)
+                                        {
+                                            <!-- زر تحصيل الديون المتبقية -->
+                                            <button type="button" class="btn btn-sm btn-success fw-bold" onclick="openCollectModal(@sale.Id, @sale.RemainingAmount)">
+                                                <i class="fa-solid fa-hand-holding-dollar me-1"></i> تحصيل
+                                            </button>
+                                        }
+
+                                        <form asp-action="CancelSale" method="post" class="d-inline" onsubmit="return confirm('هل أنت متأكد من إلغاء حركة البيع؟ سيعاد الباسكيت لأمر الإنتاج وتعدل الخزينة.');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@sale.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="fa-solid fa-rotate-left"></i> إلغاء
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="10" class="text-center p-4 text-muted">لا توجد حركات بيع مسجلة حالياً. اضغط على زر تسجيل حركة بيع جديدة للبدء.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Record New Sale -->
+<div class="modal fade" id="newSaleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-cart-plus me-1"></i> تسجيل عملية بيع جديدة</h5>
+                <button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="RecordSale" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-bold">اختر أمر الإنتاج المتاح <span class="text-danger">*</span></label>
+                        <select name="ProductionOrderId" id="selectProductionOrder" required class="form-select form-select-lg fw-bold" onchange="onOrderSelected()">
+                            <option value="">-- اختر أمر إنتاج --</option>
+                            @foreach (var order in availableOrders)
+                            {
+                                <option value="@order.Id" data-available="@order.ActualBaskets" data-price="@order.BasketSellingPrice">
+                                    أمر #@order.Id - @order.SelectedProductTypeName (المتاح: @order.ActualBaskets باسكت)
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">عدد الباسكيت المباع <span class="text-danger">*</span></label>
+                        <input type="number" name="SoldBaskets" id="saleSoldBaskets" min="1" value="1" required class="form-control form-control-lg fw-bold text-success" oninput="calculateSaleTotal()" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">سعر الباسكيت (ج.م)</label>
+                        <input type="number" step="0.01" name="BasketSellingPrice" id="saleBasketPrice" required class="form-control form-control-lg fw-bold" oninput="calculateSaleTotal()" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">طريقة الدفع <span class="text-danger">*</span></label>
+                        <select name="PaymentMethod" id="salePaymentMethod" class="form-select fw-bold" onchange="togglePaidAmount()">
+                            <option value="1">كاش (نقدي)</option>
+                            <option value="2">تحويل بنكي</option>
+                            <option value="3">آجل (غير مدفوع)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">المبلغ المدفوع (ج.م)</label>
+                        <input type="number" step="0.01" name="PaidAmount" id="salePaidAmount" class="form-control fw-bold text-primary" />
+                    </div>
+
+                    <div class="col-12">
+                        <div class="p-3 bg-light rounded text-center border">
+                            <span class="text-muted d-block mb-1">إجمالي قيمة البيع</span>
+                            <span id="saleTotalAmount" class="fs-4 fw-bold text-success">0.00</span> ج.م
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-bold">ملاحظات</label>
+                        <input type="text" name="Notes" class="form-control" placeholder="أي ملاحظات إضافية..." />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary fw-bold"><i class="fa-solid fa-check me-1"></i> إتمام البيع والتسجيل بالخزينة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Collect Remaining (مودال تحصيل المبلغ المتبقي) -->
+<div class="modal fade" id="collectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-hand-holding-dollar me-1"></i> تحصيل المبلغ المتبقي</h5>
+                <button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="CollectRemaining" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="transactionId" id="collectTxId" />
+                <div class="modal-body row g-3">
+                    <div class="col-12">
+                        <div class="p-2 border rounded bg-light text-center">
+                            <strong>المبلغ المتبقي الحالي: </strong>
+                            <span id="collectRemainingText" class="text-danger fw-bold fs-5"></span> ج.م
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">المبلغ المحصل الآن (ج.م) <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" name="amountToCollect" id="collectAmountInput" required class="form-control form-control-lg fw-bold text-success" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">طريقة الدفع <span class="text-danger">*</span></label>
+                        <select name="paymentMethod" class="form-select fw-bold">
+                            <option value="1">كاش (نقدي)</option>
+                            <option value="2">تحويل بنكي</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold">ملاحظات التحصيل</label>
+                        <input type="text" name="notes" class="form-control" placeholder="مثال: تسديد دفعة أخيرة..." />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-success fw-bold"><i class="fa-solid fa-floppy-disk me-1"></i> تأكيد التحصيل بالخزينة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openCollectModal(txId, remainingAmount) {
+            document.getElementById('collectTxId').value = txId;
+            document.getElementById('collectRemainingText').innerText = remainingAmount.toFixed(2);
+            document.getElementById('collectAmountInput').value = remainingAmount;
+            document.getElementById('collectAmountInput').max = remainingAmount;
+
+            new bootstrap.Modal(document.getElementById('collectModal')).show();
+        }
+
+        function onOrderSelected() {
+            const select = document.getElementById('selectProductionOrder');
+            const selectedOption = select.options[select.selectedIndex];
+
+            if (!selectedOption.value) return;
+
+            const available = parseFloat(selectedOption.getAttribute('data-available')) || 0;
+            const price = parseFloat(selectedOption.getAttribute('data-price')) || 0;
+
+            const qtyInput = document.getElementById('saleSoldBaskets');
+            qtyInput.max = available;
+            if (parseFloat(qtyInput.value) > available) {
+                qtyInput.value = available;
+            }
+
+            document.getElementById('saleBasketPrice').value = price;
+            calculateSaleTotal();
+        }
+
+        function calculateSaleTotal() {
+            const qty = parseFloat(document.getElementById('saleSoldBaskets').value) || 0;
+            const price = parseFloat(document.getElementById('saleBasketPrice').value) || 0;
+            const total = qty * price;
+
+            document.getElementById('saleTotalAmount').innerText = total.toFixed(2);
+            togglePaidAmount();
+        }
+
+        function togglePaidAmount() {
+            const qty = parseFloat(document.getElementById('saleSoldBaskets').value) || 0;
+            const price = parseFloat(document.getElementById('saleBasketPrice').value) || 0;
+            const total = qty * price;
+
+            const method = document.getElementById('salePaymentMethod').value;
+            const paidInput = document.getElementById('salePaidAmount');
+
+            if (method === "1" || method === "2") {
+                paidInput.value = total.toFixed(2);
+            } else if (method === "3") {
+                paidInput.value = 0;
+            }
+        }
+    </script>
+}

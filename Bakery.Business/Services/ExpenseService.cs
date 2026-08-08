@@ -133,20 +133,7 @@ namespace Bakery.Business.Services
             await _treasuryRepo.AddAsync(treasuryTx);
             await _treasuryRepo.SaveChangesAsync();
 
-            // If raw material linked, update stock
-            //if (linkedRawMaterialId.HasValue && linkedRawMaterialId.Value > 0)
-            //{
-            //    await _inventoryService.AddStockAsync(
-            //        linkedRawMaterialId.Value,
-            //        expense.Quantity,
-            //        expense.UnitPrice,
-            //         expense.PaymentMethod,   // ← ضفنا ده
-            //         expense.PaidAmount,
-            //        $"توريد بموجب مصروف: {expense.Name}",
-                    
-            //        expense.Id
-            //    );
-            //}
+           
         }
 
         public async Task UpdateExpenseAsync(Expense expense)

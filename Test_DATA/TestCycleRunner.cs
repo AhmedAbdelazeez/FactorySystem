@@ -71,7 +71,7 @@ namespace Test_DATA
             try
             {
                 Console.WriteLine("  - محاولة طلب إنتاج 10,000 شكارة دقيق (أكبر من رصيد المخزن)...");
-                await productionService.CreateProductionOrderAsync(10000);
+                await productionService.CreateProductionOrderAsync(10000, ProductType.Mabroum, "وردية صباحية تجريبية");
                 Console.WriteLine("  ❌ خطأ: تم السواح بإنشاء أمر إنتاج رغم عدم توفر المخزون!");
             }
             catch (InvalidOperationException ex)
@@ -82,16 +82,17 @@ namespace Test_DATA
 
             // 5. Test Successful Production Order Cycle (5 Sacks)
             Console.WriteLine("\n[5/5] 🏭 تنفيذ دورة إنتاج فعلي ناجحة (5 شكارة):");
-            var order = await productionService.CreateProductionOrderAsync(5, "وردية صباحية تجريبية");
+            var order = await productionService.CreateProductionOrderAsync(5, ProductType.Mabroum, "وردية صباحية تجريبية");
             Console.WriteLine($"  - تم فتح أمر إنتاج #{order.Id} لعدد {order.FlourSackCount} شكارة.");
             Console.WriteLine($"  - المستهدف المتوقع: {order.TotalTargetPieces} قطعة ({order.ExpectedBaskets} باسيكت) بقيمة {order.TotalExpectedSalesValue} ج.م");
+
 
             // Update actual production
             int actualMabroum = (int)order.OrderResults.First(r => r.ProductType == ProductType.Mabroum).TargetQuantity;
             int actualPane = (int)order.OrderResults.First(r => r.ProductType == ProductType.Pane).TargetQuantity;
             int actualSandwich = (int)order.OrderResults.First(r => r.ProductType == ProductType.Sandwich).TargetQuantity;
 
-            await productionService.UpdateActualProductionAsync(order.Id, actualMabroum, actualPane, actualSandwich, "تم الانتهاء بنجاح 100%");
+            await productionService.UpdateActualProductionAsync(order.Id, order.TotalActualPieces, "تم الانتهاء بنجاح 100%");
             Console.WriteLine($"  - تم إدخال النتائج الفعلية: مبروم={actualMabroum}، بانيه={actualPane}، ساندوتش={actualSandwich}.");
 
             // Confirm Production Order

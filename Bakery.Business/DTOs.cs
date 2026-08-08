@@ -7,9 +7,9 @@ namespace Bakery.Business.DTOs
     public class ProductionCalculationResultDto
     {
         public decimal FlourSackCount { get; set; }
-        public int TargetMabroum { get; set; }
-        public int TargetPane { get; set; }
-        public int TargetSandwich { get; set; }
+        public ProductType ProductType { get; set; }           // ← جديد
+        public string ProductTypeName { get; set; } = "";      // ← جديد
+        public int TargetQuantity { get; set; }                // ← جديد
         public int TotalTargetPieces { get; set; }
         public int ExpectedBaskets { get; set; }
         public int RemainingPieces { get; set; }
@@ -35,6 +35,8 @@ namespace Bakery.Business.DTOs
         public int Id { get; set; }
         public DateTime ProductionDate { get; set; }
         public decimal FlourSackCount { get; set; }
+        public ProductType SelectedProductType { get; set; }         // ← جديد
+        public string SelectedProductTypeName { get; set; } = "";    // ← جديد
         public decimal BasketSellingPrice { get; set; }
         public ProductionStatus Status { get; set; }
         public string StatusName => Status == ProductionStatus.Confirmed ? "مؤكد" : "مسودة";
@@ -50,6 +52,44 @@ namespace Bakery.Business.DTOs
         public DateTime? ConfirmedAt { get; set; }
 
         public List<ProductionOrderResultDto> OrderResults { get; set; } = new();
+    }
+
+
+    public class ProductOrderSalesHistoryDto
+    {
+        public int Id { get; set; }               // رقم سجل البيع
+        public int ProductionOrderId { get; set; }           // رقم أمر الإنتاج المرتبط بالبيع
+        public DateTime ProductSoldAt { get; set; }         // تاريخ البيع
+        
+        
+        public ProductType ProductType { get; set; }
+        public string SelectedProductTypeName { get; set; } = "";
+
+
+        public decimal FlourSackCount { get; set; }
+        public decimal BasketSellingPrice { get; set; }
+
+        public decimal TotalActualBaskets { get; set; }
+        public decimal TotalRemainingBaskets => TotalActualBaskets - SoldBaskets; // المتبقي
+        public decimal SoldBaskets { get; set; }
+        public decimal TotalAmount => SoldBaskets * BasketSellingPrice;
+        public decimal PaidAmount { get; set; }
+        public decimal RemainingAmount => TotalAmount - PaidAmount;
+        public PaymentMethod PaymentMethod { get; set; }
+
+        public decimal Income => PaidAmount;
+        public string? Notes { get; set; }
+    }
+
+    public class CreateProductSaleDto
+    {
+        public int ProductionOrderId { get; set; }               // أمر الإنتاج المراد البيع منه
+        public decimal SoldBaskets { get; set; }                 // عدد الباسكيت المباع
+        public decimal BasketSellingPrice { get; set; }          // سعر الباسكيت
+        public PaymentMethod PaymentMethod { get; set; }         // طريقة الدفع
+        public decimal PaidAmount { get; set; }                  // المبلغ المدفوع
+                      
+        public string? Notes { get; set; }                       // ملاحظات
     }
 
     public class ProductionOrderResultDto
