@@ -1,134 +1,134 @@
 @model Bakery.Domain.Entities.ProductionSetting
 @{
-    ViewData["Title"] = "إعدادات أسعار الباسكيت والإنتاج";
+	ViewData["Title"] = "إعدادات أسعار الباسكيت والإنتاج";
 }
 
 <!-- 1. الهيدر الموحد -->
 <div class="page-header-box mb-4 p-3 bg-white rounded-4 border shadow-sm">
-    <div class="row align-items-center gy-3">
-        <div class="col-md d-flex align-items-center gap-3">
-            <div class="rounded-3 d-flex align-items-center justify-content-center"
-                 style="width: 52px; height: 52px; background-color: #fff3cd; color: #ffc107; flex-shrink: 0;">
-                <i class="fa-solid fa-sliders fs-3"></i>
-            </div>
-            <div>
-                <h3 class="fw-bold text-dark mb-1 fs-4">إعدادات أسعار الباسكيت ومعدلات الإنتاج</h3>
-                <p class="text-muted mb-0 small">
-                    التحكم في سعر بيع الباسكيت الافتراضي ومعدل القطع التي تنتجها شكارة الدقيق
-                </p>
-            </div>
-        </div>
-    </div>
+	<div class="row align-items-center gy-3">
+		<div class="col-md d-flex align-items-center gap-3">
+			<div class="rounded-3 d-flex align-items-center justify-content-center"
+				 style="width: 52px; height: 52px; background-color: #fff3cd; color: #ffc107; flex-shrink: 0;">
+				<i class="fa-solid fa-sliders fs-3"></i>
+			</div>
+			<div>
+				<h3 class="fw-bold text-dark mb-1 fs-4">إعدادات أسعار الباسكيت ومعدلات الإنتاج</h3>
+				<p class="text-muted mb-0 small">
+					التحكم في سعر بيع الباسكيت الافتراضي ومعدل القطع التي تنتجها شكارة الدقيق
+				</p>
+			</div>
+		</div>
+	</div>
 </div>
 
 <!-- 2. جسم الصفحة والتصميم الجديد -->
 <form asp-action="Update" method="post">
-    <input type="hidden" name="Id" value="@Model.Id" />
+	<input type="hidden" name="Id" value="@Model.Id" />
 
-    <div class="row g-4 justify-content-center">
-        <!-- كارت 1: سعر بيع الباسكيت -->
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
-                <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex align-items-center gap-3">
-                    <div class="rounded-circle bg-success-subtle text-success p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
-                        <i class="fa-solid fa-basket-shopping fs-5"></i>
-                    </div>
-                    <div>
-                        <h5 class="fw-bold text-dark mb-0">سعر بيع الباسكيت</h5>
-                        <span class="text-muted small">تسعير مبيعات اليومية والإنتاج</span>
-                    </div>
-                </div>
-                <div class="card-body p-4">
-                    <label class="form-label fw-bold text-secondary">سعر بيع الباسكيت الواحد <span class="text-danger">*</span></label>
-                    <div class="input-group input-group-lg">
-                        <input type="number" step="0.01" name="BasketSellingPrice" value="@Model.BasketSellingPrice" required class="form-control fw-bold text-success border-secondary-subtle rounded-start-3" />
-                        <span class="input-group-text bg-light text-muted fw-bold rounded-end-3 fs-6">ج.م</span>
-                    </div>
-                    <div class="form-text mt-2 text-muted small">
-                        <i class="fa-solid fa-circle-info me-1 text-primary"></i>
-                        يستخدم هذا السعر لحساب إجمالي القيمة المتوقعة والفعلية للمبيعات بشكل آلي.
-                    </div>
-                </div>
-            </div>
-        </div>
+	<div class="row g-4 justify-content-center">
+		<!-- كارت 1: سعر بيع الباسكيت -->
+		<div class="col-lg-6">
+			<div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+				<div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex align-items-center gap-3">
+					<div class="rounded-circle bg-success-subtle text-success p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+						<i class="fa-solid fa-basket-shopping fs-5"></i>
+					</div>
+					<div>
+						<h5 class="fw-bold text-dark mb-0">سعر بيع الباسكيت</h5>
+						<span class="text-muted small">تسعير مبيعات اليومية والإنتاج</span>
+					</div>
+				</div>
+				<div class="card-body p-4">
+					<label class="form-label fw-bold text-secondary">سعر بيع الباسكيت الواحد <span class="text-danger">*</span></label>
+					<div class="input-group input-group-lg">
+						<input type="number" step="0.01" name="BasketSellingPrice" value="@Model.BasketSellingPrice" required class="form-control fw-bold text-success border-secondary-subtle rounded-start-3" />
+						<span class="input-group-text bg-light text-muted fw-bold rounded-end-3 fs-6">ج.م</span>
+					</div>
+					<div class="form-text mt-2 text-muted small">
+						<i class="fa-solid fa-circle-info me-1 text-primary"></i>
+						يستخدم هذا السعر لحساب إجمالي القيمة المتوقعة والفعلية للمبيعات بشكل آلي.
+					</div>
+				</div>
+			</div>
+		</div>
 
-        <!-- كارت 2: سعة الباسكيت -->
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
-                <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex align-items-center gap-3">
-                    <div class="rounded-circle bg-info-subtle text-info p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
-                        <i class="fa-solid fa-box fs-5"></i>
-                    </div>
-                    <div>
-                        <h5 class="fw-bold text-dark mb-0">سعة الباسكيت القياسية</h5>
-                        <span class="text-muted small">العدد الافتراضي للقطع بالباسكيت</span>
-                    </div>
-                </div>
-                <div class="card-body p-4">
-                    <label class="form-label fw-bold text-secondary">عدد القطع داخل الباسكيت <span class="text-danger">*</span></label>
-                    <div class="input-group input-group-lg">
-                        <input type="number" step="1" name="PiecesPerBasket" value="@Model.PiecesPerBasket" required class="form-control fw-bold text-dark border-secondary-subtle rounded-start-3" />
-                        <span class="input-group-text bg-light text-muted fw-bold rounded-end-3 fs-6">قطعة / باسيكت</span>
-                    </div>
-                    <div class="form-text mt-2 text-muted small">
-                        <i class="fa-solid fa-circle-info me-1 text-primary"></i>
-                        النسبة الشائعة للمصنع هي 28 قطعة في كل باسيكت.
-                    </div>
-                </div>
-            </div>
-        </div>
+		<!-- كارت 2: سعة الباسكيت -->
+		<div class="col-lg-6">
+			<div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+				<div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex align-items-center gap-3">
+					<div class="rounded-circle bg-info-subtle text-info p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+						<i class="fa-solid fa-box fs-5"></i>
+					</div>
+					<div>
+						<h5 class="fw-bold text-dark mb-0">سعة الباسكيت القياسية</h5>
+						<span class="text-muted small">العدد الافتراضي للقطع بالباسكيت</span>
+					</div>
+				</div>
+				<div class="card-body p-4">
+					<label class="form-label fw-bold text-secondary">عدد القطع داخل الباسكيت <span class="text-danger">*</span></label>
+					<div class="input-group input-group-lg">
+						<input type="number" step="1" name="PiecesPerBasket" value="@Model.PiecesPerBasket" required class="form-control fw-bold text-dark border-secondary-subtle rounded-start-3" />
+						<span class="input-group-text bg-light text-muted fw-bold rounded-end-3 fs-6">قطعة / باسيكت</span>
+					</div>
+					<div class="form-text mt-2 text-muted small">
+						<i class="fa-solid fa-circle-info me-1 text-primary"></i>
+						النسبة الشائعة للمصنع هي 28 قطعة في كل باسيكت.
+					</div>
+				</div>
+			</div>
+		</div>
 
-        <!-- كارت 3: معدلات إنتاج الشكارة (عرض كامل) -->
-        <div class="col-12">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-                <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex align-items-center gap-3">
-                    <div class="rounded-circle bg-warning-subtle text-warning p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
-                        <i class="fa-solid fa-wheat-awn fs-5"></i>
-                    </div>
-                    <div>
-                        <h5 class="fw-bold text-dark mb-0">معدل إنتاج القطع من شكارة الدقيق الواحدة</h5>
-                        <span class="text-muted small">تحديد عدد القطع المنتجة آلياً لكل نوع بناءً على كمية الدقيق</span>
-                    </div>
-                </div>
-                <div class="card-body p-4">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <div class="p-3 bg-light rounded-3 border border-secondary-subtle">
-                                <label class="form-label fw-bold text-dark d-block mb-2">قطع المبروم <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <input type="number" step="1" name="MabroumPiecesPerSack" value="@Model.MabroumPiecesPerSack" required class="form-control fw-bold rounded-start-3" />
-                                    <span class="input-group-text bg-white text-muted small rounded-end-3">قطعة/شكارة</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="p-3 bg-light rounded-3 border border-secondary-subtle">
-                                <label class="form-label fw-bold text-dark d-block mb-2">قطع البانيه <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <input type="number" step="1" name="PanePiecesPerSack" value="@Model.PanePiecesPerSack" required class="form-control fw-bold rounded-start-3" />
-                                    <span class="input-group-text bg-white text-muted small rounded-end-3">قطعة/شكارة</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="p-3 bg-light rounded-3 border border-secondary-subtle">
-                                <label class="form-label fw-bold text-dark d-block mb-2">قطع الساندوتش <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <input type="number" step="1" name="SandwichPiecesPerSack" value="@Model.SandwichPiecesPerSack" required class="form-control fw-bold rounded-start-3" />
-                                    <span class="input-group-text bg-white text-muted small rounded-end-3">قطعة/شكارة</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- شريط حفظ التعديلات السفلي -->
-                <div class="card-footer bg-light border-0 p-3 px-4 d-flex justify-content-end">
-                    <button type="submit" class="btn btn-bakery btn-lg rounded-3 shadow-sm px-5 fw-bold d-inline-flex align-items-center gap-2">
-                        <i class="fa-solid fa-floppy-disk"></i>
-                        <span>حفظ الإعدادات</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+		<!-- كارت 3: معدلات إنتاج الشكارة (عرض كامل) -->
+		<div class="col-12">
+			<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+				<div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex align-items-center gap-3">
+					<div class="rounded-circle bg-warning-subtle text-warning p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+						<i class="fa-solid fa-wheat-awn fs-5"></i>
+					</div>
+					<div>
+						<h5 class="fw-bold text-dark mb-0">معدل إنتاج القطع من شكارة الدقيق الواحدة</h5>
+						<span class="text-muted small">تحديد عدد القطع المنتجة آلياً لكل نوع بناءً على كمية الدقيق</span>
+					</div>
+				</div>
+				<div class="card-body p-4">
+					<div class="row g-3">
+						<div class="col-md-4">
+							<div class="p-3 bg-light rounded-3 border border-secondary-subtle">
+								<label class="form-label fw-bold text-dark d-block mb-2">قطع المبروم <span class="text-danger">*</span></label>
+								<div class="input-group">
+									<input type="number" step="1" name="MabroumPiecesPerSack" value="@Model.MabroumPiecesPerSack" required class="form-control fw-bold rounded-start-3" />
+									<span class="input-group-text bg-white text-muted small rounded-end-3">قطعة/شكارة</span>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="p-3 bg-light rounded-3 border border-secondary-subtle">
+								<label class="form-label fw-bold text-dark d-block mb-2">قطع البانيه <span class="text-danger">*</span></label>
+								<div class="input-group">
+									<input type="number" step="1" name="PanePiecesPerSack" value="@Model.PanePiecesPerSack" required class="form-control fw-bold rounded-start-3" />
+									<span class="input-group-text bg-white text-muted small rounded-end-3">قطعة/شكارة</span>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="p-3 bg-light rounded-3 border border-secondary-subtle">
+								<label class="form-label fw-bold text-dark d-block mb-2">قطع الساندوتش <span class="text-danger">*</span></label>
+								<div class="input-group">
+									<input type="number" step="1" name="SandwichPiecesPerSack" value="@Model.SandwichPiecesPerSack" required class="form-control fw-bold rounded-start-3" />
+									<span class="input-group-text bg-white text-muted small rounded-end-3">قطعة/شكارة</span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- شريط حفظ التعديلات السفلي -->
+				<div class="card-footer bg-light border-0 p-3 px-4 d-flex justify-content-end">
+					<button type="submit" class="btn btn-bakery btn-lg rounded-3 shadow-sm px-5 fw-bold d-inline-flex align-items-center gap-2">
+						<i class="fa-solid fa-floppy-disk"></i>
+						<span>حفظ الإعدادات</span>
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
 </form>

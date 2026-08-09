@@ -1,260 +1,260 @@
 @model IEnumerable<Bakery.Domain.Entities.TreasuryTransaction>
 @{
-    ViewData["Title"] = "الخزينة والأرباح";
-    var summary = ViewBag.Summary as Bakery.Business.DTOs.TreasurySummaryDto ?? new Bakery.Business.DTOs.TreasurySummaryDto();
+	ViewData["Title"] = "الخزينة والأرباح";
+	var summary = ViewBag.Summary as Bakery.Business.DTOs.TreasurySummaryDto ?? new Bakery.Business.DTOs.TreasurySummaryDto();
 }
 
 <div class="page-header-box mb-4 p-3 bg-white rounded-4 border shadow-sm">
-    <div class="row align-items-center gy-3">
-        <!-- العنوان والأيقونة على اليمين -->
-        <div class="col-md d-flex align-items-center gap-3">
-            <!-- مربع الأيقونة الأصفر -->
-            <div class="rounded-3 d-flex align-items-center justify-content-center"
-                 style="width: 52px; height: 52px; background-color: #fff3cd; color: #ffc107; flex-shrink: 0;">
-                <i class="fa-solid fa-vault fs-3"></i>
-            </div>
+	<div class="row align-items-center gy-3">
+		<!-- العنوان والأيقونة على اليمين -->
+		<div class="col-md d-flex align-items-center gap-3">
+			<!-- مربع الأيقونة الأصفر -->
+			<div class="rounded-3 d-flex align-items-center justify-content-center"
+				 style="width: 52px; height: 52px; background-color: #fff3cd; color: #ffc107; flex-shrink: 0;">
+				<i class="fa-solid fa-vault fs-3"></i>
+			</div>
 
-            <!-- النصوص -->
-            <div>
-                <h3 class="fw-bold text-dark mb-1 fs-4">حركة الخزينة والأرباح الإجمالية</h3>
-                <p class="text-muted mb-0 small">
-                    بيان تفصيلي بالمبيعات، المصروفات، النقدية المتاحة بالخزينة، والمتبقيات
-                </p>
-            </div>
-        </div>
-    </div>
+			<!-- النصوص -->
+			<div>
+				<h3 class="fw-bold text-dark mb-1 fs-4">حركة الخزينة والأرباح الإجمالية</h3>
+				<p class="text-muted mb-0 small">
+					بيان تفصيلي بالمبيعات، المصروفات، النقدية المتاحة بالخزينة، والمتبقيات
+				</p>
+			</div>
+		</div>
+	</div>
 </div>
 <!-- Net Profit & Treasury Summary Main Cards -->
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card stat-card p-4 border-0 shadow-sm bg-success text-white">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <span class="text-white-50 small fw-bold d-block mb-1">إجمالي الإيرادات (المبيعات الفعلية)</span>
-                    <h2 class="fw-extrabold mb-0">@summary.TotalIncome.ToString("N2") <small class="fs-5 fw-normal text-white-50">ج.م</small></h2>
-                </div>
-                <div class="stat-icon-wrapper bg-white bg-opacity-25 text-white rounded-circle p-3 fs-3">
-                    <i class="fa-solid fa-arrow-trend-up"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card stat-card p-4 border-0 shadow-sm bg-danger text-white">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <span class="text-white-50 small fw-bold d-block mb-1">إجمالي المصروفات الكلية</span>
-                    <h2 class="fw-extrabold mb-0">@summary.TotalExpenses.ToString("N2") <small class="fs-5 fw-normal text-white-50">ج.م</small></h2>
-                </div>
-                <div class="stat-icon-wrapper bg-white bg-opacity-25 text-white rounded-circle p-3 fs-3">
-                    <i class="fa-solid fa-arrow-trend-down"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card stat-card p-4 border-0 shadow-sm bg- @(summary.NetProfit >= 0 ? "bg-orange" : "bg-warning") text-white">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <span class="text-white-50 small fw-bold d-block mb-1">صافي الربح الفعلي (الإيراد - المصروف)</span>
-                    <h2 class="fw-extrabold mb-0">@summary.NetProfit.ToString("N2") <small class="fs-5 fw-normal text-white-50">ج.م</small></h2>
-                </div>
-                <div class="stat-icon-wrapper bg-white bg-opacity-25 text-white rounded-circle p-3 fs-3">
-                    <i class="fa-solid fa-scale-balanced"></i>
-                </div>
-            </div>
-        </div>
-    </div>
+	<div class="col-md-4">
+		<div class="card stat-card p-4 border-0 shadow-sm bg-success text-white">
+			<div class="d-flex align-items-center justify-content-between">
+				<div>
+					<span class="text-white-50 small fw-bold d-block mb-1">إجمالي الإيرادات (المبيعات الفعلية)</span>
+					<h2 class="fw-extrabold mb-0">@summary.TotalIncome.ToString("N2") <small class="fs-5 fw-normal text-white-50">ج.م</small></h2>
+				</div>
+				<div class="stat-icon-wrapper bg-white bg-opacity-25 text-white rounded-circle p-3 fs-3">
+					<i class="fa-solid fa-arrow-trend-up"></i>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-4">
+		<div class="card stat-card p-4 border-0 shadow-sm bg-danger text-white">
+			<div class="d-flex align-items-center justify-content-between">
+				<div>
+					<span class="text-white-50 small fw-bold d-block mb-1">إجمالي المصروفات الكلية</span>
+					<h2 class="fw-extrabold mb-0">@summary.TotalExpenses.ToString("N2") <small class="fs-5 fw-normal text-white-50">ج.م</small></h2>
+				</div>
+				<div class="stat-icon-wrapper bg-white bg-opacity-25 text-white rounded-circle p-3 fs-3">
+					<i class="fa-solid fa-arrow-trend-down"></i>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-4">
+		<div class="card stat-card p-4 border-0 shadow-sm bg- @(summary.NetProfit >= 0 ? "bg-orange" : "bg-warning") text-white">
+			<div class="d-flex align-items-center justify-content-between">
+				<div>
+					<span class="text-white-50 small fw-bold d-block mb-1">صافي الربح الفعلي (الإيراد - المصروف)</span>
+					<h2 class="fw-extrabold mb-0">@summary.NetProfit.ToString("N2") <small class="fs-5 fw-normal text-white-50">ج.م</small></h2>
+				</div>
+				<div class="stat-icon-wrapper bg-white bg-opacity-25 text-white rounded-circle p-3 fs-3">
+					<i class="fa-solid fa-scale-balanced"></i>
+				</div>
+			</div>
+		</div>
+	</div>
 </div>
 
 <!-- Breakdown Financial Cards -->
 <div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card stat-card p-3">
-            <div class="d-flex align-items-center">
-                <div class="stat-icon-wrapper bg-success-subtle text-success me-3">
-                    <i class="fa-solid fa-money-bill-wave"></i>
-                </div>
-                <div>
-                    <span class="text-muted small d-block mb-1">الرصيد النقدي بالكاش</span>
-                    <span class="fs-4 fw-bold text-success">@summary.CashBalance.ToString("N2") <small class="fs-6 text-muted fw-normal">ج.م</small></span>
-                    <small class="text-muted d-block mt-1">المبالغ المحصلة فعلياً بالخزينة</small>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card p-3">
-            <div class="d-flex align-items-center">
-                <div class="stat-icon-wrapper bg-info-subtle text-info me-3">
-                    <i class="fa-solid fa-building-columns"></i>
-                </div>
-                <div>
-                    <span class="text-muted small d-block mb-1">رصيد التحويلات البنكية</span>
-                    <span class="fs-4 fw-bold text-info">@summary.BankTransferBalance.ToString("N2") <small class="fs-6 text-muted fw-normal">ج.م</small></span>
-                    <small class="text-muted d-block mt-1">المبالغ بالبنوك أو المحافظ</small>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card p-3">
-            <div class="d-flex align-items-center">
-                <div class="stat-icon-wrapper bg-danger-subtle text-danger me-3">
-                    <i class="fa-solid fa-file-invoice-dollar"></i>
-                </div>
-                <div>
-                    <span class="text-muted small d-block mb-1">المبالغ المتبقية (آجل)</span>
-                    <span class="fs-4 fw-bold text-danger">@summary.TotalRemainingAmountsPayable.ToString("N2") <small class="fs-6 text-muted fw-normal">ج.م</small></span>
-                    <small class="text-danger d-block mt-1">غير محسوبة ضمن الكاش المتاح</small>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stat-card p-3">
-            <div class="d-flex align-items-center">
-                <div class="stat-icon-wrapper bg-secondary-subtle text-secondary me-3">
-                    <i class="fa-solid fa-boxes-stacked"></i>
-                </div>
-                <div>
-                    <span class="text-muted small d-block mb-1">قيمة البضاعة بالمخزن</span>
-                    <span class="fs-4 fw-bold text-dark">@summary.InventoryValue.ToString("N2") <small class="fs-6 text-muted fw-normal">ج.م</small></span>
-                    <small class="text-muted d-block mt-1">إجمالي خامات ومستلزمات المخزن</small>
-                </div>
-            </div>
-        </div>
-    </div>
+	<div class="col-md-3">
+		<div class="card stat-card p-3">
+			<div class="d-flex align-items-center">
+				<div class="stat-icon-wrapper bg-success-subtle text-success me-3">
+					<i class="fa-solid fa-money-bill-wave"></i>
+				</div>
+				<div>
+					<span class="text-muted small d-block mb-1">الرصيد النقدي بالكاش</span>
+					<span class="fs-4 fw-bold text-success">@summary.CashBalance.ToString("N2") <small class="fs-6 text-muted fw-normal">ج.م</small></span>
+					<small class="text-muted d-block mt-1">المبالغ المحصلة فعلياً بالخزينة</small>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-3">
+		<div class="card stat-card p-3">
+			<div class="d-flex align-items-center">
+				<div class="stat-icon-wrapper bg-info-subtle text-info me-3">
+					<i class="fa-solid fa-building-columns"></i>
+				</div>
+				<div>
+					<span class="text-muted small d-block mb-1">رصيد التحويلات البنكية</span>
+					<span class="fs-4 fw-bold text-info">@summary.BankTransferBalance.ToString("N2") <small class="fs-6 text-muted fw-normal">ج.م</small></span>
+					<small class="text-muted d-block mt-1">المبالغ بالبنوك أو المحافظ</small>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-3">
+		<div class="card stat-card p-3">
+			<div class="d-flex align-items-center">
+				<div class="stat-icon-wrapper bg-danger-subtle text-danger me-3">
+					<i class="fa-solid fa-file-invoice-dollar"></i>
+				</div>
+				<div>
+					<span class="text-muted small d-block mb-1">المبالغ المتبقية (آجل)</span>
+					<span class="fs-4 fw-bold text-danger">@summary.TotalRemainingAmountsPayable.ToString("N2") <small class="fs-6 text-muted fw-normal">ج.م</small></span>
+					<small class="text-danger d-block mt-1">غير محسوبة ضمن الكاش المتاح</small>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-3">
+		<div class="card stat-card p-3">
+			<div class="d-flex align-items-center">
+				<div class="stat-icon-wrapper bg-secondary-subtle text-secondary me-3">
+					<i class="fa-solid fa-boxes-stacked"></i>
+				</div>
+				<div>
+					<span class="text-muted small d-block mb-1">قيمة البضاعة بالمخزن</span>
+					<span class="fs-4 fw-bold text-dark">@summary.InventoryValue.ToString("N2") <small class="fs-6 text-muted fw-normal">ج.م</small></span>
+					<small class="text-muted d-block mt-1">إجمالي خامات ومستلزمات المخزن</small>
+				</div>
+			</div>
+		</div>
+	</div>
 </div>
 
 <!-- Expenses Categories Breakdown -->
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card card-custom p-3 bg-light">
-            <div class="d-flex justify-content-between align-items-center">
-                <span><i class="fa-solid fa-users text-primary me-2"></i> مصروفات العمالة والأجور</span>
-                <span class="fw-bold fs-5 text-dark">@summary.LaborExpenses.ToString("N2") ج.م</span>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card card-custom p-3 bg-light">
-            <div class="d-flex justify-content-between align-items-center">
-                <span><i class="fa-solid fa-boxes-stacked text-warning me-2"></i> مصروفات شراء الخامات</span>
-                <span class="fw-bold fs-5 text-dark">@summary.RawMaterialExpenses.ToString("N2") ج.م</span>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card card-custom p-3 bg-light">
-            <div class="d-flex justify-content-between align-items-center">
-                <span><i class="fa-solid fa-bolt text-danger me-2"></i> المصاريف التشغيلية (كهرباء، غاز...)</span>
-                <span class="fw-bold fs-5 text-dark">@summary.OperatingExpenses.ToString("N2") ج.م</span>
-            </div>
-        </div>
-    </div>
+	<div class="col-md-4">
+		<div class="card card-custom p-3 bg-light">
+			<div class="d-flex justify-content-between align-items-center">
+				<span><i class="fa-solid fa-users text-primary me-2"></i> مصروفات العمالة والأجور</span>
+				<span class="fw-bold fs-5 text-dark">@summary.LaborExpenses.ToString("N2") ج.م</span>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-4">
+		<div class="card card-custom p-3 bg-light">
+			<div class="d-flex justify-content-between align-items-center">
+				<span><i class="fa-solid fa-boxes-stacked text-warning me-2"></i> مصروفات شراء الخامات</span>
+				<span class="fw-bold fs-5 text-dark">@summary.RawMaterialExpenses.ToString("N2") ج.م</span>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-4">
+		<div class="card card-custom p-3 bg-light">
+			<div class="d-flex justify-content-between align-items-center">
+				<span><i class="fa-solid fa-bolt text-danger me-2"></i> المصاريف التشغيلية (كهرباء، غاز...)</span>
+				<span class="fw-bold fs-5 text-dark">@summary.OperatingExpenses.ToString("N2") ج.م</span>
+			</div>
+		</div>
+	</div>
 </div>
 
 <!-- Filter Bar -->
 <div class="card card-custom p-3 mb-4">
-    <form method="get" class="row g-3 align-items-end">
-        <div class="col-md-3">
-            <label class="form-label fw-bold small">من تاريخ</label>
-            <input type="date" name="startDate" value="@ViewBag.StartDate" class="form-control" />
-        </div>
-        <div class="col-md-3">
-            <label class="form-label fw-bold small">إلى تاريخ</label>
-            <input type="date" name="endDate" value="@ViewBag.EndDate" class="form-control" />
-        </div>
-        <div class="col-md-3">
-            <label class="form-label fw-bold small">نوع المعاملة</label>
-            <select name="type" class="form-select">
-                <option value="">جميع المعاملات</option>
-                <option value="1" selected="@(ViewBag.SelectedType == TreasuryTransactionType.Income)">إيرادات (مبيعات)</option>
-                <option value="2" selected="@(ViewBag.SelectedType == TreasuryTransactionType.Expense)">مصروفات</option>
-            </select>
-        </div>
-        <div class="col-md-3 d-flex gap-2">
-            <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-filter me-1"></i> عرض سجل الخزينة</button>
-            <a asp-action="Index" class="btn btn-outline-secondary"><i class="fa-solid fa-rotate"></i></a>
-        </div>
-    </form>
+	<form method="get" class="row g-3 align-items-end">
+		<div class="col-md-3">
+			<label class="form-label fw-bold small">من تاريخ</label>
+			<input type="date" name="startDate" value="@ViewBag.StartDate" class="form-control" />
+		</div>
+		<div class="col-md-3">
+			<label class="form-label fw-bold small">إلى تاريخ</label>
+			<input type="date" name="endDate" value="@ViewBag.EndDate" class="form-control" />
+		</div>
+		<div class="col-md-3">
+			<label class="form-label fw-bold small">نوع المعاملة</label>
+			<select name="type" class="form-select">
+				<option value="">جميع المعاملات</option>
+				<option value="1" selected="@(ViewBag.SelectedType == TreasuryTransactionType.Income)">إيرادات (مبيعات)</option>
+				<option value="2" selected="@(ViewBag.SelectedType == TreasuryTransactionType.Expense)">مصروفات</option>
+			</select>
+		</div>
+		<div class="col-md-3 d-flex gap-2">
+			<button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-filter me-1"></i> عرض سجل الخزينة</button>
+			<a asp-action="Index" class="btn btn-outline-secondary"><i class="fa-solid fa-rotate"></i></a>
+		</div>
+	</form>
 </div>
 
 <!-- Treasury Detailed Log Table -->
 <div class="card card-custom">
-    <div class="card-header bg-white fw-bold py-3">
-        <i class="fa-solid fa-list-ul text-warning me-2"></i> سجل حركة معاملات الخزينة اليومية
-    </div>
-    <div class="card-body p-0">
-        <div class="table-custom">
-            <table class="table table-bakery mb-0">
-                <thead>
-                    <tr>
-                        <th>التاريخ</th>
-                        <th>اسم المعاملة</th>
-                        <th>نوع المعاملة</th>
-                        <th>التصنيف</th>
-                        <th>المبلغ الإجمالي</th>
-                        <th>طريقة الدفع</th>
-                        <th>المبلغ المدفوع</th>
-                        <th>المتبقي</th>
-                        <th>ملاحظات</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model.Any())
-                    {
-                        foreach (var tx in Model)
-                        {
-                            <tr>
-                                <td class="small text-muted fw-bold">@tx.Date.ToString("yyyy/MM/dd HH:mm")</td>
-                                <td class="fw-bold">@tx.TransactionName</td>
-                                <td>
-                                    @if (tx.TransactionType == TreasuryTransactionType.Income)
-                                    {
-                                        <span class="badge bg-success"><i class="fa-solid fa-arrow-down-left me-1"></i> إيراد</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-danger"><i class="fa-solid fa-arrow-up-right me-1"></i> مصروف</span>
-                                    }
-                                </td>
-                                <td><span class="badge bg-light text-dark border">@tx.Category</span></td>
-                                <td class="fw-bold @(tx.TransactionType == TreasuryTransactionType.Income ? "text-success" : "text-danger")">
-                                    @tx.Amount.ToString("N2") ج.م
-                                </td>
-                                <td>
-                                    @switch (tx.PaymentMethod)
-                                    {
-                                        case PaymentMethod.Cash:
-                                            <span class="badge bg-success">كاش</span>
-                                            break;
-                                        case PaymentMethod.BankTransfer:
-                                            <span class="badge bg-info text-dark">تحويل بنكي</span>
-                                            break;
-                                        case PaymentMethod.PartiallyPaid:
-                                            <span class="badge bg-warning text-dark">جزئي</span>
-                                            break;
-                                        case PaymentMethod.Unpaid:
-                                            <span class="badge bg-danger">آجل (غير مدفوع)</span>
-                                            break;
-                                    }
-                                </td>
-                                <td class="fw-bold text-success">@tx.PaidAmount.ToString("N2") ج.م</td>
-                                <td class="@(tx.RemainingAmount > 0 ? "fw-bold text-danger" : "text-muted")">@tx.RemainingAmount.ToString("N2") ج.م</td>
-                                <td class="small text-secondary">@tx.Notes</td>
-                            </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="9" class="text-center p-4 text-muted">لا توجد معاملات مسجلة بالخزينة للفترة المحددة.</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
+	<div class="card-header bg-white fw-bold py-3">
+		<i class="fa-solid fa-list-ul text-warning me-2"></i> سجل حركة معاملات الخزينة اليومية
+	</div>
+	<div class="card-body p-0">
+		<div class="table-custom">
+			<table class="table table-bakery mb-0">
+				<thead>
+					<tr>
+						<th>التاريخ</th>
+						<th>اسم المعاملة</th>
+						<th>نوع المعاملة</th>
+						<th>التصنيف</th>
+						<th>المبلغ الإجمالي</th>
+						<th>طريقة الدفع</th>
+						<th>المبلغ المدفوع</th>
+						<th>المتبقي</th>
+						<th>ملاحظات</th>
+					</tr>
+				</thead>
+				<tbody>
+					@if (Model.Any())
+					{
+						foreach (var tx in Model)
+						{
+							<tr>
+								<td class="small text-muted fw-bold">@tx.Date.ToString("yyyy/MM/dd HH:mm")</td>
+								<td class="fw-bold">@tx.TransactionName</td>
+								<td>
+									@if (tx.TransactionType == TreasuryTransactionType.Income)
+									{
+										<span class="badge bg-success"><i class="fa-solid fa-arrow-down-left me-1"></i> إيراد</span>
+									}
+									else
+									{
+										<span class="badge bg-danger"><i class="fa-solid fa-arrow-up-right me-1"></i> مصروف</span>
+									}
+								</td>
+								<td><span class="badge bg-light text-dark border">@tx.Category</span></td>
+								<td class="fw-bold @(tx.TransactionType == TreasuryTransactionType.Income ? "text-success" : "text-danger")">
+									@tx.Amount.ToString("N2") ج.م
+								</td>
+								<td>
+									@switch (tx.PaymentMethod)
+									{
+										case PaymentMethod.Cash:
+											<span class="badge bg-success">كاش</span>
+											break;
+										case PaymentMethod.BankTransfer:
+											<span class="badge bg-info text-dark">تحويل بنكي</span>
+											break;
+										case PaymentMethod.PartiallyPaid:
+											<span class="badge bg-warning text-dark">جزئي</span>
+											break;
+										case PaymentMethod.Unpaid:
+											<span class="badge bg-danger">آجل (غير مدفوع)</span>
+											break;
+									}
+								</td>
+								<td class="fw-bold text-success">@tx.PaidAmount.ToString("N2") ج.م</td>
+								<td class="@(tx.RemainingAmount > 0 ? "fw-bold text-danger" : "text-muted")">@tx.RemainingAmount.ToString("N2") ج.م</td>
+								<td class="small text-secondary">@tx.Notes</td>
+							</tr>
+						}
+					}
+					else
+					{
+						<tr>
+							<td colspan="9" class="text-center p-4 text-muted">لا توجد معاملات مسجلة بالخزينة للفترة المحددة.</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	</div>
 </div>

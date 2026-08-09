@@ -4,6 +4,7 @@ using Bakery.DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Bakery.DataAccess.Migrations
 {
     [DbContext(typeof(BakeryDbContext))]
-    partial class BakeryDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260808155046_addsoldbaskettotreasurytransaction")]
+    partial class addsoldbaskettotreasurytransaction
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -698,8 +701,6 @@ namespace Bakery.DataAccess.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductionOrderId");
-
                     b.ToTable("TreasuryTransactions");
                 });
 
@@ -817,15 +818,6 @@ namespace Bakery.DataAccess.Migrations
                     b.Navigation("MeasurementUnit");
                 });
 
-            modelBuilder.Entity("Bakery.Domain.Entities.TreasuryTransaction", b =>
-                {
-                    b.HasOne("Bakery.Domain.Entities.ProductionOrder", "ProductionOrder")
-                        .WithMany("TreasuryTransactions")
-                        .HasForeignKey("ProductionOrderId");
-
-                    b.Navigation("ProductionOrder");
-                });
-
             modelBuilder.Entity("Bakery.Domain.Entities.Employee", b =>
                 {
                     b.Navigation("Advances");
@@ -855,8 +847,6 @@ namespace Bakery.DataAccess.Migrations
                     b.Navigation("InventoryTransactions");
 
                     b.Navigation("OrderResults");
-
-                    b.Navigation("TreasuryTransactions");
                 });
 
             modelBuilder.Entity("Bakery.Domain.Entities.ProductionRecipe", b =>

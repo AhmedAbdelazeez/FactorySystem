@@ -367,8 +367,8 @@
 					</div>
 
 					<div class="col-md-6">
-						<label class="form-label fw-bold">طريقة الدفع</label>
-						<select name="PaymentMethod" id="expPaymentMethod" class="form-select" onchange="togglePaidAmount()">
+						<label class="form-label fw-bold">طريقة الدفع <span class="text-danger">*</span></label>
+						<select name="PaymentMethod" id="expPaymentMethod" class="form-select fw-bold" onchange="togglePaidAmount()">
 							<option value="@((int)PaymentMethod.Cash)">كاش (مدفوع بالكامل)</option>
 							<option value="@((int)PaymentMethod.BankTransfer)">تحويل بنكي (مدفوع بالكامل)</option>
 							<option value="@((int)PaymentMethod.PartiallyPaid)">مدفوع جزئياً</option>
@@ -383,9 +383,20 @@
 						<input type="date" name="Date" value="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control" />
 					</div>
 					<div class="col-md-6" id="addPaidAmountContainer" style="display: none;">
-    <label class="form-label fw-bold">المبلغ المدفوع <span class="text-danger">*</span></label>
-    <input type="number" step="0.01" name="PaidAmount" id="expPaidAmount" value="0" class="form-control" autocomplete="off" />
-</div>
+						<label class="form-label fw-bold">المبلغ المدفوع حالياً (ج.م) <span class="text-danger">*</span></label>
+						<input type="number" step="0.01" min="0" name="PaidAmount" id="expPaidAmount" value="0" class="form-control fw-bold text-primary" autocomplete="off" oninput="validateExpensePartialPayment()" />
+
+						<div id="expPaidAmountError" class="text-danger small fw-bold mt-1 d-none">
+							المبلغ المدفوع يجب أن يكون أقل من الإجمالي وأكبر من صفر.
+						</div>
+						<div id="expPaidAmountHint" class="text-muted small mt-1"></div>
+					</div>
+					<div class="col-12" id="expRemainingContainer" style="display: none;">
+						<div class="p-2 bg-danger bg-opacity-10 rounded text-center border border-danger">
+							<span class="text-muted d-block small">المبلغ المتبقي (آجل)</span>
+							<span id="expRemainingAmount" class="fs-6 fw-bold text-danger">0.00</span> ج.م
+						</div>
+					</div>
 					<div class="col-12">
 						<label class="form-label fw-bold">ملاحظات</label>
 						<input type="text" name="Notes" class="form-control" placeholder="ملاحظات تفصيلية..." />
@@ -461,8 +472,8 @@
 					</div>
 
 					<div class="col-md-6">
-						<label class="form-label fw-bold">طريقة الدفع</label>
-						<select name="PaymentMethod" id="editPaymentMethod" class="form-select" onchange="toggleEditPaidAmount()">
+						<label class="form-label fw-bold">طريقة الدفع <span class="text-danger">*</span></label>
+						<select name="PaymentMethod" id="editPaymentMethod" class="form-select fw-bold" onchange="toggleEditPaidAmount()">
 							<option value="@((int)PaymentMethod.Cash)">كاش (مدفوع بالكامل)</option>
 							<option value="@((int)PaymentMethod.BankTransfer)">تحويل بنكي (مدفوع بالكامل)</option>
 							<option value="@((int)PaymentMethod.PartiallyPaid)">مدفوع جزئياً</option>
@@ -477,8 +488,19 @@
 						<input type="date" name="Date" id="editDate" class="form-control" required />
 					</div>
 					<div class="col-md-6" id="editPaidAmountContainer" style="display: none;">
-						<label class="form-label fw-bold">المبلغ المدفوع <span class="text-danger">*</span></label>
-						<input type="number" step="0.01" name="PaidAmount" id="editPaidAmount" value="0" class="form-control" autocomplete="off" />
+						<label class="form-label fw-bold">المبلغ المدفوع حالياً (ج.م) <span class="text-danger">*</span></label>
+						<input type="number" step="0.01" min="0" name="PaidAmount" id="editPaidAmount" value="0" class="form-control fw-bold text-primary" autocomplete="off" oninput="validateEditExpensePartialPayment()" />
+
+						<div id="editPaidAmountError" class="text-danger small fw-bold mt-1 d-none">
+							المبلغ المدفوع يجب أن يكون أقل من الإجمالي وأكبر من صفر.
+						</div>
+						<div id="editPaidAmountHint" class="text-muted small mt-1"></div>
+					</div>
+					<div class="col-12" id="editRemainingContainer" style="display: none;">
+						<div class="p-2 bg-danger bg-opacity-10 rounded text-center border border-danger">
+							<span class="text-muted d-block small">المبلغ المتبقي (آجل)</span>
+							<span id="editRemainingAmount" class="fs-6 fw-bold text-danger">0.00</span> ج.م
+						</div>
 					</div>
 					<div class="col-12">
 						<label class="form-label fw-bold">ملاحظات</label>
@@ -493,69 +515,252 @@
 		</div>
 	</div>
 </div>
+
+
 @section Scripts {
 	<script>
-		// التحكم في المبلغ المدفوع لمودال الإضافة
+
+		// 1. Toggle & Calculate Paid Amount (Add Expense Modal)
+
 		function togglePaidAmount() {
-    const pm = document.getElementById('expPaymentMethod').value;
-    const total = parseFloat(document.getElementById('expTotalAmount').value) || 0;
-    const paidInp = document.getElementById('expPaidAmount');
-    const paidContainer = document.getElementById('addPaidAmountContainer');
+			const pm = document.getElementById('expPaymentMethod').value;
+			const total = parseFloat(document.getElementById('expTotalAmount').value) || 0;
+			const paidInp = document.getElementById('expPaidAmount');
+			const paidContainer = document.getElementById('addPaidAmountContainer');
+			const remainingContainer = document.getElementById('expRemainingContainer');
 
-    const cashVal = "@((int)PaymentMethod.Cash)";
-    const bankVal = "@((int)PaymentMethod.BankTransfer)";
-    const unpaidVal = "@((int)PaymentMethod.Unpaid)";
-    const partialVal = "@((int)PaymentMethod.PartiallyPaid)";
+			const cashVal = "@((int)PaymentMethod.Cash)";
+			const bankVal = "@((int)PaymentMethod.BankTransfer)";
+			const unpaidVal = "@((int)PaymentMethod.Unpaid)";
+			const partialVal = "@((int)PaymentMethod.PartiallyPaid)";
 
-    if (pm === partialVal) {
-        paidContainer.style.display = "block";
-        paidInp.readOnly = false;
-        if (parseFloat(paidInp.value) > total) {
-            paidInp.value = total > 0 ? total.toFixed(2) : '0.00';
-        }
-    } else {
-        paidContainer.style.display = "none";
-        paidInp.readOnly = true;
+			// كاش أو تحويل بنكي (مدفوع بالكامل)
+			if (pm === cashVal || pm === bankVal) {
+				if (paidContainer) paidContainer.style.display = "none";
+				if (remainingContainer) remainingContainer.style.display = "none";
+				paidInp.value = total > 0 ? total.toFixed(2) : '0.00';
+				paidInp.required = false;
+				clearExpensePaymentError();
+				return;
+			}
 
-        if (pm === cashVal || pm === bankVal) {
-            paidInp.value = total > 0 ? total.toFixed(2) : '0.00';
-        } else if (pm === unpaidVal) {
-            paidInp.value = '0.00';
-        }
-    }
-}
+			// آجل (غير مدفوع)
+			if (pm === unpaidVal) {
+				if (paidContainer) paidContainer.style.display = "none";
+				if (remainingContainer) remainingContainer.style.display = "none";
+				paidInp.value = '0.00';
+				paidInp.required = false;
+				clearExpensePaymentError();
+				return;
+			}
 
-		// التحكم في المبلغ المدفوع لمودال التعديل
+			// دفع جزئي
+			if (pm === partialVal) {
+				if (paidContainer) paidContainer.style.display = "block";
+				if (remainingContainer) remainingContainer.style.display = "block";
+				paidInp.required = true;
+
+				let currentPaid = parseFloat(paidInp.value) || 0;
+
+				if (currentPaid === 0 || currentPaid >= total) {
+					paidInp.value = total > 0 ? (total / 2).toFixed(2) : "0.00";
+				}
+
+				validateExpensePartialPayment();
+			}
+		}
+
+		// 2. Validate Partial Payment (Add Expense Modal)
+
+		function validateExpensePartialPayment() {
+			const total = parseFloat(document.getElementById('expTotalAmount').value) || 0;
+			const paid = parseFloat(document.getElementById('expPaidAmount').value) || 0;
+
+			if (paid <= 0) {
+				showExpensePaymentError("يجب إدخال مبلغ مدفوع أكبر من صفر.");
+				return false;
+			}
+
+			if (paid >= total && total > 0) {
+				showExpensePaymentError("في الدفع الجزئي، المبلغ المدفوع يجب أن يكون أقل من إجمالي المصروف.");
+				return false;
+			}
+
+			clearExpensePaymentError();
+
+			const remaining = Math.max(total - paid, 0);
+			const remElem = document.getElementById('expRemainingAmount');
+			if (remElem) remElem.innerText = remaining.toFixed(2);
+
+			const hintElem = document.getElementById('paidAmountHint');
+			if (hintElem) hintElem.innerText = `الإجمالي: ${total.toFixed(2)} ج.م - المتبقي: ${remaining.toFixed(2)} ج.م`;
+
+			return true;
+		}
+
+		
+		// 3. Error Helpers (Add Expense)
+
+		function showExpensePaymentError(msg) {
+			const err = document.getElementById('expPaidAmountError');
+			const btn = document.querySelector('#addExpenseForm button[type="submit"]');
+			if (err) {
+				err.innerText = msg;
+				err.classList.remove('d-none');
+			}
+			if (btn) btn.disabled = true;
+		}
+
+		function clearExpensePaymentError() {
+			const err = document.getElementById('expPaidAmountError');
+			const btn = document.querySelector('#addExpenseForm button[type="submit"]');
+			if (err) err.classList.add('d-none');
+			if (btn) btn.disabled = false;
+		}
+
+		
+		// 4. Form Submit Listener Validation (Add Expense)
+
+		const addExpenseForm = document.getElementById('addExpenseForm');
+		if (addExpenseForm) {
+			addExpenseForm.addEventListener('submit', function(e) {
+				const pm = document.getElementById('expPaymentMethod').value;
+				const partialVal = "@((int)PaymentMethod.PartiallyPaid)";
+
+				if (pm === partialVal) {
+					const isValid = validateExpensePartialPayment();
+					if (!isValid) {
+						e.preventDefault();
+						return false;
+					}
+				}
+				return true;
+			});
+		}
+
+		
+		// 5. Toggle & Calculate Paid Amount (Edit Expense Modal)
+
 		function toggleEditPaidAmount() {
-    const pm = document.getElementById('editPaymentMethod').value;
-    const total = parseFloat(document.getElementById('editTotalAmount').value) || 0;
-    const paidInp = document.getElementById('editPaidAmount');
-    const paidContainer = document.getElementById('editPaidAmountContainer');
+			const pm = document.getElementById('editPaymentMethod').value;
+			const total = parseFloat(document.getElementById('editTotalAmount').value) || 0;
+			const paidInp = document.getElementById('editPaidAmount');
+			const paidContainer = document.getElementById('editPaidAmountContainer');
+			const remainingContainer = document.getElementById('editRemainingContainer');
 
-    const cashVal = "@((int)PaymentMethod.Cash)";
-    const bankVal = "@((int)PaymentMethod.BankTransfer)";
-    const unpaidVal = "@((int)PaymentMethod.Unpaid)";
-    const partialVal = "@((int)PaymentMethod.PartiallyPaid)";
+			const cashVal = "@((int)PaymentMethod.Cash)";
+			const bankVal = "@((int)PaymentMethod.BankTransfer)";
+			const unpaidVal = "@((int)PaymentMethod.Unpaid)";
+			const partialVal = "@((int)PaymentMethod.PartiallyPaid)";
 
-    if (pm === partialVal) {
-        paidContainer.style.display = "block";
-        paidInp.readOnly = false;
-        if (parseFloat(paidInp.value) > total) {
-            paidInp.value = total > 0 ? total.toFixed(2) : '0.00';
-        }
-    } else {
-        paidContainer.style.display = "none";
-        paidInp.readOnly = true;
+			// كاش أو تحويل بنكي (مدفوع بالكامل)
+			if (pm === cashVal || pm === bankVal) {
+				if (paidContainer) paidContainer.style.display = "none";
+				if (remainingContainer) remainingContainer.style.display = "none";
+				paidInp.value = total > 0 ? total.toFixed(2) : '0.00';
+				paidInp.required = false;
+				clearEditExpensePaymentError();
+				return;
+			}
 
-        if (pm === cashVal || pm === bankVal) {
-            paidInp.value = total > 0 ? total.toFixed(2) : '0.00';
-        } else if (pm === unpaidVal) {
-            paidInp.value = '0.00';
-        }
-    }
-}
+			// آجل (غير مدفوع)
+			if (pm === unpaidVal) {
+				if (paidContainer) paidContainer.style.display = "none";
+				if (remainingContainer) remainingContainer.style.display = "none";
+				paidInp.value = '0.00';
+				paidInp.required = false;
+				clearEditExpensePaymentError();
+				return;
+			}
 
-		// فتح مودال السداد
+			// دفع جزئي
+			if (pm === partialVal) {
+				if (paidContainer) paidContainer.style.display = "block";
+				if (remainingContainer) remainingContainer.style.display = "block";
+				paidInp.required = true;
+
+				let currentPaid = parseFloat(paidInp.value) || 0;
+
+				if (currentPaid === 0 || currentPaid >= total) {
+					paidInp.value = total > 0 ? (total / 2).toFixed(2) : "0.00";
+				}
+
+				validateEditExpensePartialPayment();
+			}
+		}
+
+		
+		// 6. Validate Partial Payment (Edit Expense Modal)
+
+		function validateEditExpensePartialPayment() {
+			const total = parseFloat(document.getElementById('editTotalAmount').value) || 0;
+			const paid = parseFloat(document.getElementById('editPaidAmount').value) || 0;
+
+			if (paid <= 0) {
+				showEditExpensePaymentError("يجب إدخال مبلغ مدفوع أكبر من صفر.");
+				return false;
+			}
+
+			if (paid >= total && total > 0) {
+				showEditExpensePaymentError("في الدفع الجزئي، المبلغ المدفوع يجب أن يكون أقل من إجمالي المصروف.");
+				return false;
+			}
+
+			clearEditExpensePaymentError();
+
+			const remaining = Math.max(total - paid, 0);
+			const remElem = document.getElementById('editRemainingAmount');
+			if (remElem) remElem.innerText = remaining.toFixed(2);
+
+			const hintElem = document.getElementById('editPaidAmountHint');
+			if (hintElem) hintElem.innerText = `الإجمالي: ${total.toFixed(2)} ج.م - المتبقي: ${remaining.toFixed(2)} ج.م`;
+
+			return true;
+		}
+
+		
+		// 7. Error Helpers (Edit Expense)
+
+		function showEditExpensePaymentError(msg) {
+			const err = document.getElementById('editPaidAmountError');
+			const btn = document.querySelector('#editExpenseForm button[type="submit"]');
+			if (err) {
+				err.innerText = msg;
+				err.classList.remove('d-none');
+			}
+			if (btn) btn.disabled = true;
+		}
+
+		function clearEditExpensePaymentError() {
+			const err = document.getElementById('editPaidAmountError');
+			const btn = document.querySelector('#editExpenseForm button[type="submit"]');
+			if (err) err.classList.add('d-none');
+			if (btn) btn.disabled = false;
+		}
+
+		
+		// 8. Edit Form Submit Listener
+
+		const editExpenseForm = document.getElementById('editExpenseForm');
+		if (editExpenseForm) {
+			editExpenseForm.addEventListener('submit', function(e) {
+				const pm = document.getElementById('editPaymentMethod').value;
+				const partialVal = "@((int)PaymentMethod.PartiallyPaid)";
+
+				if (pm === partialVal) {
+					const isValid = validateEditExpensePartialPayment();
+					if (!isValid) {
+						e.preventDefault();
+						return false;
+					}
+				}
+				return true;
+			});
+		}
+
+		
+		// 9. Modals Trigger Helpers
+
 		function openPayModal(id, name, remaining) {
 			document.getElementById('payExpenseId').value = id;
 			document.getElementById('payExpenseName').innerText = name;
@@ -565,7 +770,6 @@
 			new bootstrap.Modal(document.getElementById('payModal')).show();
 		}
 
-		// فتح وتعبئة مودال التعديل
 		function openEditModal(id, name, totalAmount, paymentMethod, paidAmount, date, notes, categoryId) {
 			document.getElementById('editExpenseId').value = id;
 			document.getElementById('editName').value = name;

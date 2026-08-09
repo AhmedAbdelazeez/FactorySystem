@@ -104,12 +104,13 @@ namespace Test_DATA.Controllers
         // sale recording
 
         [HttpGet]
-        public async Task<IActionResult> Sales()
+        public async Task<IActionResult> Sales(DateTime? filterDate)
         {
             try
             {
                 ViewBag.AvailableOrders = await _productionService.GetAvailableOrdersForSaleAsync();
-                var salesHistory = await _productionService.GetSalesHistoryAsync();
+                ViewBag.FilterDate = filterDate?.ToString("yyyy-MM-dd");
+                var salesHistory = await _productionService.GetSalesHistoryAsync(filterDate);
                 return View(salesHistory);
             }
             catch (Exception ex)

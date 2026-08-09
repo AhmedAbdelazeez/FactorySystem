@@ -1,233 +1,233 @@
 ﻿@model Bakery.Business.DTOs.EmployeeDetailsDto
 @{
-    ViewData["Title"] = $"تفاصيل العامل - {Model.Name}";
+	ViewData["Title"] = $"تفاصيل العامل - {Model.Name}";
 }
 
 <!-- Header Box (تفاصيل الموظف) -->
 <div class="page-header-box mb-4 p-3 bg-white rounded-4 border shadow-sm">
-    <div class="row align-items-center g-3">
-        <div class="col-md-7">
-            <div class="d-flex align-items-center">
-                <div class="stat-icon-wrapper bg-warning-subtle text-warning me-3 d-flex align-items-center justify-content-center rounded-3" style="width: 52px; height: 52px; flex-shrink: 0;">
-                    <i class="fa-solid fa-user-tie fs-3"></i>
-                </div>
-                <div>
-                    <div class="d-flex align-items-center gap-2 mb-1">
-                        <h3 class="fw-bold text-dark mb-0 fs-4">@Model.Name</h3>
-                        @if (Model.IsActive)
-                        {
-                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2">نشط</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2">غير نشط</span>
-                        }
-                    </div>
-                    <p class="text-muted small mb-0">الكشف التفصيلي للحضور والغياب، السلف المصروفة، وسجل الرواتب</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-5 text-md-end">
-            <a asp-action="Index" class="btn btn-outline-primary rounded-3 shadow-sm px-3 py-2 fw-bold d-inline-flex align-items-center gap-2">
-                <i class="fa-solid fa-arrow-right"></i>
-                <span>العودة لقائمة العمال</span>
-            </a>
-        </div>
-    </div>
+	<div class="row align-items-center g-3">
+		<div class="col-md-7">
+			<div class="d-flex align-items-center">
+				<div class="stat-icon-wrapper bg-warning-subtle text-warning me-3 d-flex align-items-center justify-content-center rounded-3" style="width: 52px; height: 52px; flex-shrink: 0;">
+					<i class="fa-solid fa-user-tie fs-3"></i>
+				</div>
+				<div>
+					<div class="d-flex align-items-center gap-2 mb-1">
+						<h3 class="fw-bold text-dark mb-0 fs-4">@Model.Name</h3>
+						@if (Model.IsActive)
+						{
+							<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2">نشط</span>
+						}
+						else
+						{
+							<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2">غير نشط</span>
+						}
+					</div>
+					<p class="text-muted small mb-0">الكشف التفصيلي للحضور والغياب، السلف المصروفة، وسجل الرواتب</p>
+				</div>
+			</div>
+		</div>
+		<div class="col-md-5 text-md-end">
+			<a asp-action="Index" class="btn btn-outline-primary rounded-3 shadow-sm px-3 py-2 fw-bold d-inline-flex align-items-center gap-2">
+				<i class="fa-solid fa-arrow-right"></i>
+				<span>العودة لقائمة العمال</span>
+			</a>
+		</div>
+	</div>
 </div>
 <div class="row g-3 mb-4">
-    <!-- 1. الوظيفة والسن -->
-    <div class="col-12 col-sm-6 col-lg">
-        <div class="card card-custom h-100 p-3 bg-white">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="text-muted small fw-bold">الوظيفة / السن</span>
-                <i class="fa-solid fa-briefcase text-primary opacity-50 fs-5"></i>
-            </div>
-            <div class="fs-5 fw-bold text-dark text-truncate">@Model.JobTitle</div>
-            <div class="small text-muted">@Model.Age سنة</div>
-        </div>
-    </div>
+	<!-- 1. الوظيفة والسن -->
+	<div class="col-12 col-sm-6 col-lg">
+		<div class="card card-custom h-100 p-3 bg-white">
+			<div class="d-flex align-items-center justify-content-between mb-2">
+				<span class="text-muted small fw-bold">الوظيفة / السن</span>
+				<i class="fa-solid fa-briefcase text-primary opacity-50 fs-5"></i>
+			</div>
+			<div class="fs-5 fw-bold text-dark text-truncate">@Model.JobTitle</div>
+			<div class="small text-muted">@Model.Age سنة</div>
+		</div>
+	</div>
 
-    <!-- 2. تاريخ التعيين -->
-    <div class="col-12 col-sm-6 col-lg">
-        <div class="card card-custom h-100 p-3  bg-white">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="text-muted small fw-bold">تاريخ التعيين</span>
-                <i class="fa-solid fa-calendar-check text-info opacity-50 fs-5"></i>
-            </div>
-            <div class="fs-5 fw-bold text-info">@Model.StartedDate.ToString("yyyy/MM/dd")</div>
-            <div class="small text-muted">تاريخ بدء العمل</div>
-        </div>
-    </div>
+	<!-- 2. تاريخ التعيين -->
+	<div class="col-12 col-sm-6 col-lg">
+		<div class="card card-custom h-100 p-3  bg-white">
+			<div class="d-flex align-items-center justify-content-between mb-2">
+				<span class="text-muted small fw-bold">تاريخ التعيين</span>
+				<i class="fa-solid fa-calendar-check text-info opacity-50 fs-5"></i>
+			</div>
+			<div class="fs-5 fw-bold text-info">@Model.StartedDate.ToString("yyyy/MM/dd")</div>
+			<div class="small text-muted">تاريخ بدء العمل</div>
+		</div>
+	</div>
 
-    <!-- 3. الراتب الشهري الأساسي -->
-    <div class="col-12 col-sm-6 col-lg">
-        <div class="card card-custom h-100 p-3  bg-white">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="text-muted small fw-bold">الراتب الأساسي</span>
-                <i class="fa-solid fa-money-bill-wave text-success opacity-50 fs-5"></i>
-            </div>
-            <div class="fs-5 fw-bold text-success">@Model.MonthlySalary.ToString("N0") <span class="fs-6 fw-normal">ج.م</span></div>
-            <div class="small text-muted">شهرياً</div>
-        </div>
-    </div>
+	<!-- 3. الراتب الشهري الأساسي -->
+	<div class="col-12 col-sm-6 col-lg">
+		<div class="card card-custom h-100 p-3  bg-white">
+			<div class="d-flex align-items-center justify-content-between mb-2">
+				<span class="text-muted small fw-bold">الراتب الأساسي</span>
+				<i class="fa-solid fa-money-bill-wave text-success opacity-50 fs-5"></i>
+			</div>
+			<div class="fs-5 fw-bold text-success">@Model.MonthlySalary.ToString("N0") <span class="fs-6 fw-normal">ج.م</span></div>
+			<div class="small text-muted">شهرياً</div>
+		</div>
+	</div>
 
-    <!-- 4. السلف المعلقة -->
-    <div class="col-12 col-sm-6 col-lg">
-        <div class="card card-custom h-100 p-3 bg-white">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="text-muted small fw-bold">السلف المعلقة</span>
-                <i class="fa-solid fa-hand-holding-dollar text-warning opacity-50 fs-5"></i>
-            </div>
-            <div class="fs-5 fw-bold text-warning">@Model.PendingAdvanceAmount.ToString("N0") <span class="fs-6 fw-normal">ج.م</span></div>
-            <div class="small text-muted">تُخصم عند الصرف</div>
-        </div>
-    </div>
+	<!-- 4. السلف المعلقة -->
+	<div class="col-12 col-sm-6 col-lg">
+		<div class="card card-custom h-100 p-3 bg-white">
+			<div class="d-flex align-items-center justify-content-between mb-2">
+				<span class="text-muted small fw-bold">السلف المعلقة</span>
+				<i class="fa-solid fa-hand-holding-dollar text-warning opacity-50 fs-5"></i>
+			</div>
+			<div class="fs-5 fw-bold text-warning">@Model.PendingAdvanceAmount.ToString("N0") <span class="fs-6 fw-normal">ج.م</span></div>
+			<div class="small text-muted">تُخصم عند الصرف</div>
+		</div>
+	</div>
 
-    <!-- 5. أيام الغياب -->
-    <div class="col-12 col-sm-6 col-lg">
-        <div class="card card-custom h-100 p-3 bg-white">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="text-muted small fw-bold">غياب للخصم</span>
-                <i class="fa-solid fa-user-xmark text-danger opacity-50 fs-5"></i>
-            </div>
-            <div class="fs-5 fw-bold text-danger">@Model.AbsentDaysCount <span class="fs-6 fw-normal">أيام</span></div>
-            <div class="small text-muted">غير مخصومة بعد</div>
-        </div>
-    </div>
+	<!-- 5. أيام الغياب -->
+	<div class="col-12 col-sm-6 col-lg">
+		<div class="card card-custom h-100 p-3 bg-white">
+			<div class="d-flex align-items-center justify-content-between mb-2">
+				<span class="text-muted small fw-bold">غياب للخصم</span>
+				<i class="fa-solid fa-user-xmark text-danger opacity-50 fs-5"></i>
+			</div>
+			<div class="fs-5 fw-bold text-danger">@Model.AbsentDaysCount <span class="fs-6 fw-normal">أيام</span></div>
+			<div class="small text-muted">غير مخصومة بعد</div>
+		</div>
+	</div>
 </div>
 
 <ul class="nav nav-tabs nav-tabs-custom mb-3" id="empTab" role="tablist">
-    <li class="nav-item">
-        <button class="nav-link active fw-bold" id="salary-tab" data-bs-toggle="tab" data-bs-target="#salaries" type="button">
-            <i class="fa-solid fa-money-bill-wave me-1"></i> سجل الرواتب
-        </button>
-    </li>
-    <li class="nav-item">
-        <button class="nav-link fw-bold" id="advances-tab" data-bs-toggle="tab" data-bs-target="#advances" type="button">
-            <i class="fa-solid fa-hand-holding-dollar me-1"></i> سجل السُلف
-        </button>
-    </li>
-    <li class="nav-item">
-        <button class="nav-link fw-bold" id="attendance-tab" data-bs-toggle="tab" data-bs-target="#attendance" type="button">
-            <i class="fa-solid fa-calendar-xmark me-1"></i> سجل الغياب
-        </button>
-    </li>
+	<li class="nav-item">
+		<button class="nav-link active fw-bold" id="salary-tab" data-bs-toggle="tab" data-bs-target="#salaries" type="button">
+			<i class="fa-solid fa-money-bill-wave me-1"></i> سجل الرواتب
+		</button>
+	</li>
+	<li class="nav-item">
+		<button class="nav-link fw-bold" id="advances-tab" data-bs-toggle="tab" data-bs-target="#advances" type="button">
+			<i class="fa-solid fa-hand-holding-dollar me-1"></i> سجل السُلف
+		</button>
+	</li>
+	<li class="nav-item">
+		<button class="nav-link fw-bold" id="attendance-tab" data-bs-toggle="tab" data-bs-target="#attendance" type="button">
+			<i class="fa-solid fa-calendar-xmark me-1"></i> سجل الغياب
+		</button>
+	</li>
 </ul>
 
 <div class="tab-content" id="empTabContent">
-    <!-- 1. سجل الرواتب -->
-    <div class="tab-pane fade show active" id="salaries">
-        <div class="card card-custom p-0">
-            <div class="table-responsive">
-                <table class="table table-custom mb-0">
-                    <thead>
-                        <tr>
-                            <th>تاريخ الصرف</th>
-                            <th>المبلغ الصافي المصروف</th>
-                            <th>الملاحظات وتفاصيل الحساب</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.SalaryExpenses.Any())
-                        {
-                            foreach (var s in Model.SalaryExpenses)
-                            {
-                                <tr>
-                                    <td>@s.Date.ToString("yyyy/MM/dd HH:mm")</td>
-                                    <td class="fw-bold text-success">@s.Amount.ToString("N2") ج.م</td>
-                                    <td>@s.Notes</td>
-                                </tr>
-                            }
-                        }
-                        else
-                        {
-                            <tr><td colspan="3" class="text-center text-muted p-4">لا يوجد رواتب مصروفة لهذا العامل بعد.</td></tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+	<!-- 1. سجل الرواتب -->
+	<div class="tab-pane fade show active" id="salaries">
+		<div class="card card-custom p-0">
+			<div class="table-responsive">
+				<table class="table table-custom mb-0">
+					<thead>
+						<tr>
+							<th>تاريخ الصرف</th>
+							<th>المبلغ الصافي المصروف</th>
+							<th>الملاحظات وتفاصيل الحساب</th>
+						</tr>
+					</thead>
+					<tbody>
+						@if (Model.SalaryExpenses.Any())
+						{
+							foreach (var s in Model.SalaryExpenses)
+							{
+								<tr>
+									<td>@s.Date.ToString("yyyy/MM/dd HH:mm")</td>
+									<td class="fw-bold text-success">@s.Amount.ToString("N2") ج.م</td>
+									<td>@s.Notes</td>
+								</tr>
+							}
+						}
+						else
+						{
+							<tr><td colspan="3" class="text-center text-muted p-4">لا يوجد رواتب مصروفة لهذا العامل بعد.</td></tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
 
-    <!-- 2. سجل السُلف -->
-    <div class="tab-pane fade" id="advances">
-        <div class="card card-custom p-0">
-            <div class="table-responsive">
-                <table class="table table-custom mb-0">
-                    <thead>
-                        <tr>
-                            <th>تاريخ صرف السلفة</th>
-                            <th>المبلغ</th>
-                            <th>حالة الخصم</th>
-                            <th>تاريخ التسوية / الخصم</th>
-                            <th>ملاحظات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.Advances.Any())
-                        {
-                            foreach (var adv in Model.Advances)
-                            {
-                                <tr>
-                                    <td>@adv.Date.ToString("yyyy/MM/dd")</td>
-                                    <td class="fw-bold">@adv.Amount.ToString("N2") ج.م</td>
-                                    <td>
-                                        @if (adv.IsPaid)
-                                        {
-                                            <span class="badge bg-success">تم الخصم من الراتب</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-warning text-dark">معلقة</span>
-                                        }
-                                    </td>
-                                    <td>@(adv.PaidDate.HasValue ? adv.PaidDate.Value.ToString("yyyy/MM/dd") : "-")</td>
-                                    <td>@adv.Notes</td>
-                                </tr>
-                            }
-                        }
-                        else
-                        {
-                            <tr><td colspan="5" class="text-center text-muted p-4">لا يوجد سُلف مسجلة.</td></tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+	<!-- 2. سجل السُلف -->
+	<div class="tab-pane fade" id="advances">
+		<div class="card card-custom p-0">
+			<div class="table-responsive">
+				<table class="table table-custom mb-0">
+					<thead>
+						<tr>
+							<th>تاريخ صرف السلفة</th>
+							<th>المبلغ</th>
+							<th>حالة الخصم</th>
+							<th>تاريخ التسوية / الخصم</th>
+							<th>ملاحظات</th>
+						</tr>
+					</thead>
+					<tbody>
+						@if (Model.Advances.Any())
+						{
+							foreach (var adv in Model.Advances)
+							{
+								<tr>
+									<td>@adv.Date.ToString("yyyy/MM/dd")</td>
+									<td class="fw-bold">@adv.Amount.ToString("N2") ج.م</td>
+									<td>
+										@if (adv.IsPaid)
+										{
+											<span class="badge bg-success">تم الخصم من الراتب</span>
+										}
+										else
+										{
+											<span class="badge bg-warning text-dark">معلقة</span>
+										}
+									</td>
+									<td>@(adv.PaidDate.HasValue ? adv.PaidDate.Value.ToString("yyyy/MM/dd") : "-")</td>
+									<td>@adv.Notes</td>
+								</tr>
+							}
+						}
+						else
+						{
+							<tr><td colspan="5" class="text-center text-muted p-4">لا يوجد سُلف مسجلة.</td></tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
 
-    <!-- 3. سجل الغياب -->
-    <div class="tab-pane fade" id="attendance">
-        <div class="card card-custom p-0">
-            <div class="table-custom">
-                <table class="table table-bakery mb-0">
-                    <thead>
-                        <tr>
-                            <th>تاريخ اليوم</th>
-                            <th>اليوم</th>
-                            <th>الملاحظات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.Attendances.Any())
-                        {
-                            foreach (var att in Model.Attendances)
-                            {
-                                <tr>
-                                    <td>@att.Date.ToString("yyyy/MM/dd")</td>
-                                    <td>@att.Date.ToString("dddd", new System.Globalization.CultureInfo("ar-EG"))</td>
-                                    <td>@(string.IsNullOrEmpty(att.Notes) ? "غياب" : att.Notes)</td>
-                                </tr>
-                            }
-                        }
-                        else
-                        {
-                            <tr><td colspan="3" class="text-center text-muted p-4">لا يوجد أيام غياب مسجلة لهذا العامل.</td></tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+	<!-- 3. سجل الغياب -->
+	<div class="tab-pane fade" id="attendance">
+		<div class="card card-custom p-0">
+			<div class="table-custom">
+				<table class="table table-bakery mb-0">
+					<thead>
+						<tr>
+							<th>تاريخ اليوم</th>
+							<th>اليوم</th>
+							<th>الملاحظات</th>
+						</tr>
+					</thead>
+					<tbody>
+						@if (Model.Attendances.Any())
+						{
+							foreach (var att in Model.Attendances)
+							{
+								<tr>
+									<td>@att.Date.ToString("yyyy/MM/dd")</td>
+									<td>@att.Date.ToString("dddd", new System.Globalization.CultureInfo("ar-EG"))</td>
+									<td>@(string.IsNullOrEmpty(att.Notes) ? "غياب" : att.Notes)</td>
+								</tr>
+							}
+						}
+						else
+						{
+							<tr><td colspan="3" class="text-center text-muted p-4">لا يوجد أيام غياب مسجلة لهذا العامل.</td></tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
 </div>

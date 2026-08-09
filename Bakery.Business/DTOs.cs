@@ -47,6 +47,7 @@ namespace Bakery.Business.DTOs
         public int RemainingPieces { get; set; }
         public decimal TotalExpectedSalesValue { get; set; }
         public decimal TotalActualSalesValue { get; set; }
+        public decimal SoldBaskets { get; set; }
         public string? Notes { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? ConfirmedAt { get; set; }
@@ -69,8 +70,11 @@ namespace Bakery.Business.DTOs
         public decimal FlourSackCount { get; set; }
         public decimal BasketSellingPrice { get; set; }
 
+        public int TotalActualPieces { get; set; }
         public decimal TotalActualBaskets { get; set; }
-        public decimal TotalRemainingBaskets => TotalActualBaskets - SoldBaskets; // المتبقي
+        public int RemainingPieces { get; set; }
+        public int RemainingBasketsInOrder { get; set; } // المتبقي
+        
         public decimal SoldBaskets { get; set; }
         public decimal TotalAmount => SoldBaskets * BasketSellingPrice;
         public decimal PaidAmount { get; set; }

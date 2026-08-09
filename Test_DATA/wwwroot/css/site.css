@@ -379,3 +379,49 @@ body {
     color: var(--text-muted);
     margin-top: 0.25rem;
 }
+
+.table-bakery td .btn-sm {
+    white-space: nowrap;
+    font-size: 0.78rem;
+}
+
+.table-bakery td {
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+}
+
+
+.btn-xs {
+    padding: 3px 8px !important;
+    font-size: 0.75rem !important;
+    line-height: 1.2 !important;
+    border-radius: 6px !important;
+}
+
+
+.table-bakery th {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #495057;
+    padding: 12px 8px;
+}
+
+.table-bakery td {
+    font-size: 0.88rem;
+    padding: 10px 8px;
+}
+
+.fs-7 {
+    font-size: 0.75rem !important;
+}
+
+.btn-xs {
+    padding: 2px 6px;
+    font-size: 0.72rem;
+}
+
+.bg-amber-light {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}

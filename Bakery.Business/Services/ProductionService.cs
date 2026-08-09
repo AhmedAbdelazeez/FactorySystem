@@ -23,7 +23,7 @@ namespace Bakery.Business.Services
 
         //new methods for product sales
         Task<bool> RecordProductSaleAsync(CreateProductSaleDto dto);
-        Task<IEnumerable<ProductOrderSalesHistoryDto>> GetSalesHistoryAsync();
+        Task<IEnumerable<ProductOrderSalesHistoryDto>> GetSalesHistoryAsync(DateTime? filterDate = null);
         Task<IEnumerable<ProductOrderSalesHistoryDto>> GetSalesHistoryByOrderIdAsync(int orderId);
         Task<IEnumerable<ProductionOrderDto>> GetAvailableOrdersForSaleAsync();
         Task<bool> CancelProductSaleAsync(int treasuryTransactionId);
@@ -135,7 +135,7 @@ namespace Bakery.Business.Services
 
 
 
-        // ===== BL: تحديد عدد القطع لكل شكارة حسب النوع المختار =====
+        //  BL: تحديد عدد القطع لكل شكارة حسب النوع المختار
         private static decimal GetPiecesPerSackForType(ProductionSetting setting, ProductType type) => type switch
         {
             ProductType.Mabroum => setting.MabroumPiecesPerSack,
@@ -161,10 +161,6 @@ namespace Bakery.Business.Services
             var price = customBasketPrice ?? setting.BasketSellingPrice;
 
 
-
-            //int mabroum = (int)Math.Round(flourSackCount * setting.MabroumPiecesPerSack);
-            //int pane = (int)Math.Round(flourSackCount * setting.PanePiecesPerSack);
-            //int sandwich = (int)Math.Round(flourSackCount * setting.SandwichPiecesPerSack);
 
 
             decimal piecesPerSack = GetPiecesPerSackForType(setting, productType);
@@ -218,9 +214,7 @@ namespace Bakery.Business.Services
             return new ProductionCalculationResultDto
             {
                 FlourSackCount = flourSackCount,
-                // TargetMabroum = mabroum,
-                // TargetPane = pane,
-                // TargetSandwich = sandwich,
+                
                 ProductType = productType,
                 ProductTypeName = GetProductTypeName(productType),
                 TargetQuantity = totalTargetPieces,
@@ -285,25 +279,7 @@ namespace Bakery.Business.Services
                 AchievementPercentage = 0
             });
 
-            //order.OrderResults.Add(new ProductionOrderResult
-            //{
-            //    ProductType = ProductType.Pane,
-            //    ProductTypeName = "بانيه",
-            //    TargetQuantity = calc.TargetPane,
-            //    ActualQuantity = 0,
-            //    Difference = -calc.TargetPane,
-            //    AchievementPercentage = 0
-            //});
-
-            //order.OrderResults.Add(new ProductionOrderResult
-            //{
-            //    ProductType = ProductType.Sandwich,
-            //    ProductTypeName = "ساندوتش",
-            //    TargetQuantity = calc.TargetSandwich,
-            //    ActualQuantity = 0,
-            //    Difference = -calc.TargetSandwich,
-            //    AchievementPercentage = 0
-            //});
+           
 
             await _context.ProductionOrders.AddAsync(order);
             await _context.SaveChangesAsync();
@@ -344,7 +320,7 @@ namespace Bakery.Business.Services
 
             order.TotalActualPieces = actualQuantity;
             order.ActualBaskets = actualQuantity / piecesPerBasket;
-            order.TotalActualSalesValue = order.ActualBaskets * order.BasketSellingPrice;
+           // order.TotalActualSalesValue = order.ActualBaskets * order.BasketSellingPrice;
             if (!string.IsNullOrEmpty(notes))
                 order.Notes = notes;
 
@@ -395,25 +371,7 @@ namespace Bakery.Business.Services
                 _context.ProductionOrders.Update(order);
                 await _context.SaveChangesAsync();
 
-                //// Add Treasury Transaction for Income
-                //if (order.TotalActualSalesValue > 0)
-                //{
-                //    var treasuryTx = new TreasuryTransaction
-                //    {
-                //        Date = order.ProductionDate,
-                //        TransactionName = $"إيراد إنتاج فعلي لأمر رقم {order.Id} ({GetProductTypeName(order.SelectedProductType)} - {order.ActualBaskets} باسيكت)",
-                //        TransactionType = TreasuryTransactionType.Income,
-                //        Category = "مبيعات إنتاج",
-                //        Amount = order.TotalActualSalesValue,
-                //        PaymentMethod = PaymentMethod.Cash,
-                //        PaidAmount = order.TotalActualSalesValue,
-                //        RemainingAmount = 0,
-                //        Notes = $"عدد شكاير: {order.FlourSackCount} - إجمالي قطع: {order.TotalActualPieces}",
-                //        ProductionOrderId = order.Id
-                //    };
-                //await _treasuryRepo.AddAsync(treasuryTx);
-                //await _treasuryRepo.SaveChangesAsync();
-                //}
+                
 
                 await transaction.CommitAsync();
             }
@@ -440,20 +398,40 @@ namespace Bakery.Business.Services
             if (dto.SoldBaskets > order.ActualBaskets)
                 throw new InvalidOperationException($"الكمية المطلوبة ({dto.SoldBaskets}) أكبر من المتاح حالياً بالإنتاج ({order.ActualBaskets} باسكت).");
 
+            decimal totalSaleAmount = dto.SoldBaskets * dto.BasketSellingPrice;
+            if (dto.PaymentMethod == PaymentMethod.PartiallyPaid)
+            {
+                if (dto.PaidAmount <= 0)
+                    throw new InvalidOperationException(
+                        "المبلغ المدفوع يجب أن يكون أكبر من صفر.");
+
+                if (dto.PaidAmount >= totalSaleAmount)
+                    throw new InvalidOperationException(
+                        "في الدفع الجزئي يجب أن يكون المبلغ المدفوع أقل من إجمالي البيع.");
+            }
+
+
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                decimal totalSaleAmount = dto.SoldBaskets * dto.BasketSellingPrice;
+                //decimal totalSaleAmount = dto.SoldBaskets * dto.BasketSellingPrice;
                 decimal paidAmount = dto.PaidAmount;
 
                 // إدخال الحركة المالية في الخزينة إذا تم دفع أي مبلغ (كاش / تحويل)
-                if (dto.PaymentMethod == PaymentMethod.Cash || dto.PaymentMethod == PaymentMethod.BankTransfer)
+                PaymentMethod actualPaymentMethod;
+
+                if (dto.PaidAmount >= totalSaleAmount)
                 {
-                    paidAmount = totalSaleAmount;
+                    actualPaymentMethod = dto.PaymentMethod == PaymentMethod.BankTransfer ? PaymentMethod.BankTransfer : PaymentMethod.Cash;
+                    dto.PaidAmount = totalSaleAmount; // عدم السماح بزيادة المدفوع عن الإجمالي
                 }
-                else if (dto.PaymentMethod == PaymentMethod.Unpaid)
+                else if (dto.PaidAmount > 0 && dto.PaidAmount < totalSaleAmount)
                 {
-                    paidAmount = 0;
+                    actualPaymentMethod = PaymentMethod.PartiallyPaid; //  ضبط حالة الدفع الجزئي
+                }
+                else
+                {
+                    actualPaymentMethod = PaymentMethod.Unpaid; //  آجل في حال كان المدفوع 0
                 }
 
                 decimal remainingAmount = totalSaleAmount - paidAmount;
@@ -470,11 +448,12 @@ namespace Bakery.Business.Services
                     TransactionType = TreasuryTransactionType.Income,
                     Category = "مبيعات إنتاج",
                     Amount = totalSaleAmount,
-                    PaymentMethod = dto.PaymentMethod,
+                    PaymentMethod = actualPaymentMethod,
                     PaidAmount = paidAmount,
                     RemainingAmount = remainingAmount > 0 ? remainingAmount : 0,
                     Notes = dto.Notes,
-                    ProductionOrderId = order.Id
+                    ProductionOrderId = order.Id,
+                    SoldBaskets = dto.SoldBaskets
                 };
 
                 await _treasuryRepo.AddAsync(treasuryTx);
@@ -503,57 +482,142 @@ namespace Bakery.Business.Services
             return list.Select(MapToDto);
         }
 
-        public async Task<IEnumerable<ProductOrderSalesHistoryDto>> GetSalesHistoryAsync()
+        public async Task<IEnumerable<ProductOrderSalesHistoryDto>> GetSalesHistoryAsync(DateTime? filterDate = null)
         {
-            var sales = await (from t in _context.TreasuryTransactions
-                               join o in _context.ProductionOrders on t.ProductionOrderId equals o.Id into orders
-                               from o in orders.DefaultIfEmpty()
-                               where t.TransactionType == TreasuryTransactionType.Income && t.Category == "مبيعات إنتاج"
-                               orderby t.Date descending
-                               select new ProductOrderSalesHistoryDto
-                               {
-                                   Id = t.Id,
-                                   ProductionOrderId = t.ProductionOrderId ?? 0,
-                                   ProductSoldAt = t.Date,
-                                   ProductType = o != null ? o.SelectedProductType : ProductType.Mabroum,
-                                   SelectedProductTypeName = o != null ? GetProductTypeName(o.SelectedProductType) : "",
-                                   FlourSackCount = o != null ? o.FlourSackCount : 0,
-                                   BasketSellingPrice = o != null ? o.BasketSellingPrice : 0,
-                                   TotalActualBaskets = o != null ? o.ActualBaskets : 0,
-                                   SoldBaskets = (o != null && o.BasketSellingPrice > 0) ? t.Amount / o.BasketSellingPrice : 0,
-                                   PaidAmount = t.PaidAmount,
-                                   PaymentMethod = t.PaymentMethod,
-                                   Notes = t.Notes
-                               }).ToListAsync();
+            var query = from t in _context.TreasuryTransactions
+                        join o in _context.ProductionOrders on t.ProductionOrderId equals o.Id into orders
+                        from o in orders.DefaultIfEmpty()
+                        where t.TransactionType == TreasuryTransactionType.Income
+                           && t.Category == "مبيعات إنتاج"
+                           && (t.SoldBaskets.HasValue && t.SoldBaskets.Value > 0)
+                        select new { t, o };
 
-            return sales;
+            if (filterDate.HasValue)
+            {
+                var start = filterDate.Value.Date;
+                var end = start.AddDays(1).AddTicks(-1);
+                query = query.Where(x => x.t.Date >= start && x.t.Date <= end);
+            }
+
+            var rawSales = await query
+                 .OrderByDescending(x => x.t.Date)
+                 .ThenByDescending(x => x.t.Id)
+                 .ToListAsync();
+            if (!rawSales.Any())
+                return new List<ProductOrderSalesHistoryDto>();
+
+            var orderIds = rawSales.Select(x => x.t.ProductionOrderId).Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToList();
+
+            var allOrderSales = await _context.TreasuryTransactions
+                 .Where(t => t.ProductionOrderId.HasValue
+                       && orderIds.Contains(t.ProductionOrderId.Value)
+                       && t.TransactionType == TreasuryTransactionType.Income
+                       && t.Category == "مبيعات إنتاج")
+                 .OrderBy(t => t.Date)
+                 .ThenBy(t => t.Id)
+                 .Select(t => new { t.Id, t.ProductionOrderId, t.SoldBaskets, t.Date })
+                 .ToListAsync();
+
+            var resultList = new List<ProductOrderSalesHistoryDto>();
+
+            foreach (var item in rawSales)
+            {
+                var t = item.t;
+                var o = item.o;
+
+
+               
+                decimal currentSold = t.SoldBaskets ?? 0;
+                int totalActualBaskets = 0;
+                decimal priorAndCurrentSold = 0;
+                if (o != null)
+                {
+                    decimal totalSoldAllTime = allOrderSales
+                            .Where(s => s.ProductionOrderId == o.Id)
+                            .Sum(s => s.SoldBaskets ?? 0);
+
+                    totalActualBaskets = o.ActualBaskets + (int)totalSoldAllTime;
+
+                    priorAndCurrentSold = allOrderSales
+                          .Where(s => s.ProductionOrderId == o.Id && (s.Date < t.Date || (s.Date == t.Date && s.Id <= t.Id)))
+                          .Sum(s => s.SoldBaskets ?? 0);
+                }
+
+                decimal remainingInOrderAtThisPoint = Math.Max(0, totalActualBaskets - priorAndCurrentSold);
+
+                resultList.Add(new ProductOrderSalesHistoryDto
+                {
+                    Id = t.Id,
+                    ProductionOrderId = t.ProductionOrderId ?? 0,
+                    ProductSoldAt = t.Date,
+                    ProductType = o != null ? o.SelectedProductType : ProductType.Mabroum,
+                    SelectedProductTypeName = o != null ? GetProductTypeName(o.SelectedProductType) : "",
+                    FlourSackCount = o != null ? o.FlourSackCount : 0,
+
+                    BasketSellingPrice = currentSold > 0 ? t.Amount / currentSold : (o != null ? o.BasketSellingPrice : 0),
+                    TotalActualPieces = o != null ? o.TotalActualPieces : 0,
+                    TotalActualBaskets = totalActualBaskets,
+                    RemainingPieces = o != null ? o.RemainingPieces : 0,
+
+                    RemainingBasketsInOrder = (int)remainingInOrderAtThisPoint,
+
+                    SoldBaskets = currentSold,
+                    PaidAmount = t.PaidAmount,
+                    PaymentMethod = t.PaymentMethod,
+                    Notes = t.Notes
+                });
+            }
+
+            return resultList;
         }
 
 
         public async Task<IEnumerable<ProductOrderSalesHistoryDto>> GetSalesHistoryByOrderIdAsync(int orderId)
         {
-            var sales = await (from t in _context.TreasuryTransactions
-                               join o in _context.ProductionOrders on t.ProductionOrderId equals o.Id into orders
-                               from o in orders.DefaultIfEmpty()
-                               where t.ProductionOrderId == orderId && t.Category == "مبيعات إنتاج"
-                               orderby t.Date descending
-                               select new ProductOrderSalesHistoryDto
-                               {
-                                   Id = t.Id,
-                                   ProductionOrderId = t.ProductionOrderId ?? 0,
-                                   ProductSoldAt = t.Date,
-                                   ProductType = o != null ? o.SelectedProductType : ProductType.Mabroum,
-                                   SelectedProductTypeName = o != null ? GetProductTypeName(o.SelectedProductType) : "",
-                                   FlourSackCount = o != null ? o.FlourSackCount : 0,
-                                   BasketSellingPrice = o != null ? o.BasketSellingPrice : 0,
-                                   TotalActualBaskets = o != null ? o.ActualBaskets : 0,
-                                   SoldBaskets = (o != null && o.BasketSellingPrice > 0) ? t.Amount / o.BasketSellingPrice : 0,
-                                   PaidAmount = t.PaidAmount,
-                                   PaymentMethod = t.PaymentMethod,
-                                   Notes = t.Notes
-                               }).ToListAsync();
+            var order = await _context.ProductionOrders.FirstOrDefaultAsync(o => o.Id == orderId);
 
-            return sales;
+            var allSalesForOrder = await _context.TreasuryTransactions
+                .Where(t => t.ProductionOrderId == orderId
+                         && t.TransactionType == TreasuryTransactionType.Income
+                         && t.Category == "مبيعات إنتاج")
+                .OrderBy(t => t.Date).ThenBy(t => t.Id)
+                .ToListAsync();
+
+            decimal totalSoldAllTime = allSalesForOrder.Sum(s => s.SoldBaskets ?? 0);
+            int totalActualBaskets = (order?.ActualBaskets ?? 0) + (int)totalSoldAllTime;
+
+            var result = new List<ProductOrderSalesHistoryDto>();
+            decimal runningSold = 0;
+
+            foreach (var t in allSalesForOrder.OrderByDescending(x => x.Date).ThenByDescending(x => x.Id))
+            {
+                decimal currentSold = t.SoldBaskets ?? 0;
+
+                // بما إننا شغالين على ترتيب تنازلي، بنحسب "المتبقي وقتها" بنفس منطق الدالة التانية
+                decimal priorAndCurrentSold = allSalesForOrder
+                    .Where(s => s.Date < t.Date || (s.Date == t.Date && s.Id <= t.Id))
+                    .Sum(s => s.SoldBaskets ?? 0);
+
+                result.Add(new ProductOrderSalesHistoryDto
+                {
+                    Id = t.Id,
+                    ProductionOrderId = orderId,
+                    ProductSoldAt = t.Date,
+                    ProductType = order != null ? order.SelectedProductType : ProductType.Mabroum,
+                    SelectedProductTypeName = order != null ? GetProductTypeName(order.SelectedProductType) : "",
+                    FlourSackCount = order != null ? order.FlourSackCount : 0,
+                    BasketSellingPrice = currentSold > 0 ? t.Amount / currentSold : (order != null ? order.BasketSellingPrice : 0),
+                    TotalActualBaskets = totalActualBaskets,
+                    RemainingBasketsInOrder = (int)Math.Max(0, totalActualBaskets - priorAndCurrentSold),
+                    SoldBaskets = currentSold,
+                    PaidAmount = t.PaidAmount,
+                    PaymentMethod = t.PaymentMethod,
+                    Notes = t.Notes
+                });
+            }
+
+
+            return result;
         }
 
         public async Task<bool> CancelProductSaleAsync(int treasuryTransactionId)
@@ -572,10 +636,10 @@ namespace Bakery.Business.Services
                     var order = await _context.ProductionOrders
                         .FirstOrDefaultAsync(o => o.Id == transaction.ProductionOrderId.Value);
 
-                    if (order != null && order.BasketSellingPrice > 0)
+                    if (order != null)
                     {
-                        int restoredBaskets = (int)(transaction.Amount / order.BasketSellingPrice);
-                        order.ActualBaskets += restoredBaskets;
+                        decimal restoredBaskets = transaction.SoldBaskets ?? 0;
+                        order.ActualBaskets += (int)restoredBaskets;
                         _context.ProductionOrders.Update(order);
                     }
                 }
@@ -664,6 +728,7 @@ namespace Bakery.Business.Services
         {
             var query = _context.ProductionOrders
                 .Include(o => o.OrderResults)
+                .Include(o => o.TreasuryTransactions)
                 .AsQueryable();
 
             if (startDate.HasValue)
@@ -679,14 +744,24 @@ namespace Bakery.Business.Services
         public async Task<ProductionOrderDto?> GetProductionOrderByIdAsync(int id)
         {
             var order = await _context.ProductionOrders
-                .Include(o => o.OrderResults)
-                .FirstOrDefaultAsync(o => o.Id == id);
+                 .Include(o => o.OrderResults)
+                 .Include(o => o.TreasuryTransactions)
+                 .FirstOrDefaultAsync(o => o.Id == id);
 
-            return order == null ? null : MapToDto(order);
+            return order != null ? MapToDto(order) : null;
         }
 
         private static ProductionOrderDto MapToDto(ProductionOrder order)
         {
+            decimal soldBasketsCount = order.TreasuryTransactions?
+        .Where(t => t.TransactionType == TreasuryTransactionType.Income
+                 && t.Category == "مبيعات إنتاج")
+        .Sum(s => s.SoldBaskets ?? 0) ?? 0;
+
+            decimal actualRealizedSales = order.TreasuryTransactions?
+            .Where(t => t.TransactionType == TreasuryTransactionType.Income && t.Category == "مبيعات إنتاج")
+            .Sum(s => (s.SoldBaskets ?? 0) * order.BasketSellingPrice) ?? 0;
+
             return new ProductionOrderDto
             {
                 Id = order.Id,
@@ -700,9 +775,12 @@ namespace Bakery.Business.Services
                 TotalActualPieces = order.TotalActualPieces,
                 ExpectedBaskets = order.ExpectedBaskets,
                 ActualBaskets = order.ActualBaskets,
+                SoldBaskets = soldBasketsCount,
+
                 RemainingPieces = order.RemainingPieces,
                 TotalExpectedSalesValue = order.TotalExpectedSalesValue,
-                TotalActualSalesValue = order.TotalActualSalesValue,
+
+                TotalActualSalesValue = actualRealizedSales,
                 Notes = order.Notes,
                 CreatedAt = order.CreatedAt,
                 ConfirmedAt = order.ConfirmedAt,

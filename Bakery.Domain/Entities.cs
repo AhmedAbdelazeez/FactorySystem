@@ -124,6 +124,9 @@ namespace Bakery.Domain.Entities
 
         public ICollection<ProductionOrderResult> OrderResults { get; set; } = new List<ProductionOrderResult>();
         public ICollection<InventoryTransaction> InventoryTransactions { get; set; } = new List<InventoryTransaction>();
+
+        public  ICollection<TreasuryTransaction> TreasuryTransactions { get; set; } = new List<TreasuryTransaction>();
+    
     }
 
     public class ProductionOrderResult
@@ -221,7 +224,9 @@ namespace Bakery.Domain.Entities
         public decimal RemainingAmount { get; set; }
         public string? Notes { get; set; }
 
+        public decimal? SoldBaskets { get; set; }  // جديد - عشان نعرف بالظبط كام باسكيت اتباع في الحركة دي
         public int? ExpenseId { get; set; }
         public int? ProductionOrderId { get; set; }
+        public  ProductionOrder? ProductionOrder { get; set; }
     }
 }

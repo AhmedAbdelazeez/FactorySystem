@@ -52,6 +52,45 @@
 		</div>
 	</div>
 </div>
+
+<!-- 🔍 Compact Date Filter Box -->
+<div class="card border-0 shadow-sm rounded-4 mb-3">
+	<div class="card-body p-2 px-3 bg-light rounded-4 border">
+		<form asp-action="Index" method="get" id="productionDateFilterForm" class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+			<div class="d-flex align-items-center gap-2">
+				<label for="startDate" class="fw-bold fs-7 text-dark text-nowrap mb-0">
+					<i class="fa-regular fa-calendar-days text-primary me-1"></i> عرض الأوامر من تاريخ:
+				</label>
+				<input type="date"
+					   name="startDate"
+					   id="startDate"
+					   class="form-control form-control-sm bg-white fw-bold shadow-sm"
+					   style="max-width: 150px;"
+					   value="@(Context.Request.Query["startDate"].ToString())"
+					   onchange="document.getElementById('productionDateFilterForm').submit();" />
+
+				<label for="endDate" class="fw-bold fs-7 text-dark text-nowrap mb-0 ms-2">إلى:</label>
+				<input type="date"
+					   name="endDate"
+					   id="endDate"
+					   class="form-control form-control-sm bg-white fw-bold shadow-sm"
+					   style="max-width: 150px;"
+					   value="@(Context.Request.Query["endDate"].ToString())"
+					   onchange="document.getElementById('productionDateFilterForm').submit();" />
+			</div>
+
+			<div class="d-flex gap-2 align-items-center">
+				<button type="button" class="btn btn-sm btn-primary fw-bold px-3 fs-7" onclick="selectTodayProduction()">
+					<i class="fa-solid fa-calendar-day me-1"></i> اليوم
+				</button>
+				<a asp-action="Index" class="btn btn-sm btn-outline-secondary fw-bold px-3 fs-7" title="عرض كل الأوامر">
+					<i class="fa-solid fa-list me-1"></i> كافة الأوامر
+				</a>
+			</div>
+		</form>
+	</div>
+</div>
+
 <!-- Production Orders Table -->
 <div class="card card-custom">
 	<div class="card-body p-0">
@@ -63,11 +102,12 @@
 						<th>النوع</th>
 						<th>عدد الشكاير</th>
 						<th>المستهدف (قطع / باسيكت)</th>
-						<th>الفعلي (قطع / باسيكت)</th>
-						<th>القيمة المبيعات المتوقعة</th>
-						<th>قيمة المبيعات الفعلية</th>
+						<th>الإنتاج الفعلي</th>
+						<th>الكمية المباعة والمتاحة</th>
+						<th>القيمة المتوقعة</th>
+						<th>قيمة المباع فعليا</th>
 						<th>حالة التشغيل</th>
-						<th class="text-center">الإجراءات والاعتماد</th>
+						<th class="text-center" style="min-width: 240px;">الإجراءات والاعتماد</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -76,55 +116,117 @@
 						foreach (var order in Model)
 						{
 							<tr>
+								<!-- رقم الأمر والتاريخ -->
 								<td>
 									<div class="fw-bold text-primary">#@order.Id</div>
-									<div class="small text-muted">@order.ProductionDate.ToString("yyyy/MM/dd")</div>
+									<div class="small text-muted"><i class="fa-regular fa-calendar me-1"></i>@order.ProductionDate.ToString("yyyy/MM/dd")</div>
 								</td>
+
+								<!-- النوع -->
 								<td><span class="badge bg-amber">@order.SelectedProductTypeName</span></td>
+
+								<!-- عدد الشكاير -->
 								<td class="fw-bold fs-5">@order.FlourSackCount <small class="fs-6 text-muted">شكارة</small></td>
+
+								<!-- المستهدف -->
 								<td>
 									<div class="fw-bold text-dark">@order.TotalTargetPieces <small>قطعة</small></div>
 									<span class="badge bg-light text-dark border">@order.ExpectedBaskets باسيكت + @order.RemainingPieces قطعة</span>
 								</td>
+
+								<!-- الإنتاج الفعلي -->
 								<td>
 									@if (order.TotalActualPieces > 0)
 									{
-										<div class="fw-bold text-success">@order.TotalActualPieces <small>قطعة</small></div>
-										<span class="badge bg-success">@order.ActualBaskets باسيكت</span>
+										var piecesPerBasket = settings.PiecesPerBasket > 0 ? settings.PiecesPerBasket : 28;
+										var totalActualBasketsCalc = order.TotalActualPieces / piecesPerBasket;
+
+										<div class="fw-bold text-dark">@order.TotalActualPieces <small>قطعة</small></div>
+										<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+											(@totalActualBasketsCalc باسكت + @order.RemainingPieces قطعة)
+										</span>
 									}
 									else
 									{
 										<span class="text-muted fst-italic">لم يسجل بعد</span>
 									}
 								</td>
-								<td>@order.TotalExpectedSalesValue.ToString("N2") ج.م</td>
-								<td class="fw-bold text-success">@order.TotalActualSalesValue.ToString("N2") ج.م</td>
+
+								<!-- الكمية المباعة والمتاحة -->
 								<td>
-									@if (order.Status == ProductionStatus.Confirmed)
+									@if (order.SoldBaskets > 0)
 									{
-										<span class="badge bg-success p-2"><i class="fa-solid fa-circle-check me-1"></i> مؤكد ومخصوم من المخزن</span>
+										<div class="fw-bold text-primary fs-6">@order.SoldBaskets.ToString("0.##") <small class="text-muted">باسكت مباع</small></div>
 									}
 									else
 									{
-										<span class="badge bg-warning text-dark p-2"><i class="fa-solid fa-clock me-1"></i> مسودة (تحت الإعداد)</span>
+										<div class="text-muted small mb-1">0 باسكت مباع</div>
+									}
+
+									@if (order.TotalActualPieces > 0)
+									{
+										<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 d-inline-block">
+											المتاح: @order.ActualBaskets باسكت
+										</span>
 									}
 								</td>
-								<td class="text-center">
-									<button class="btn btn-sm btn-outline-info" onclick="viewOrderDetails(@order.Id)">
-										<i class="fa-solid fa-eye me-1"></i> عرض وتعديل
-									</button>
-									@if (order.Status == ProductionStatus.Draft)
-									{
-										<form asp-action="Confirm" method="post" class="d-inline" onsubmit="return confirm('هل أنت تأكد من اعتماد وتأكيد أمر الإنتاج؟ سيعمل النظام على خصم الخامات فوراً وتسجيل المبيعات بالخزينة.');">
-											<input type="hidden" name="id" value="@order.Id" />
-											<button type="submit" class="btn btn-sm btn-success"><i class="fa-solid fa-check me-1"></i> تأكيد الإنتاج</button>
-										</form>
 
-										<button type="button" class="btn btn-sm btn-outline-danger"
-												onclick="confirmDelete(@order.Id, '@Url.Action("Delete", "Production")', 'هل أنت متأكد من حذف هذا الأمر؟')">
-											<i class="fa-solid fa-trash"></i>
-										</button>
+								<!-- المبيعات المتوقعة والفعلية -->
+								<td class="fw-bold">@order.TotalExpectedSalesValue.ToString("N2") <small class="text-muted">ج.م</small></td>
+								<td class="fw-bold text-success">@order.TotalActualSalesValue.ToString("N2") <small>ج.م</small></td>
+
+								<!-- حالة التشغيل -->
+								<td>
+									@if (order.Status == ProductionStatus.Confirmed)
+									{
+										<span class="badge bg-success p-2">
+											<i class="fa-solid fa-circle-check me-1"></i> مؤكد ومخصوم
+										</span>
 									}
+									else
+									{
+										<span class="badge bg-warning text-dark p-2">
+											<i class="fa-solid fa-clock me-1"></i> مسودة
+										</span>
+									}
+								</td>
+
+								<!-- الإجراءات والاعتماد -->
+								<td class="text-center text-nowrap">
+									<div class="d-inline-flex align-items-center justify-content-center gap-1">
+										@if (order.Status == ProductionStatus.Draft)
+										{
+											<button type="button"
+													class="btn btn-xs btn-outline-primary fw-bold text-nowrap py-1 px-2"
+													title="إدخال وتسجيل الكميات الفعلية"
+													onclick="viewOrderDetails(@order.Id)">
+												<i class="fa-solid fa-pen-to-square me-1"></i>إدخال الفعلي
+											</button>
+
+											<button type="button"
+													class="btn btn-xs btn-success fw-bold text-nowrap py-1 px-2"
+													title="تأكيد الإنتاج"
+													onclick="openConfirmProductionModal(@order.Id)">
+												<i class="fa-solid fa-check me-1"></i>تأكيد
+											</button>
+
+											<button type="button"
+													class="btn btn-xs btn-outline-danger py-1 px-2"
+													title="حذف الأمر"
+													onclick="confirmDelete(@order.Id, '@Url.Action("Delete", "Production")', 'هل أنت متأكد من حذف هذا الأمر؟')">
+												<i class="fa-solid fa-trash"></i>
+											</button>
+										}
+										else
+										{
+											<button type="button"
+													class="btn btn-xs btn-outline-info fw-bold text-nowrap py-1 px-2"
+													title="عرض تفاصيل أمر الإنتاج"
+													onclick="viewOrderDetails(@order.Id)">
+												<i class="fa-solid fa-eye me-1"></i>عرض التفاصيل
+											</button>
+										}
+									</div>
 								</td>
 							</tr>
 						}
@@ -132,7 +234,7 @@
 					else
 					{
 						<tr>
-							<td colspan="9" class="text-center p-4 text-muted">لا توجد أوامر إنتاج سابقة. اضغط على فتح أمر إنتاج جديد للبدء.</td>
+							<td colspan="10" class="text-center p-4 text-muted">لا توجد أوامر إنتاج سابقة. اضغط على فتح أمر إنتاج جديد للبدء.</td>
 						</tr>
 					}
 				</tbody>
@@ -242,6 +344,90 @@
 	</div>
 </div>
 
+<!-- Confirm Production Modal -->
+<div class="modal fade" id="confirmProductionModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content border-0">
+
+			<div class="modal-header bg-success text-white">
+				<h5 class="modal-title fw-bold">
+					<i class="fa-solid fa-circle-check me-2"></i>
+					تأكيد أمر الإنتاج
+				</h5>
+
+				<button type="button"
+						class="btn-close btn-close-white ms-0 me-auto"
+						data-bs-dismiss="modal">
+				</button>
+			</div>
+
+			<div class="modal-body text-center p-4">
+
+				<div class="mb-3">
+					<i class="fa-solid fa-triangle-exclamation text-warning fs-1"></i>
+				</div>
+
+				<h5 class="fw-bold mb-3">
+					هل أنت متأكد من اعتماد أمر الإنتاج؟
+				</h5>
+
+				<p class="text-muted mb-3">
+					سيتم اعتماد أمر الإنتاج وخصم الخامات من المخزن.
+					يمكن بعد ذلك تسجيل عمليات البيع من شاشة المبيعات.
+				</p>
+
+				<div class="alert alert-warning text-end mb-0">
+					<div class="fw-bold mb-1">
+						<i class="fa-solid fa-circle-info me-1"></i>
+						تنبيه
+					</div>
+
+					<small>
+						بعد التأكيد لن يكون بالإمكان تعديل بيانات الإنتاج الفعلية.
+					</small>
+				</div>
+
+				<div class="mt-3 p-3 bg-light rounded border text-end">
+					<div>
+						<strong>رقم أمر الإنتاج:</strong>
+						<span id="confirmProductionOrderId"
+							  class="text-primary fw-bold">
+							-
+						</span>
+					</div>
+				</div>
+
+			</div>
+
+			<div class="modal-footer">
+
+				<button type="button"
+						class="btn btn-secondary"
+						data-bs-dismiss="modal">
+					إلغاء
+				</button>
+
+				<form asp-action="Confirm" method="post" id="confirmProductionForm">
+					@Html.AntiForgeryToken()
+
+					<input type="hidden"
+						   name="id"
+						   id="confirmProductionId" />
+
+					<button type="submit"
+							class="btn btn-success fw-bold">
+
+						<i class="fa-solid fa-check me-1"></i>
+						نعم، اعتماد أمر الإنتاج
+					</button>
+				</form>
+
+			</div>
+
+		</div>
+	</div>
+</div>
+
 @section Scripts {
 	<script>
 		function calculateTargetsLive() {
@@ -310,54 +496,93 @@
 			const result = order.OrderResults[0];
 
 			let html = `
-						<div class="row g-3 mb-3">
-							<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>النوع:</strong> ${order.SelectedProductTypeName}</div></div>
-							<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>عدد الشكاير:</strong> ${order.FlourSackCount} شكارة</div></div>
-							<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>الحالة:</strong> ${order.StatusName}</div></div>
-						</div>
+								<div class="row g-3 mb-3">
+									<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>النوع:</strong> ${order.SelectedProductTypeName}</div></div>
+									<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>عدد الشكاير:</strong> ${order.FlourSackCount} شكارة</div></div>
+									<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>الحالة:</strong> ${order.StatusName}</div></div>
+								</div>
 
-						<h6 class="fw-bold text-primary mb-2">المستهدف مقابل الفعلي:</h6>
-						<div class="table-responsive mb-3">
-							<table class="table table-bordered align-middle text-center">
-								<thead class="table-dark">
-									<tr>
-										<th>النوع</th>
-										<th>الكمية المستهدفة</th>
-										<th>الكمية الفعلية المُنتجة</th>
-										<th>الفرق</th>
-										<th>نسبة الإنجاز</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr>
-										<td class="fw-bold">${result.ProductTypeName}</td>
-										<td class="fw-bold text-primary">${result.TargetQuantity} قطعة</td>
-										<td>
-											<input type="number" name="actualQuantity" value="${result.ActualQuantity}" ${readonlyAttr} class="form-control form-control-sm text-center fw-bold text-success" style="max-width: 120px; margin: 0 auto;" />
-										</td>
-										<td class="fw-bold ${result.Difference >= 0 ? 'text-success' : 'text-danger'}">${result.Difference} قطعة</td>
-										<td><span class="badge ${result.AchievementPercentage >= 100 ? 'bg-success' : 'bg-warning text-dark'}">${result.AchievementPercentage}%</span></td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
+								<h6 class="fw-bold text-primary mb-2">المستهدف مقابل الفعلي:</h6>
+								<div class="table-responsive mb-3">
+									<table class="table table-bordered align-middle text-center">
+										<thead class="table-dark">
+											<tr>
+												<th>النوع</th>
+												<th>الكمية المستهدفة</th>
+												<th>الكمية الفعلية المُنتجة</th>
+												<th>الفرق</th>
+												<th>نسبة الإنجاز</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr>
+												<td class="fw-bold">${result.ProductTypeName}</td>
+												<td class="fw-bold text-primary">${result.TargetQuantity} قطعة</td>
+												<td>
+													<input type="number" name="actualQuantity" value="${result.ActualQuantity}" ${readonlyAttr} class="form-control form-control-sm text-center fw-bold text-success" style="max-width: 120px; margin: 0 auto;" />
+												</td>
+												<td class="fw-bold ${result.Difference >= 0 ? 'text-success' : 'text-danger'}">${result.Difference} قطعة</td>
+												<td><span class="badge ${result.AchievementPercentage >= 100 ? 'bg-success' : 'bg-warning text-dark'}">${result.AchievementPercentage}%</span></td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
 
-						<div class="row g-2 mt-2 bg-light p-3 rounded">
-							<div class="col-md-6"><strong>الباسكيت المستهدف:</strong> ${order.ExpectedBaskets} باسيكت</div>
-							<div class="col-md-6"><strong>الباسكيت الفعلي:</strong> <span class="fw-bold text-success">${order.ActualBaskets} باسيكت</span></div>
-							<div class="col-md-6"><strong>قيمة المبيعات المتوقعة:</strong> ${order.TotalExpectedSalesValue.toFixed(2)} ج.م</div>
-							<div class="col-md-6"><strong>قيمة المبيعات الفعلية:</strong> <span class="fw-bold text-success">${order.TotalActualSalesValue.toFixed(2)} ج.م</span></div>
-						</div>
+								<div class="row g-2 mt-2 bg-light p-3 rounded">
+									<div class="col-md-6"><strong>الباسكيت المستهدف:</strong> ${order.ExpectedBaskets} باسيكت</div>
+									<div class="col-md-6"><strong>الباسكيت الفعلي:</strong> <span class="fw-bold text-success">${order.ActualBaskets} باسيكت</span></div>
+									<div class="col-md-6"><strong>قيمة المبيعات المتوقعة:</strong> ${order.TotalExpectedSalesValue.toFixed(2)} ج.م</div>
+									<div class="col-md-6"><strong>قيمة المبيعات الفعلية:</strong> <span class="fw-bold text-success">${order.TotalActualSalesValue.toFixed(2)} ج.م</span></div>
+								</div>
 
-						<div class="mt-3">
-							<label class="form-label fw-bold">ملاحظات أخرى:</label>
-							<input type="text" name="notes" value="${order.Notes || ''}" ${isConfirmed ? 'readonly' : ''} class="form-control" />
-						</div>
-					`;
+								<div class="mt-3">
+									<label class="form-label fw-bold">ملاحظات أخرى:</label>
+									<input type="text" name="notes" value="${order.Notes || ''}" ${isConfirmed ? 'readonly' : ''} class="form-control" />
+								</div>
+							`;
 
 			document.getElementById('modalOrderContent').innerHTML = html;
 			document.getElementById('saveActualBtn').style.display = isConfirmed ? 'none' : 'inline-block';
 			new bootstrap.Modal(document.getElementById('orderDetailsModal')).show();
 		}
+
+
+
+		function openConfirmProductionModal(id) {
+
+			document.getElementById('confirmProductionId').value = id;
+
+			document.getElementById('confirmProductionOrderId').innerText = '#' + id;
+
+			const modalElement = document.getElementById('confirmProductionModal');
+
+			const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+
+			modal.show();
+		}
+
+
+		function selectTodayProduction() {
+			const today = new Date();
+			const year = today.getFullYear();
+			const month = String(today.getMonth() + 1).padStart(2, '0');
+			const day = String(today.getDate()).padStart(2, '0');
+
+			const formattedDate = `${year}-${month}-${day}`;
+
+			const startDate = document.getElementById('startDate');
+			const endDate = document.getElementById('endDate');
+
+			if (startDate && endDate) {
+				startDate.value = formattedDate;
+				endDate.value = formattedDate;
+			}
+
+			const form = document.getElementById('productionDateFilterForm');
+			if (form) {
+				form.submit();
+			}
+		}
+
 	</script>
 }

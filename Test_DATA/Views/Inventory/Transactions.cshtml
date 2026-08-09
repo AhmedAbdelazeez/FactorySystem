@@ -9,7 +9,7 @@
 
 	// 1. التقسيم إلى تابين
 	var purchaseTransactions = allTransactions.Where(t => t.TransactionType == TransactionType.Purchase);
-	var deductionTransactions = allTransactions.Where(t => t.TransactionType == TransactionType.ProductionDeduction );
+	var deductionTransactions = allTransactions.Where(t => t.TransactionType == TransactionType.ProductionDeduction);
 
 	// 2. حساب الإحصائيات
 	var totalTransactions = allTransactions.Count();
@@ -246,6 +246,7 @@
 											</button>
 										</div>
 
+
 										<!-- Modal Edit Transaction -->
 										<div class="modal fade text-start" id="editModal-@tx.Id" tabindex="-1" aria-hidden="true">
 											<div class="modal-dialog modal-dialog-centered modal-lg">
@@ -256,7 +257,7 @@
 														</h5>
 														<button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button>
 													</div>
-													<form asp-action="UpdateTransaction" method="post">
+													<form asp-action="UpdateTransaction" method="post" id="editTxForm-@tx.Id">
 														<div class="modal-body p-4 row g-3">
 															<input type="hidden" name="transactionId" value="@tx.Id" />
 
@@ -277,23 +278,26 @@
 
 															<div class="col-md-6">
 																<label class="form-label fw-bold">طريقة الدفع <span class="text-danger">*</span></label>
-																<select name="paymentMethod" id="payMethod-@tx.Id" class="form-select" onchange="togglePaidAmountEdit(@tx.Id)">
-																	<option value="@PaymentMethod.Cash" selected="@(tx.Expense?.PaymentMethod == PaymentMethod.Cash)">كاش</option>
-																	<option value="@PaymentMethod.BankTransfer" selected="@(tx.Expense?.PaymentMethod == PaymentMethod.BankTransfer)">تحويل بنكي</option>
-																	<option value="@PaymentMethod.PartiallyPaid" selected="@(tx.Expense?.PaymentMethod == PaymentMethod.PartiallyPaid)">مدفوع جزئياً</option>
-																	<option value="@PaymentMethod.Unpaid" selected="@(tx.Expense?.PaymentMethod == PaymentMethod.Unpaid)">آجل (غير مدفوع)</option>
+																<select name="paymentMethod" id="payMethod-@tx.Id" class="form-select fw-bold" onchange="togglePaidAmountEdit(@tx.Id)">
+																	<option value="@((int)PaymentMethod.Cash)" selected="@(tx.Expense?.PaymentMethod == PaymentMethod.Cash)">كاش (مدفوع بالكامل)</option>
+																	<option value="@((int)PaymentMethod.BankTransfer)" selected="@(tx.Expense?.PaymentMethod == PaymentMethod.BankTransfer)">تحويل بنكي (مدفوع بالكامل)</option>
+																	<option value="@((int)PaymentMethod.PartiallyPaid)" selected="@(tx.Expense?.PaymentMethod == PaymentMethod.PartiallyPaid)">مدفوع جزئياً</option>
+																	<option value="@((int)PaymentMethod.Unpaid)" selected="@(tx.Expense?.PaymentMethod == PaymentMethod.Unpaid)">آجل (غير مدفوع)</option>
 																</select>
 															</div>
 
 															<div class="col-md-6 @(tx.Expense?.PaymentMethod == PaymentMethod.PartiallyPaid ? "" : "d-none")" id="paidAmountContainer-@tx.Id">
-																<label class="form-label fw-bold">المبلغ المدفوع حالياً (ج.م)</label>
-																<input type="number" step="0.01" name="paidAmount" id="paidAmount-@tx.Id" class="form-control fw-bold text-success" value="@(tx.Expense?.PaidAmount ?? 0)" />
+																<label class="form-label fw-bold">المبلغ المدفوع حالياً (ج.م) <span class="text-danger">*</span></label>
+																<input type="number" step="0.01" min="0" name="paidAmount" id="paidAmount-@tx.Id" class="form-control fw-bold text-success" value="@(tx.Expense?.PaidAmount ?? 0)" autocomplete="off" oninput="validateEditPartialPayment(@tx.Id)" />
+																<div id="paidAmountError-@tx.Id" class="text-danger small fw-bold mt-1 d-none"></div>
 															</div>
 
 															<div class="col-12">
-																<div class="alert alert-info border-0 bg-info-subtle text-info-emphasis rounded-3 py-2 mb-0 small">
-																	<i class="fa-solid fa-calculator me-1"></i>
-																	الإجمالي الجديد المتوقع: <span id="totalDisplay-@tx.Id" class="fw-bold text-primary fs-6">@tx.TotalAmount.ToString("N2")</span> ج.م
+																<div class="p-3 bg-light rounded border text-center">
+																	<span class="text-muted d-block mb-1">الإجمالي الجديد المتوقع: <strong id="totalDisplay-@tx.Id" class="fw-bold text-primary fs-6">@tx.TotalAmount.ToString("N2")</strong> ج.م</span>
+																	<div id="editRemainingContainer-@tx.Id" class="@(tx.Expense?.PaymentMethod == PaymentMethod.PartiallyPaid ? "" : "d-none") mt-2 pt-2 border-top">
+																		<span class="text-danger fw-bold">المتبقي (آجل): <span id="editRemainingDisp-@tx.Id">0.00</span> ج.م</span>
+																	</div>
 																</div>
 															</div>
 
@@ -304,7 +308,7 @@
 														</div>
 														<div class="modal-footer bg-light">
 															<button type="button" class="btn btn-outline-secondary rounded-3 px-4" data-bs-dismiss="modal">إلغاء</button>
-															<button type="submit" class="btn btn-primary rounded-3 px-4 shadow-sm">حفظ التعديلات</button>
+															<button type="submit" id="submitEditBtn-@tx.Id" class="btn btn-primary rounded-3 px-4 shadow-sm">حفظ التعديلات</button>
 														</div>
 													</form>
 												</div>
@@ -463,29 +467,58 @@
 
 		function togglePaidAmountEdit(id) {
 			const methodSelect = document.getElementById(`payMethod-${id}`);
-			const method = methodSelect.value;
+			if (!methodSelect) return;
+
+			const method = parseInt(methodSelect.value, 10);
 			const container = document.getElementById(`paidAmountContainer-${id}`);
 			const paidInput = document.getElementById(`paidAmount-${id}`);
+			const remainingContainer = document.getElementById(`editRemainingContainer-${id}`);
+			const submitBtn = document.getElementById(`submitEditBtn-${id}`);
 
-			const cashVal = "@PaymentMethod.Cash.ToString()";
-			const bankVal = "@PaymentMethod.BankTransfer.ToString()";
-			const partialVal = "@PaymentMethod.PartiallyPaid.ToString()";
-			const unpaidVal = "@PaymentMethod.Unpaid.ToString()";
+			const cashVal = parseInt("@((int)PaymentMethod.Cash)", 10);
+			const bankVal = parseInt("@((int)PaymentMethod.BankTransfer)", 10);
+			const partialVal = parseInt("@((int)PaymentMethod.PartiallyPaid)", 10);
+			const unpaidVal = parseInt("@((int)PaymentMethod.Unpaid)", 10);
 
 			const qty = parseFloat(document.getElementById(`qty-${id}`).value) || 0;
 			const price = parseFloat(document.getElementById(`price-${id}`).value) || 0;
 			const total = qty * price;
 
+			// 1 & 2. كاش أو تحويل بنكي (المدفوع = الإجمالي تلقائياً)
+			if (method === cashVal || method === bankVal) {
+				container.classList.add('d-none');
+				if (remainingContainer) remainingContainer.classList.add('d-none');
+				paidInput.value = total.toFixed(2);
+				paidInput.required = false;
+				clearEditError(id);
+				return;
+			}
+
+			// 4. آجل (المدفوع = صفر)
+			if (method === unpaidVal) {
+				container.classList.add('d-none');
+				if (remainingContainer) remainingContainer.classList.add('d-none');
+				paidInput.value = "0.00";
+				paidInput.required = false;
+				clearEditError(id);
+				return;
+			}
+
+			// 3. دفع جزئي (إظهار الـ Input وحسابه مرن بحسب إدخال المستخدم)
 			if (method === partialVal) {
 				container.classList.remove('d-none');
-			} else {
-				container.classList.add('d-none');
+				if (remainingContainer) remainingContainer.classList.remove('d-none');
+				paidInput.required = true;
 
-				if (method === unpaidVal) {
-					paidInput.value = 0;
-				} else if (method === cashVal || method === bankVal) {
-					paidInput.value = total;
+				let currentPaid = parseFloat(paidInput.value) || 0;
+
+				// لو كان مسجل 0 أو قيمة غير منطقية لسبب ما، خليه يقترح نص الإجمالي كـ Default
+				if (currentPaid <= 0 || currentPaid >= total) {
+					currentPaid = total > 0 ? (total / 2) : 0;
+					paidInput.value = currentPaid.toFixed(2);
 				}
+
+				validateEditPartialPayment(id);
 			}
 		}
 
