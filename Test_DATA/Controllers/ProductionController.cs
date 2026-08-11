@@ -3,6 +3,7 @@ using Bakery.Business.Services;
 using Bakery.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Test_DATA.Controllers
@@ -27,7 +28,7 @@ namespace Test_DATA.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> CalculateApi(decimal flourSackCount, ProductType productType,decimal? customBasketPrice)
+        public async Task<IActionResult> CalculateApi(decimal flourSackCount, ProductType productType, decimal? customBasketPrice)
         {
             try
             {
@@ -56,7 +57,7 @@ namespace Test_DATA.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> UpdateActual(int id, int actualQuantity, string? notes)
+        public async Task<IActionResult> UpdateActual(int id, decimal actualQuantity, string? notes)
         {
             try
             {
@@ -76,7 +77,6 @@ namespace Test_DATA.Controllers
             try
             {
                 await _productionService.ConfirmProductionOrderAsync(id);
-
                 TempData["SuccessMessage"] = "تم تأكيد عملية الإنتاج وخصم الخامات من المخزن بنجاح! 🥖✨";
             }
             catch (Exception ex)
@@ -116,7 +116,8 @@ namespace Test_DATA.Controllers
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"حدث خطأ أثناء تحميل بيانات المبيعات: {ex.Message}";
-                return View();
+                ViewBag.AvailableOrders = new List<ProductionOrderDto>();
+                return View(new List<ProductOrderSalesHistoryDto>());
             }
         }
 
@@ -166,5 +167,3 @@ namespace Test_DATA.Controllers
         }
     }
 }
-    
-

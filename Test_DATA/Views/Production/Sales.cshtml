@@ -3,11 +3,14 @@
 @{
 	ViewData["Title"] = "شاشة وسجل المبيعات";
 	var availableOrders = ViewBag.AvailableOrders as IEnumerable<Bakery.Business.DTOs.ProductionOrderDto> ?? new List<Bakery.Business.DTOs.ProductionOrderDto>();
-
+	var settings = ViewBag.Settings as Bakery.Domain.Entities.ProductionSetting ?? new Bakery.Domain.Entities.ProductionSetting();
+    int piecesPerBasket = settings.PiecesPerBasket > 0 ? settings.PiecesPerBasket : 28;
 	// حساب إحصائيات الكروت
 	decimal totalSales = Model?.Sum(s => s.TotalAmount) ?? 0;
 	decimal totalPaid = Model?.Sum(s => s.PaidAmount) ?? 0;
 	decimal totalRemaining = Model?.Sum(s => s.RemainingAmount) ?? 0;
+
+
 }
 
 <!-- Header -->
@@ -39,7 +42,7 @@
 	</div>
 </div>
 
-<!--  Compact Date Filter Box -->
+<!-- Compact Date Filter Box -->
 <div class="card border-0 shadow-sm rounded-4 mb-3">
 	<div class="card-body p-2 px-3 bg-light rounded-4 border">
 		<form asp-action="Sales" method="get" id="dateFilterForm" class="d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -147,11 +150,8 @@
 
 								<!-- إلاجمالي المنتج -->
 								<td>
-									<div class="fw-bold text-dark">@sale.TotalActualBaskets <small class="text-muted">باسكت</small></div>
-									@if (sale.RemainingPieces > 0)
-									{
-										<div class="small text-muted fs-7">+ @sale.RemainingPieces قطعة</div>
-									}
+									<div class="fw-bold text-dark">@sale.TotalActualBaskets.ToString("0.##") <small class="text-muted">باسكت</small></div>
+									
 								</td>
 
 								<!-- الكمية المباعة -->
@@ -163,7 +163,7 @@
 								<!-- الكمية المتبقية -->
 								<td>
 									<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fs-7">
-										<i class="fa-solid fa-box me-1"></i>@sale.RemainingBasketsInOrder باسكت
+										<i class="fa-solid fa-box me-1"></i>@sale.RemainingBasketsInOrder.ToString("0.##") باسكت
 									</span>
 								</td>
 
@@ -318,17 +318,14 @@
 								<option value="@order.Id"
 										data-available="@order.ActualBaskets"
 										data-price="@order.BasketSellingPrice">
-
 									أمر #@order.Id -
 									@order.SelectedProductTypeName
-									(المتاح: @order.ActualBaskets باسكت)
-
+									(المتاح: @order.ActualBaskets.ToString("0.##") باسكت)
 								</option>
 							}
 
 						</select>
 					</div>
-
 
 					<!-- Sold Baskets -->
 					<div class="col-md-6">
@@ -338,15 +335,15 @@
 						</label>
 
 						<input type="number"
+							   step="0.01"
 							   name="SoldBaskets"
 							   id="saleSoldBaskets"
-							   min="1"
+							   min="0.01"
 							   value="1"
 							   required
 							   class="form-control form-control-lg fw-bold text-success"
 							   oninput="calculateSaleTotal()" />
 					</div>
-
 
 					<!-- Basket Price -->
 					<div class="col-md-6">
@@ -364,7 +361,6 @@
 							   oninput="calculateSaleTotal()" />
 					</div>
 
-
 					<!-- Payment Method -->
 					<div class="col-md-6">
 						<label class="form-label fw-bold">
@@ -377,30 +373,16 @@
 								class="form-select fw-bold"
 								onchange="togglePaidAmount()">
 
-							<option value="1">
-								كاش (نقدي)
-							</option>
-
-							<option value="2">
-								تحويل بنكي
-							</option>
-
-							<option value="3">
-								دفع جزئي
-							</option>
-
-							<option value="4">
-								آجل (غير مدفوع)
-							</option>
+							<option value="1">كاش (نقدي)</option>
+							<option value="2">تحويل بنكي</option>
+							<option value="3">دفع جزئي</option>
+							<option value="4">آجل (غير مدفوع)</option>
 
 						</select>
 					</div>
 
-
 					<!-- Paid Amount -->
-					<div class="col-md-6 d-none"
-						 id="salePaidContainer">
-
+					<div class="col-md-6 d-none" id="salePaidContainer">
 						<label class="form-label fw-bold">
 							المبلغ المدفوع حالياً (ج.م)
 							<span class="text-danger">*</span>
@@ -416,91 +398,42 @@
 							   autocomplete="off"
 							   oninput="validatePartialPayment()" />
 
-						<div id="paidAmountError"
-							 class="text-danger small fw-bold mt-1 d-none">
+						<div id="paidAmountError" class="text-danger small fw-bold mt-1 d-none">
 							المبلغ المدفوع يجب أن يكون أقل من إجمالي البيع.
 						</div>
 
-						<div id="paidAmountHint"
-							 class="text-muted small mt-1">
-						</div>
-
+						<div id="paidAmountHint" class="text-muted small mt-1"></div>
 					</div>
-
 
 					<!-- Total -->
 					<div class="col-12">
 						<div class="p-3 bg-light rounded text-center border">
-
-							<span class="text-muted d-block mb-1">
-								إجمالي قيمة البيع
-							</span>
-
-							<span id="saleTotalAmount"
-								  class="fs-4 fw-bold text-success">
-								0.00
-							</span>
-
-							ج.م
-
+							<span class="text-muted d-block mb-1">إجمالي قيمة البيع</span>
+							<span id="saleTotalAmount" class="fs-4 fw-bold text-success">0.00</span> ج.م
 						</div>
 					</div>
-
 
 					<!-- Remaining -->
-					<div class="col-12 d-none"
-						 id="saleRemainingContainer">
-
+					<div class="col-12 d-none" id="saleRemainingContainer">
 						<div class="p-3 bg-danger bg-opacity-10 rounded text-center border border-danger">
-
-							<span class="text-muted d-block mb-1">
-								المبلغ المتبقي
-							</span>
-
-							<span id="saleRemainingAmount"
-								  class="fs-5 fw-bold text-danger">
-								0.00
-							</span>
-
-							ج.م
-
+							<span class="text-muted d-block mb-1">المبلغ المتبقي</span>
+							<span id="saleRemainingAmount" class="fs-5 fw-bold text-danger">0.00</span> ج.م
 						</div>
-
 					</div>
-
 
 					<!-- Notes -->
 					<div class="col-12">
-						<label class="form-label fw-bold">
-							ملاحظات
-						</label>
-
-						<input type="text"
-							   name="Notes"
-							   class="form-control"
-							   placeholder="أي ملاحظات إضافية..." />
+						<label class="form-label fw-bold">ملاحظات</label>
+						<input type="text" name="Notes" class="form-control" placeholder="أي ملاحظات إضافية..." />
 					</div>
 
 				</div>
 
-
 				<div class="modal-footer">
-
-					<button type="button"
-							class="btn btn-secondary"
-							data-bs-dismiss="modal">
-						إلغاء
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+					<button type="submit" id="submitSaleBtn" class="btn btn-primary fw-bold">
+						<i class="fa-solid fa-check me-1"></i> إتمام البيع والتسجيل بالخزينة
 					</button>
-
-					<button type="submit"
-							id="submitSaleBtn"
-							class="btn btn-primary fw-bold">
-
-						<i class="fa-solid fa-check me-1"></i>
-						إتمام البيع والتسجيل بالخزينة
-
-					</button>
-
 				</div>
 
 			</form>
@@ -508,6 +441,7 @@
 		</div>
 	</div>
 </div>
+
 <!-- Modal Collect Remaining -->
 <div class="modal fade" id="collectModal" tabindex="-1">
 	<div class="modal-dialog">
@@ -528,7 +462,7 @@
 					</div>
 					<div class="col-md-6">
 						<label class="form-label fw-bold">المبلغ المحصل الآن (ج.م) <span class="text-danger">*</span></label>
-						<input type="number" min="0.1" step="0.01" name="amountToCollect" id="collectAmountInput" required class="form-control form-control-lg fw-bold text-success" />
+						<input type="number" min="0.01" step="0.01" name="amountToCollect" id="collectAmountInput" required class="form-control form-control-lg fw-bold text-success" />
 					</div>
 					<div class="col-md-6">
 						<label class="form-label fw-bold">طريقة الدفع <span class="text-danger">*</span></label>
@@ -551,695 +485,247 @@
 	</div>
 </div>
 
-
-
 @section Scripts {
 	<script>
-
-		
 		// 1. Date Picker - اختيار تاريخ اليوم
-
 		function selectToday() {
-
 			const today = new Date();
-
 			const year = today.getFullYear();
 			const month = String(today.getMonth() + 1).padStart(2, '0');
 			const day = String(today.getDate()).padStart(2, '0');
 
 			const selectedDate = document.getElementById('selectedDate');
-
 			if (selectedDate) {
 				selectedDate.value = `${year}-${month}-${day}`;
 			}
 
-			const dateFilterForm =
-				document.getElementById('dateFilterForm');
-
+			const dateFilterForm = document.getElementById('dateFilterForm');
 			if (dateFilterForm) {
 				dateFilterForm.submit();
 			}
 		}
 
-
-		
 		// 2. Cancel Sale Modal
-
-		
 		function openConfirmCancelModal(id, productName, baskets) {
-
-			const saleId =
-				document.getElementById('cancelSaleId');
-
-			const details =
-				document.getElementById('cancelModalDetailsText');
+			const saleId = document.getElementById('cancelSaleId');
+			const details = document.getElementById('cancelModalDetailsText');
 
 			if (saleId) {
 				saleId.value = id;
 			}
 
 			if (details) {
-
-				details.innerText =
-					`سيتم إلغاء بيع عدد (${baskets} باسكت) من منتج (${productName})، وتصحيح الخزينة والمخزون.`;
+				details.innerText = `سيتم إلغاء بيع عدد (${baskets} باسكت) من منتج (${productName})، وتصحيح الخزينة والمخزون.`;
 			}
 
-			const modalElement =
-				document.getElementById('cancelConfirmModal');
-
+			const modalElement = document.getElementById('cancelConfirmModal');
 			if (modalElement) {
-
 				new bootstrap.Modal(modalElement).show();
 			}
 		}
 
-
-		
 		// 3. Collect Remaining Sale Amount
-
-		
 		function openCollectModal(txId, remainingAmount) {
+			document.getElementById('collectTxId').value = txId;
+			document.getElementById('collectRemainingText').innerText = Number(remainingAmount).toFixed(2);
+			
+			const input = document.getElementById('collectAmountInput');
+			input.value = remainingAmount;
+			input.max = remainingAmount;
 
-			document.getElementById('collectTxId').value =
-				txId;
-
-			document.getElementById('collectRemainingText')
-				.innerText =
-				Number(remainingAmount).toFixed(2);
-
-			document.getElementById('collectAmountInput')
-				.value =
-				remainingAmount;
-
-			document.getElementById('collectAmountInput')
-				.max =
-				remainingAmount;
-
-			const modalElement =
-				document.getElementById('collectModal');
-
+			const modalElement = document.getElementById('collectModal');
 			if (modalElement) {
-
 				new bootstrap.Modal(modalElement).show();
 			}
 		}
 
-
-		
 		// 4. Production Order Selected - Sale Modal
-
-		
 		function onOrderSelected() {
+			const select = document.getElementById('selectProductionOrder');
+			if (!select) return;
 
-			const select =
-				document.getElementById('selectProductionOrder');
+			const selectedOption = select.options[select.selectedIndex];
+			if (!selectedOption.value) return;
 
-			if (!select) {
-				return;
-			}
+			const available = parseFloat(selectedOption.getAttribute('data-available')) || 0;
+			const price = parseFloat(selectedOption.getAttribute('data-price')) || 0;
 
-			const selectedOption =
-				select.options[select.selectedIndex];
-
-			if (!selectedOption.value) {
-				return;
-			}
-
-			const available =
-				parseFloat(
-					selectedOption.getAttribute('data-available')
-				) || 0;
-
-			const price =
-				parseFloat(
-					selectedOption.getAttribute('data-price')
-				) || 0;
-
-
-			const qtyInput =
-				document.getElementById('saleSoldBaskets');
-
+			const qtyInput = document.getElementById('saleSoldBaskets');
 			qtyInput.max = available;
 
-
-			if (
-				parseFloat(qtyInput.value) > available
-			) {
-
+			if (parseFloat(qtyInput.value) > available) {
 				qtyInput.value = available;
 			}
 
-
-			document.getElementById('saleBasketPrice')
-				.value = price;
-
-
+			document.getElementById('saleBasketPrice').value = price;
 			calculateSaleTotal();
 		}
 
-
-		
 		// 5. Calculate Sale Total
-
-		
 		function calculateSaleTotal() {
-
-			const qty =
-				parseFloat(
-					document.getElementById('saleSoldBaskets').value
-				) || 0;
-
-			const price =
-				parseFloat(
-					document.getElementById('saleBasketPrice').value
-				) || 0;
-
-
+			const qty = parseFloat(document.getElementById('saleSoldBaskets').value) || 0;
+			const price = parseFloat(document.getElementById('saleBasketPrice').value) || 0;
 			const total = qty * price;
 
-
-			document.getElementById('saleTotalAmount')
-				.innerText =
-				total.toFixed(2);
-
-
+			document.getElementById('saleTotalAmount').innerText = total.toFixed(2);
 			togglePaidAmount();
 		}
 
-
-		
 		// 6. Payment Method - Sale Modal
-
-		
 		function togglePaidAmount() {
+			const method = document.getElementById('salePaymentMethod').value;
+			const paidContainer = document.getElementById('salePaidContainer');
+			const paidInput = document.getElementById('salePaidAmount');
+			const remainingContainer = document.getElementById('saleRemainingContainer');
+			const submitBtn = document.getElementById('submitSaleBtn');
 
-			const method =
-				document.getElementById('salePaymentMethod').value;
-
-			const paidContainer =
-				document.getElementById('salePaidContainer');
-
-			const paidInput =
-				document.getElementById('salePaidAmount');
-
-			const remainingContainer =
-				document.getElementById('saleRemainingContainer');
-
-			const submitBtn =
-				document.getElementById('submitSaleBtn');
-
-
-			const qty =
-				parseFloat(
-					document.getElementById('saleSoldBaskets').value
-				) || 0;
-
-			const price =
-				parseFloat(
-					document.getElementById('saleBasketPrice').value
-				) || 0;
-
-
+			const qty = parseFloat(document.getElementById('saleSoldBaskets').value) || 0;
+			const price = parseFloat(document.getElementById('saleBasketPrice').value) || 0;
 			const total = qty * price;
 
-
-			
-			// Cash
-
-			
-			if (method === "1") {
-
+			// Cash, BankTransfer, or Unpaid
+			if (method === "1" || method === "2") {
 				paidContainer.classList.add('d-none');
-
 				remainingContainer.classList.add('d-none');
-
-				paidInput.value =
-					total.toFixed(2);
-
+				paidInput.value = total.toFixed(2);
 				paidInput.required = false;
-
 				submitBtn.disabled = false;
-
 				clearPaymentError();
-
 				return;
 			}
 
-
-					
-			// Bank Transfer
-
-			
-			if (method === "2") {
-
-				paidContainer.classList.add('d-none');
-
-				remainingContainer.classList.add('d-none');
-
-				paidInput.value =
-					total.toFixed(2);
-
-				paidInput.required = false;
-
-				submitBtn.disabled = false;
-
-				clearPaymentError();
-
-				return;
-			}
-
-
-			
-			// Unpaid
-
-		
 			if (method === "4") {
-
 				paidContainer.classList.add('d-none');
-
 				remainingContainer.classList.add('d-none');
-
 				paidInput.value = "0";
-
 				paidInput.required = false;
-
 				submitBtn.disabled = false;
-
 				clearPaymentError();
-
 				return;
 			}
 
-
-            
-			// partially paid
-
-			
+			// Partially paid
 			if (method === "3") {
-
 				paidContainer.classList.remove('d-none');
-
 				remainingContainer.classList.remove('d-none');
-
 				paidInput.required = true;
 
+				const currentPaid = parseFloat(paidInput.value) || 0;
 
-				const currentPaid =
-					parseFloat(paidInput.value) || 0;
-
-
-				// لو مفيش قيمة صحيحة
-				if (
-					currentPaid <= 0 ||
-					currentPaid >= total
-				) {
-
-					paidInput.value =
-						total > 0
-							? (total / 2).toFixed(2)
-							: "0";
+				if (currentPaid <= 0 || currentPaid >= total) {
+					paidInput.value = total > 0 ? (total / 2).toFixed(2) : "0";
 				}
 
-
 				updateRemainingAmount();
-
 				validatePartialPayment();
 			}
 		}
 
-
-		
 		// 7. Validate Partial Payment
-
-		
 		function validatePartialPayment() {
-
-			const qty =
-				parseFloat(
-					document.getElementById('saleSoldBaskets').value
-				) || 0;
-
-			const price =
-				parseFloat(
-					document.getElementById('saleBasketPrice').value
-				) || 0;
-
-
+			const qty = parseFloat(document.getElementById('saleSoldBaskets').value) || 0;
+			const price = parseFloat(document.getElementById('saleBasketPrice').value) || 0;
 			const total = qty * price;
-
-
-			const paid =
-				parseFloat(
-					document.getElementById('salePaidAmount').value
-				) || 0;
-
+			const paid = parseFloat(document.getElementById('salePaidAmount').value) || 0;
 
 			if (paid <= 0) {
-
-				showPaymentError(
-					"يجب إدخال مبلغ أكبر من صفر."
-				);
-
+				showPaymentError("يجب إدخال مبلغ أكبر من صفر.");
 				return false;
 			}
-
 
 			if (paid >= total && total > 0) {
-
-				showPaymentError(
-					"في الدفع الجزئي، المبلغ المدفوع يجب أن يكون أقل من إجمالي البيع."
-				);
-
+				showPaymentError("في الدفع الجزئي، المبلغ المدفوع يجب أن يكون أقل من إجمالي البيع.");
 				return false;
 			}
 
-
 			clearPaymentError();
-
 			updateRemainingAmount();
-
 			return true;
 		}
 
-
-		
 		// 8. Calculate Remaining Amount
-
-		
 		function updateRemainingAmount() {
-
-			const qty =
-				parseFloat(
-					document.getElementById('saleSoldBaskets').value
-				) || 0;
-
-			const price =
-				parseFloat(
-					document.getElementById('saleBasketPrice').value
-				) || 0;
-
-
+			const qty = parseFloat(document.getElementById('saleSoldBaskets').value) || 0;
+			const price = parseFloat(document.getElementById('saleBasketPrice').value) || 0;
 			const total = qty * price;
+			const paid = parseFloat(document.getElementById('salePaidAmount').value) || 0;
+			const remaining = Math.max(total - paid, 0);
 
-
-			const paid =
-				parseFloat(
-					document.getElementById('salePaidAmount').value
-				) || 0;
-
-
-			const remaining =
-				Math.max(total - paid, 0);
-
-
-			const remainingAmount =
-				document.getElementById('saleRemainingAmount');
-
+			const remainingAmount = document.getElementById('saleRemainingAmount');
 			if (remainingAmount) {
-
-				remainingAmount.innerText =
-					remaining.toFixed(2);
+				remainingAmount.innerText = remaining.toFixed(2);
 			}
 
-
-			const hint =
-				document.getElementById('paidAmountHint');
-
+			const hint = document.getElementById('paidAmountHint');
 			if (hint) {
-
-				hint.innerText =
-					`الإجمالي: ${total.toFixed(2)} ج.م - المتبقي: ${remaining.toFixed(2)} ج.م`;
+				hint.innerText = `الإجمالي: ${total.toFixed(2)} ج.م - المتبقي: ${remaining.toFixed(2)} ج.م`;
 			}
 		}
 
-
-		
 		// 9. Show Payment Error
-
-		
 		function showPaymentError(message) {
-
-			const error =
-				document.getElementById('paidAmountError');
-
-			const submitBtn =
-				document.getElementById('submitSaleBtn');
-
+			const error = document.getElementById('paidAmountError');
+			const submitBtn = document.getElementById('submitSaleBtn');
 
 			if (error) {
-
 				error.innerText = message;
-
 				error.classList.remove('d-none');
 			}
 
-
 			if (submitBtn) {
-
 				submitBtn.disabled = true;
 			}
 		}
 
-
-		// =========================================================
 		// 10. Clear Payment Error
-		// =========================================================
-
 		function clearPaymentError() {
-
-			const error =
-				document.getElementById('paidAmountError');
-
-			const submitBtn =
-				document.getElementById('submitSaleBtn');
-
+			const error = document.getElementById('paidAmountError');
+			const submitBtn = document.getElementById('submitSaleBtn');
 
 			if (error) {
-
 				error.classList.add('d-none');
 			}
 
-
 			if (submitBtn) {
-
 				submitBtn.disabled = false;
 			}
 		}
 
-
-		
 		// 11. Validate Sale Form Before Submit
-
-		
-		const newSaleForm =
-			document.getElementById('newSaleForm');
-
-
+		const newSaleForm = document.getElementById('newSaleForm');
 		if (newSaleForm) {
-
-			newSaleForm.addEventListener(
-				'submit',
-				function(e) {
-
-					const method =
-						document.getElementById('salePaymentMethod')
-							.value;
-
-
-					if (method === "3") {
-
-						const isValid =
-							validatePartialPayment();
-
-
-						if (!isValid) {
-
-							e.preventDefault();
-
-							return false;
-						}
+			newSaleForm.addEventListener('submit', function(e) {
+				const method = document.getElementById('salePaymentMethod').value;
+				if (method === "3") {
+					const isValid = validatePartialPayment();
+					if (!isValid) {
+						e.preventDefault();
+						return false;
 					}
-
-					return true;
 				}
-			);
+				return true;
+			});
 		}
 
-
-		
 		// 12. Reset Sale Modal
-
-		
-		const newSaleModal =
-			document.getElementById('newSaleModal');
-
-
+		const newSaleModal = document.getElementById('newSaleModal');
 		if (newSaleModal) {
-
-			newSaleModal.addEventListener(
-				'hidden.bs.modal',
-				function() {
-
-					if (newSaleForm) {
-
-						newSaleForm.reset();
-					}
-
-
-					const paidContainer =
-						document.getElementById('salePaidContainer');
-
-					if (paidContainer) {
-
-						paidContainer.classList.add('d-none');
-					}
-
-
-					const remainingContainer =
-						document.getElementById(
-							'saleRemainingContainer'
-						);
-
-					if (remainingContainer) {
-
-						remainingContainer.classList.add('d-none');
-					}
-
-
-					const total =
-						document.getElementById(
-							'saleTotalAmount'
-						);
-
-					if (total) {
-
-						total.innerText = "0.00";
-					}
-
-
-					clearPaymentError();
+			newSaleModal.addEventListener('hidden.bs.modal', function() {
+				if (newSaleForm) {
+					newSaleForm.reset();
 				}
-			);
+
+				const paidContainer = document.getElementById('salePaidContainer');
+				if (paidContainer) paidContainer.classList.add('d-none');
+
+				const remainingContainer = document.getElementById('saleRemainingContainer');
+				if (remainingContainer) remainingContainer.classList.add('d-none');
+
+				const total = document.getElementById('saleTotalAmount');
+				if (total) total.innerText = "0.00";
+
+				clearPaymentError();
+			});
 		}
-
-
-		
-		// 13. Add Stock Modal
-
-		
-		function openAddStockModal(
-			id,
-			name,
-			currentUnitPrice
-		) {
-
-			document.getElementById('stockMaterialId')
-				.value = id;
-
-			document.getElementById('stockMaterialName')
-				.innerText = name;
-
-			document.getElementById('stockUnitPrice')
-				.value = currentUnitPrice;
-
-
-			// Default Payment Method = Cash
-			document.getElementById('stockPaymentMethod')
-				.value = "1";
-
-
-			togglePaidAmountField(
-				'stockPaymentMethod',
-				'stockPaidContainer'
-			);
-
-
-			const modalElement =
-				document.getElementById('addStockModal');
-
-			if (modalElement) {
-
-				new bootstrap.Modal(modalElement).show();
-			}
-		}
-
-
-		
-		// 14. Add Stock Payment Method
-
-		
-		function togglePaidAmountField(
-			selectId,
-			containerId
-		) {
-
-			const selectElem =
-				document.getElementById(selectId);
-
-			const containerElem =
-				document.getElementById(containerId);
-
-
-			if (!selectElem || !containerElem) {
-				return;
-			}
-
-
-			// 3 = Partial Payment
-			if (selectElem.value === "3") {
-
-				containerElem.classList.remove('d-none');
-
-			}
-			else {
-
-				containerElem.classList.add('d-none');
-
-				// تصفير المدفوع لو مش Partial
-				const paidInput =
-					containerElem.querySelector(
-						'input[name="PaidAmount"]'
-					);
-
-				if (paidInput) {
-
-					paidInput.value = "0";
-				}
-			}
-		}
-
-
-		
-		// 15. Add Stock Modal - Reset
-
-		
-		const addStockModal =
-			document.getElementById('addStockModal');
-
-
-		if (addStockModal) {
-
-			addStockModal.addEventListener(
-				'hidden.bs.modal',
-				function() {
-
-					const paymentMethod =
-						document.getElementById(
-							'stockPaymentMethod'
-						);
-
-					if (paymentMethod) {
-
-						paymentMethod.value = "1";
-
-						togglePaidAmountField(
-							'stockPaymentMethod',
-							'stockPaidContainer'
-						);
-					}
-				}
-			);
-		}
-
 	</script>
 }

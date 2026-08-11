@@ -7,7 +7,6 @@ using Bakery.DataAccess;
 using Bakery.DataAccess.Repositories;
 using Bakery.Domain.Entities;
 using Bakery.Domain.Enums;
-using System.Runtime.InteropServices.JavaScript;
 
 namespace Bakery.Business.Services
 {
@@ -16,18 +15,15 @@ namespace Bakery.Business.Services
         Task<IEnumerable<RawMaterial>> GetAllRawMaterialsAsync();
         Task<RawMaterial?> GetRawMaterialByIdAsync(int id);
         Task AddRawMaterialAsync(RawMaterial material, PaymentMethod paymentMethod, decimal paidAmount = 0, string? notes = null);
-        //Task UpdateRawMaterialAsync(RawMaterial material);
         Task DeleteRawMaterialAsync(int id);
         Task<decimal> GetTotalInventoryValueAsync();
         Task AddStockAsync(int rawMaterialId, decimal quantity, decimal unitPrice, PaymentMethod paymentMethod, decimal paidAmount = 0, string? notes = null, int? expenseId = null);
         Task DeductStockAsync(int rawMaterialId, decimal quantity, int productionOrderId, string? notes = null);
         Task<IEnumerable<InventoryTransaction>> GetTransactionsAsync(int? rawMaterialId = null);
         Task<InventoryTransaction?> GetTransactionByIdAsync(int id);
-        Task UpdateTransactionAsync(int transactionId, decimal newQuantity, decimal newUnitPrice,PaymentMethod paymentMethod,decimal paidAmount, string? notes = null);
+        Task UpdateTransactionAsync(int transactionId, decimal newQuantity, decimal newUnitPrice, PaymentMethod paymentMethod, decimal paidAmount, string? notes = null);
         Task DeleteTransactionAsync(int transactionId);
         Task<bool> MaterialTypeExistsAsync(int materialTypeId, int? excludeId = null);
-
-
     }
 
     public class InventoryService : IInventoryService
@@ -38,17 +34,18 @@ namespace Bakery.Business.Services
         private readonly IRepository<Expense> _expenseRepo;
         private readonly IRepository<TreasuryTransaction> _treasuryRepo;
 
-        public InventoryService(BakeryDbContext context,
+        public InventoryService(
+            BakeryDbContext context,
             IRepository<RawMaterial> materialRepo,
             IRepository<InventoryTransaction> transactionRepo,
-            IRepository<Expense> expenseRepo ,
+            IRepository<Expense> expenseRepo,
             IRepository<TreasuryTransaction> treasuryRepo)
         {
             _context = context;
             _materialRepo = materialRepo;
             _transactionRepo = transactionRepo;
             _expenseRepo = expenseRepo;
-            _treasuryRepo=treasuryRepo;
+            _treasuryRepo = treasuryRepo;
         }
 
         public async Task<IEnumerable<RawMaterial>> GetAllRawMaterialsAsync()
@@ -57,7 +54,7 @@ namespace Bakery.Business.Services
                 .Include(r => r.MeasurementUnit)
                 .Include(r => r.MaterialType)
                 .OrderBy(r => r.MaterialType!.Name)
-                .ThenBy(r=>r.MeasurementUnit!.Name)
+                .ThenBy(r => r.MeasurementUnit!.Name)
                 .ToListAsync();
         }
 
@@ -69,13 +66,14 @@ namespace Bakery.Business.Services
                 .FirstOrDefaultAsync(r => r.Id == id);
         }
 
-        public async Task AddRawMaterialAsync(RawMaterial material, PaymentMethod paymentMethod,decimal paidAmount = 0, string? notes = null)
+        public async Task AddRawMaterialAsync(RawMaterial material, PaymentMethod paymentMethod, decimal paidAmount = 0, string? notes = null)
         {
             if (await MaterialTypeExistsAsync(material.MaterialTypeId))
             {
                 var type = await _context.MaterialTypes.FindAsync(material.MaterialTypeId);
                 throw new InvalidOperationException($"المادة الخام '{type?.Name}' موجودة بالفعل في المخزن، يمكنك توريد كمية جديدة لها بدلاً من الإضافة.");
             }
+
             if (material.CurrentQuantity < 0)
                 throw new InvalidOperationException("لا يمكن أن تكون كمية المخزون بالسالب.");
 
@@ -97,7 +95,6 @@ namespace Bakery.Business.Services
                 await _materialRepo.AddAsync(material);
                 await _materialRepo.SaveChangesAsync();
 
-                // ده هيعمل الـ Transaction بتاعته لوحده (فاكر AddStockAsync بقى فيها BeginTransactionAsync)
                 await AddStockAsync(material.Id, initialQty, initialPrice, paymentMethod, paidAmount, notes ?? "رصيد افتتاحي عند إضافة المادة");
             }
             else
@@ -107,7 +104,6 @@ namespace Bakery.Business.Services
                 await _materialRepo.AddAsync(material);
                 await _materialRepo.SaveChangesAsync();
             }
-               await _materialRepo.SaveChangesAsync();
         }
 
         public async Task DeleteRawMaterialAsync(int id)
@@ -120,13 +116,13 @@ namespace Bakery.Business.Services
                 .AnyAsync(t => t.RawMaterialId == id);
 
             if (hasTransactions)
-
-                throw new InvalidOperationException("لا يمكن حذف هذه المادة لوجود حركات مسجلة عليها في سجل المخزن. يجب حذفها من سجل حركه المخزن اولا .");
+                throw new InvalidOperationException("لا يمكن حذف هذه المادة لوجود حركات مسجلة عليها في سجل المخزن. يجب حذفها من سجل حركة المخزن أولاً.");
 
             bool usedInRecipes = await _context.ProductionRecipeItems
                 .AnyAsync(r => r.RawMaterialId == id);
-            if(usedInRecipes)
-                throw new InvalidOperationException("لا يمكن حذف هذه المادة لأنهامستخدمه فى وصفة انتاج . قم بأزالتها من الوصفه أولا.");
+
+            if (usedInRecipes)
+                throw new InvalidOperationException("لا يمكن حذف هذه المادة لأنها مستخدمة في وصفة إنتاج. قم بإزالتها من الوصفة أولاً.");
 
             _materialRepo.Remove(existing);
             await _materialRepo.SaveChangesAsync();
@@ -137,11 +133,8 @@ namespace Bakery.Business.Services
             return await _context.RawMaterials.SumAsync(r => r.CurrentQuantity * r.UnitPrice);
         }
 
-        //توريد كميه او شراء
-        public async Task AddStockAsync(int rawMaterialId, decimal quantity, decimal unitPrice, PaymentMethod paymentMethod, decimal paidAmount=0, string? notes = null, int? expenseId = null)
+        public async Task AddStockAsync(int rawMaterialId, decimal quantity, decimal unitPrice, PaymentMethod paymentMethod, decimal paidAmount = 0, string? notes = null, int? expenseId = null)
         {
-            
-
             if (quantity <= 0) throw new InvalidOperationException("يجب أن تكون الكمية أكبر من الصفر.");
 
             var material = await _materialRepo.GetByIdAsync(rawMaterialId);
@@ -150,16 +143,13 @@ namespace Bakery.Business.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                //حساب قيمه التوريد الجديد
                 decimal newBatchValue = quantity * unitPrice;
-                //حساب اجمالى القيمه الجديده للمخزن (القيمه القديمه +قيمه التوريد الجديده
                 decimal newTotalValue = material.TotalValue + newBatchValue;
-                // حساب اجمالى الكميه الجديده للمخزن (الكميه القديمه + الكميه الجديده
                 decimal newTotalQuantity = material.CurrentQuantity + quantity;
 
                 material.UnitPrice = newTotalQuantity > 0
-                          ? Math.Round(newTotalValue / newTotalQuantity, 4)
-                          : unitPrice;
+                    ? Math.Round(newTotalValue / newTotalQuantity, 4)
+                    : unitPrice;
 
                 material.CurrentQuantity = newTotalQuantity;
                 material.TotalValue = Math.Round(material.CurrentQuantity * material.UnitPrice, 2);
@@ -167,7 +157,6 @@ namespace Bakery.Business.Services
                 _materialRepo.Update(material);
                 await _context.SaveChangesAsync();
 
-                //تسجيل مصروف الشراء
                 int? linkedExpenseId = expenseId;
                 if (linkedExpenseId == null)
                 {
@@ -211,25 +200,22 @@ namespace Bakery.Business.Services
                     await _expenseRepo.SaveChangesAsync();
                     linkedExpenseId = purchaseExpense.Id;
 
-                
-
-                var treasuryTx = new TreasuryTransaction
-                {
-                    Date = purchaseExpense.Date,
-                    TransactionName = purchaseExpense.Name,
-                    TransactionType = TreasuryTransactionType.Expense,
-                    Category = "مواد خام",
-                    Amount = purchaseExpense.TotalAmount,
-                    PaymentMethod = purchaseExpense.PaymentMethod,
-                    PaidAmount = purchaseExpense.PaidAmount,
-                    RemainingAmount = purchaseExpense.RemainingAmount,
-                    Notes = purchaseExpense.Notes,
-                    ExpenseId = purchaseExpense.Id
-                };
-                await _treasuryRepo.AddAsync(treasuryTx);
-                await _treasuryRepo.SaveChangesAsync();
-            }
-
+                    var treasuryTx = new TreasuryTransaction
+                    {
+                        Date = purchaseExpense.Date,
+                        TransactionName = purchaseExpense.Name,
+                        TransactionType = TreasuryTransactionType.Expense,
+                        Category = "مواد خام",
+                        Amount = purchaseExpense.TotalAmount,
+                        PaymentMethod = purchaseExpense.PaymentMethod,
+                        PaidAmount = purchaseExpense.PaidAmount,
+                        RemainingAmount = purchaseExpense.RemainingAmount,
+                        Notes = purchaseExpense.Notes,
+                        ExpenseId = purchaseExpense.Id
+                    };
+                    await _treasuryRepo.AddAsync(treasuryTx);
+                    await _treasuryRepo.SaveChangesAsync();
+                }
 
                 var invTransaction = new InventoryTransaction
                 {
@@ -255,13 +241,6 @@ namespace Bakery.Business.Services
             }
         }
 
-    
-
-
-
-
-   
-        // خصم استهلاك انتج
         public async Task DeductStockAsync(int rawMaterialId, decimal quantity, int productionOrderId, string? notes = null)
         {
             if (quantity <= 0) throw new InvalidOperationException("كمية الخصم يجب أن تكون أكبر من الصفر.");
@@ -269,6 +248,7 @@ namespace Bakery.Business.Services
             var material = await _context.RawMaterials
                 .Include(r => r.MaterialType)
                 .FirstOrDefaultAsync(r => r.Id == rawMaterialId);
+
             if (material == null) throw new KeyNotFoundException("المادة الخام غير موجودة.");
 
             if (material.CurrentQuantity < quantity)
@@ -298,14 +278,13 @@ namespace Bakery.Business.Services
             await _context.SaveChangesAsync();
         }
 
-       //عرض حركات المخزن
         public async Task<IEnumerable<InventoryTransaction>> GetTransactionsAsync(int? rawMaterialId = null)
         {
             var query = _context.InventoryTransactions
                 .Include(t => t.RawMaterial)
-                  .ThenInclude(r => r!.MeasurementUnit)
+                    .ThenInclude(r => r!.MeasurementUnit)
                 .Include(t => t.RawMaterial)
-                  .ThenInclude(r => r!.MaterialType)
+                    .ThenInclude(r => r!.MaterialType)
                 .Include(t => t.Expense)
                 .AsQueryable();
 
@@ -324,10 +303,11 @@ namespace Bakery.Business.Services
                 .FirstOrDefaultAsync(t => t.Id == id);
         }
 
-        public async Task UpdateTransactionAsync(int transactionId, decimal newQuantity, decimal newUnitPrice,PaymentMethod paymentMethod,decimal paidAmount, string? notes = null)
+        public async Task UpdateTransactionAsync(int transactionId, decimal newQuantity, decimal newUnitPrice, PaymentMethod paymentMethod, decimal paidAmount, string? notes = null)
         {
             if (newQuantity <= 0) throw new InvalidOperationException("يجب أن تكون الكمية أكبر من الصفر.");
-            if(newUnitPrice<=0) throw new InvalidOperationException("يجب أن يكون السعر أكبر من الصفر.");
+            if (newUnitPrice <= 0) throw new InvalidOperationException("يجب أن يكون السعر أكبر من الصفر.");
+
             var tx = await _context.InventoryTransactions.FirstOrDefaultAsync(t => t.Id == transactionId);
             if (tx == null) throw new KeyNotFoundException("الحركة غير موجودة.");
 
@@ -341,16 +321,12 @@ namespace Bakery.Business.Services
             try
             {
                 decimal newBatchValue = newQuantity * newUnitPrice;
-
-                // 2: إعادة حساب الكمية بالكامل من مجموع كل الحركات (/)
                 decimal quantityDifference = newQuantity - tx.Quantity;
                 decimal projectedQuantity = material.CurrentQuantity + quantityDifference;
 
-                // قيد 3: منع الكمية من النزول تحت الصفر بعد التعديل
                 if (projectedQuantity < 0)
                     throw new InvalidOperationException($"لا يمكن تعديل هذه الحركة لأن الكمية الناتجة ستكون سالبة (الكمية المتاحة حاليًا: {material.CurrentQuantity}، والفرق المطلوب: {quantityDifference}). قد يكون تم استهلاك جزء من هذه الكمية في أوامر إنتاج لاحقة.");
 
-                // تحديث الـ RawMaterial: نطرح القديم ونضيف الجديد بشكل متكامل
                 decimal materialValueWithoutOldBatch = material.TotalValue - (tx.Quantity * tx.UnitPrice);
                 decimal newMaterialTotalValue = materialValueWithoutOldBatch + newBatchValue;
 
@@ -360,14 +336,12 @@ namespace Bakery.Business.Services
                 material.LastUpdatedDate = DateTime.Now;
                 _materialRepo.Update(material);
 
-                //تحديث الحركه
                 tx.Quantity = newQuantity;
                 tx.UnitPrice = newUnitPrice;
                 tx.TotalAmount = newBatchValue;
                 if (!string.IsNullOrWhiteSpace(notes)) tx.Notes = notes;
                 _context.InventoryTransactions.Update(tx);
 
-                // تحديث ال Expense المرتبطة بالحركة (إن وجدت)
                 if (tx.ExpenseId.HasValue)
                 {
                     var expense = await _context.Expenses.FirstOrDefaultAsync(e => e.Id == tx.ExpenseId.Value);
@@ -396,17 +370,15 @@ namespace Bakery.Business.Services
 
                         _context.Expenses.Update(expense);
 
-                        // تحديث الـ TreasuryTransaction المرتبطة بالمصروف
                         var mainTreasuryTx = await _context.TreasuryTransactions
-                              .FirstOrDefaultAsync(t => t.ExpenseId == expense.Id 
-                                                     && t.Category != "سداد متبقيات");
+                            .FirstOrDefaultAsync(t => t.ExpenseId == expense.Id && t.Category != "سداد متبقيات");
 
                         if (mainTreasuryTx != null)
                         {
                             mainTreasuryTx.Amount = expense.TotalAmount;
                             mainTreasuryTx.PaymentMethod = expense.PaymentMethod;
                             mainTreasuryTx.PaidAmount = expense.PaidAmount;
-                            mainTreasuryTx.RemainingAmount = expense.RemainingAmount; // ✅ تحديث المتبقي الصحيح
+                            mainTreasuryTx.RemainingAmount = expense.RemainingAmount;
                             _context.TreasuryTransactions.Update(mainTreasuryTx);
                         }
                     }
@@ -421,14 +393,12 @@ namespace Bakery.Business.Services
                 throw;
             }
         }
-            
 
         public async Task DeleteTransactionAsync(int transactionId)
         {
             var tx = await _context.InventoryTransactions.FirstOrDefaultAsync(t => t.Id == transactionId);
             if (tx == null) return;
 
-            // قيد 1: مينفعش تمسح حركات خصم الاستهلاك خالص
             if (tx.TransactionType != TransactionType.Purchase)
                 throw new InvalidOperationException("لا يمكن حذف حركات خصم الاستهلاك الناتجة عن أوامر الإنتاج.");
 
@@ -436,7 +406,7 @@ namespace Bakery.Business.Services
             if (material == null) throw new KeyNotFoundException("المادة الخام غير موجودة.");
 
             decimal projectedQuantity = material.CurrentQuantity - tx.Quantity;
-            
+
             if (projectedQuantity < 0)
                 throw new InvalidOperationException($"لا يمكن حذف هذه الحركة لأن جزءًا من هذه الكمية ({tx.Quantity}) تم استخدامه بالفعل في أوامر إنتاج لاحقة. الكمية المتاحة حاليًا فقط: {material.CurrentQuantity}.");
 
@@ -459,17 +429,15 @@ namespace Bakery.Business.Services
                 material.LastUpdatedDate = DateTime.Now;
                 _materialRepo.Update(material);
 
-
-
-                // حذف الـ Expense والـ TreasuryTransaction المرتبطين (لو موجودين)
                 if (tx.ExpenseId.HasValue)
                 {
                     var expense = await _context.Expenses.FirstOrDefaultAsync(e => e.Id == tx.ExpenseId.Value);
                     if (expense != null)
                     {
                         var treasuryTxs = await _context.TreasuryTransactions
-                                 .Where(t => t.ExpenseId == expense.Id)
-                                 .ToListAsync();
+                            .Where(t => t.ExpenseId == expense.Id)
+                            .ToListAsync();
+
                         if (treasuryTxs.Any())
                             _context.TreasuryTransactions.RemoveRange(treasuryTxs);
 
@@ -488,7 +456,6 @@ namespace Bakery.Business.Services
                 throw;
             }
         }
-            
 
         public async Task<bool> MaterialTypeExistsAsync(int materialTypeId, int? excludeId = null)
         {
@@ -497,10 +464,7 @@ namespace Bakery.Business.Services
             if (excludeId.HasValue)
                 query = query.Where(m => m.Id != excludeId.Value);
 
-            var result = await query.AnyAsync();
-            return result;
+            return await query.AnyAsync();
         }
-
-       
     }
 }

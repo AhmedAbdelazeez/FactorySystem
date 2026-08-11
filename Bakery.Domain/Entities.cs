@@ -113,8 +113,8 @@ namespace Bakery.Domain.Entities
 
         public int TotalTargetPieces { get; set; }
         public int TotalActualPieces { get; set; }
-        public int ExpectedBaskets { get; set; }
-        public int ActualBaskets { get; set; }
+        public decimal ExpectedBaskets { get; set; }
+        public decimal ActualBaskets { get; set; }
         public int RemainingPieces { get; set; }
         public decimal TotalExpectedSalesValue { get; set; }
         public decimal TotalActualSalesValue { get; set; }

@@ -135,6 +135,21 @@ namespace Bakery.DataAccess
             modelBuilder.Entity<ProductionOrder>()
                 .Property(o => o.TotalActualSalesValue).HasPrecision(18, 2);
 
+
+           modelBuilder.Entity<ProductionOrder>(entity =>
+            {
+                entity.Property(e => e.ExpectedBaskets).HasPrecision(18, 2);
+                entity.Property(e => e.ActualBaskets).HasPrecision(18, 2);
+                entity.Property(e => e.BasketSellingPrice).HasPrecision(18, 2);
+                entity.Property(e => e.FlourSackCount).HasPrecision(18, 2);
+            });
+
+
+            modelBuilder.Entity<TreasuryTransaction>(entity =>
+            {
+                entity.Property(e => e.SoldBaskets).HasPrecision(18, 2);
+            });
+
             modelBuilder.Entity<ProductionOrderResult>()
                 .Property(r => r.AchievementPercentage).HasPrecision(18, 2);
 

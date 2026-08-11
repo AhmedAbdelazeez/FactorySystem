@@ -14,7 +14,7 @@ namespace Bakery.Business.Services
     {
         Task<IEnumerable<Expense>> GetAllExpensesAsync(DateTime? startDate = null, DateTime? endDate = null, int? categoryId = null);
         Task<Expense?> GetExpenseByIdAsync(int id);
-        Task AddExpenseAsync(Expense expense);//, int? linkedRawMaterialId = null);
+        Task AddExpenseAsync(Expense expense);
         Task UpdateExpenseAsync(Expense expense);
         Task DeleteExpenseAsync(int id);
         Task PayRemainingAsync(int expenseId, decimal amountPaidNow, PaymentMethod paymentMethod);
@@ -66,10 +66,8 @@ namespace Bakery.Business.Services
                 .FirstOrDefaultAsync(e => e.Id == id);
         }
 
-        public async Task AddExpenseAsync(Expense expense)//, int? linkedRawMaterialId = null)
-         {
-            //expense.TotalAmount = expense.Quantity * expense.UnitPrice;
-            //expense.TotalAmount = expense.Quantity * expense.UnitPrice;
+        public async Task AddExpenseAsync(Expense expense)
+        {
             if (expense.Quantity <= 0)
             {
                 expense.Quantity = 1;
@@ -83,6 +81,7 @@ namespace Bakery.Business.Services
             {
                 expense.TotalAmount = expense.Quantity * expense.UnitPrice;
             }
+
             if (expense.ExpenseCategoryId <= 0)
             {
                 var defaultCategory = await _context.ExpenseCategories.FirstOrDefaultAsync();
@@ -132,8 +131,6 @@ namespace Bakery.Business.Services
             };
             await _treasuryRepo.AddAsync(treasuryTx);
             await _treasuryRepo.SaveChangesAsync();
-
-           
         }
 
         public async Task UpdateExpenseAsync(Expense expense)
@@ -177,8 +174,10 @@ namespace Bakery.Business.Services
             _expenseRepo.Update(existing);
             await _expenseRepo.SaveChangesAsync();
 
-            // 4. تحديث حركة الخزينة المرتبطة تلقائياً
-            var treasuryTx = await _context.TreasuryTransactions.FirstOrDefaultAsync(t => t.ExpenseId == expense.Id);
+            // 4. تحديث حركة الخزينة المرتبطة تلقائياً (استبعاد حركات سداد المتبقيات)
+            var treasuryTx = await _context.TreasuryTransactions
+                .FirstOrDefaultAsync(t => t.ExpenseId == expense.Id && t.Category != "سداد متبقيات");
+
             if (treasuryTx != null)
             {
                 var category = await _context.ExpenseCategories.FindAsync(existing.ExpenseCategoryId);
@@ -197,10 +196,8 @@ namespace Bakery.Business.Services
             }
         }
 
-
         public async Task DeleteExpenseAsync(int expenseId)
         {
-            // التأكد من وجود Transaction مفتوح حالياً أو إنشاء جديد
             var existingTransaction = _context.Database.CurrentTransaction;
             using var transaction = existingTransaction == null
                 ? await _context.Database.BeginTransactionAsync()
@@ -211,9 +208,8 @@ namespace Bakery.Business.Services
                 var expense = await _context.Expenses.FindAsync(expenseId);
                 if (expense == null) throw new KeyNotFoundException("المصروف غير موجود.");
 
-                //منع حذف مصروفات التوريد من هنا خالص
                 bool isLinkedToInventory = await _context.InventoryTransactions
-             .AnyAsync(t => t.ExpenseId == expenseId);
+                    .AnyAsync(t => t.ExpenseId == expenseId);
 
                 if (isLinkedToInventory)
                 {
@@ -221,14 +217,11 @@ namespace Bakery.Business.Services
                         "هذا المصروف ناتج عن عملية توريد مخزون، لا يمكن حذفه من هنا. يرجى حذفه أو تعديله من صفحة \"سجل حركة المخزن\" فقط.");
                 }
 
-
                 // 1. التعامل مع مصروفات العمالة (الرواتب والسُلف)
                 if (expense.EmployeeId.HasValue)
                 {
-                    //  إذا كان المصروف عبارة عن "سلفة" تم إضافتها سابقاً
                     if (expense.Name.StartsWith("سلفة للعامل"))
                     {
-                        // نجد السلفة المعلقة أو غير المعلقة المرتبطة بهذا العامل ونفس المبلغ/التاريخ
                         var matchingAdvance = await _context.EmployeeAdvances
                             .FirstOrDefaultAsync(a => a.EmployeeId == expense.EmployeeId.Value
                                                    && a.Amount == expense.TotalAmount
@@ -236,14 +229,11 @@ namespace Bakery.Business.Services
 
                         if (matchingAdvance != null)
                         {
-                            // نحذف السلفة من الجدول تماماً فتختفي تلقائياً من "السلف المعلقة"
                             _context.EmployeeAdvances.Remove(matchingAdvance);
                         }
                     }
-                    // حالة ب: إذا كان المصروف عبارة عن "راتب شهر" تم صرفه
                     else if (expense.Name.StartsWith("راتب العامل"))
                     {
-                        // نعيد السلف التي تم تسويتها مع هذا الراتب لتصبح "معلقة" مرة أخرى
                         var paidAdvances = await _context.EmployeeAdvances
                             .Where(a => a.EmployeeId == expense.EmployeeId.Value && a.PaidDate.HasValue && a.PaidDate.Value.Date == expense.Date.Date)
                             .ToListAsync();
@@ -256,9 +246,7 @@ namespace Bakery.Business.Services
                     }
                 }
 
-                
-
-                // 2. حذف حركة الخزينة المرتبطة بالمصروف (سواء كانت سداد أصلي أو سداد متبقيات
+                // 2. حذف جميع حركات الخزينة المرتبطة بالمصروف (السداد الأصلي وسداد المتبقيات)
                 var relatedTreasuryTxs = await _context.TreasuryTransactions
                     .Where(t => t.ExpenseId == expenseId)
                     .ToListAsync();
@@ -268,9 +256,7 @@ namespace Bakery.Business.Services
                     _context.TreasuryTransactions.RemoveRange(relatedTreasuryTxs);
                 }
 
-             
                 // 3. حذف المصروف نفسه
-              
                 _expenseRepo.Remove(expense);
 
                 await _context.SaveChangesAsync();
@@ -308,12 +294,14 @@ namespace Bakery.Business.Services
                 if (amountPaidNow > expense.RemainingAmount)
                     throw new InvalidOperationException($"المبلغ المدفوع ({amountPaidNow:N2}) أكبر من المتبقي ({expense.RemainingAmount:N2}).");
 
+                // 1. تحديث أرقام المصروف الرئيسي
                 expense.PaidAmount += amountPaidNow;
                 expense.RemainingAmount = expense.TotalAmount - expense.PaidAmount;
 
-                if (expense.RemainingAmount == 0)
+                if (expense.RemainingAmount <= 0)
                 {
-                    expense.PaymentMethod = paymentMethod;
+                    expense.RemainingAmount = 0;
+                    expense.PaymentMethod = paymentMethod; // تحويله للحالة النهائية (مثل الكاش)
                 }
                 else
                 {
@@ -322,7 +310,20 @@ namespace Bakery.Business.Services
 
                 _expenseRepo.Update(expense);
 
-                // تسجيل حركة السداد في الخزينة
+                // 2. تحديث حركة الخزينة الأصلية لتنعكس التغيرات بها في الجدول السفلّي
+                var mainTreasuryTx = await _context.TreasuryTransactions
+                    .FirstOrDefaultAsync(t => t.ExpenseId == expense.Id && t.Category != "سداد متبقيات");
+
+                if (mainTreasuryTx != null)
+                {
+                    mainTreasuryTx.PaidAmount = expense.PaidAmount;
+                    mainTreasuryTx.RemainingAmount = expense.RemainingAmount;
+                    mainTreasuryTx.PaymentMethod = expense.PaymentMethod;
+
+                    _treasuryRepo.Update(mainTreasuryTx);
+                }
+
+                // 3. تسجيل حركة السداد الجديدة في الخزينة (تسجيل تدفق نقدي بتاريخ اليوم)
                 var treasuryTx = new TreasuryTransaction
                 {
                     Date = DateTime.Now,
@@ -356,5 +357,4 @@ namespace Bakery.Business.Services
             }
         }
     }
- }
-
+}

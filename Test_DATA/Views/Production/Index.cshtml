@@ -53,7 +53,7 @@
 	</div>
 </div>
 
-<!--  Compact Date Filter Box -->
+<!-- Compact Date Filter Box -->
 <div class="card border-0 shadow-sm rounded-4 mb-3">
 	<div class="card-body p-2 px-3 bg-light rounded-4 border">
 		<form asp-action="Index" method="get" id="productionDateFilterForm" class="d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -131,7 +131,7 @@
 								<!-- المستهدف -->
 								<td>
 									<div class="fw-bold text-dark">@order.TotalTargetPieces <small class="fw-normal">قطعة</small></div>
-									<span class="badge bg-light text-dark border">@order.ExpectedBaskets باسكت + @order.RemainingPieces قطعة</span>
+									<span class="badge bg-light text-dark border">@order.ExpectedBaskets باسكت </span>
 								</td>
 
 								<!-- الإنتاج الفعلي -->
@@ -139,12 +139,14 @@
 									@if (order.TotalActualPieces > 0)
 									{
 										var piecesPerBasket = settings.PiecesPerBasket > 0 ? settings.PiecesPerBasket : 28;
-										var totalActualBasketsCalc = order.TotalActualPieces / piecesPerBasket;
+										var totalActualBasketsCalc = (decimal)order.TotalActualPieces / piecesPerBasket;
 
-										<div class="fw-bold text-dark">@order.TotalActualPieces <small class="fw-normal">قطعة</small></div>
-										<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
-											(@totalActualBasketsCalc باسكت + @order.RemainingPieces قطعة)
-										</span>
+										<div class="fw-bold text-dark fs-6">
+											@order.TotalActualPieces.ToString("N0") <small class="fw-normal text-muted">قطعة</small>
+										</div>
+										<div class="small text-muted">
+											<i class="fa-solid fa-boxes-stacked me-1"></i>@totalActualBasketsCalc.ToString("0.##") باسكت
+										</div>
 									}
 									else
 									{
@@ -154,20 +156,34 @@
 
 								<!-- الكمية المباعة والمتاحة -->
 								<td>
-									@if (order.SoldBaskets > 0)
+									@if (order.TotalActualPieces > 0)
 									{
-										<div class="fw-bold text-primary fs-6">@order.SoldBaskets.ToString("0.##") <small class="text-muted fw-normal">باسكت مباع</small></div>
+										var piecesPerBasket = settings.PiecesPerBasket > 0 ? settings.PiecesPerBasket : 28;
+
+										// حساب إجمالي القطع المباعة والمتاحة
+										var soldPieces = (int)(order.SoldBaskets * piecesPerBasket);
+										var availablePieces = Math.Max(order.TotalActualPieces - soldPieces, 0);
+
+										<!-- المباع -->
+										<div class="fw-bold text-primary fs-6">
+											@order.SoldBaskets.ToString("0.##") <small class="text-muted fw-normal">باسكت مباع</small>
+										</div>
+										<div class="small text-muted fs-7 mb-1">
+											<i class="fa-solid fa-layer-group me-1"></i>@soldPieces.ToString("N0") قطعة
+										</div>
+
+										<!-- المتاح -->
+										<div class="fw-bold text-success fs-7">
+											المتاح: @order.ActualBaskets.ToString("0.##") <small class="fw-normal">باسكت</small>
+										</div>
+										<div class="small text-muted fs-7">
+											<i class="fa-solid fa-cubes me-1"></i>@availablePieces.ToString("N0") قطعة
+										</div>
 									}
 									else
 									{
-										<div class="text-muted small mb-1">0 باسكت مباع</div>
-									}
-
-									@if (order.TotalActualPieces > 0)
-									{
-										<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 d-inline-block">
-											المتاح: (@order.ActualBaskets باسكت + @order.RemainingPieces قطعة)
-										</span>
+										<div class="text-muted small">0 باسكت مباع</div>
+										<span class="badge bg-light text-muted border px-2 py-1 mt-1">غير متاح</span>
 									}
 								</td>
 
@@ -348,86 +364,51 @@
 <div class="modal fade" id="confirmProductionModal" tabindex="-1" aria-hidden="true">
 	<div class="modal-dialog">
 		<div class="modal-content border-0">
-
 			<div class="modal-header bg-success text-white">
 				<h5 class="modal-title fw-bold">
 					<i class="fa-solid fa-circle-check me-2"></i>
 					تأكيد أمر الإنتاج
 				</h5>
-
-				<button type="button"
-						class="btn-close btn-close-white ms-0 me-auto"
-						data-bs-dismiss="modal">
-				</button>
+				<button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
 			</div>
 
 			<div class="modal-body text-center p-4">
-
-
 				<div class="alert alert-warning text-end mb-3">
 					<div class="fw-bold mb-1">
 						<i class="fa-solid fa-circle-info me-1"></i>
 						تنبيه
 					</div>
-
-					<h5>
-						بعد التأكيد لن يكون بالإمكان تعديل بيانات الإنتاج الفعلية.
-					</h5>
+					<h5>بعد التأكيد لن يكون بالإمكان تعديل بيانات الإنتاج الفعلية.</h5>
 				</div>
 
 				<div class="mb-3">
 					<i class="fa-solid fa-triangle-exclamation text-warning fs-1"></i>
 				</div>
 
-				
-				<h5 class="fw-bold mb-3">
-					هل أنت متأكد من اعتماد أمر الإنتاج؟
-				</h5>
-
+				<h5 class="fw-bold mb-3">هل أنت متأكد من اعتماد أمر الإنتاج؟</h5>
 				<p class="text-muted mb-3">
 					سيتم اعتماد أمر الإنتاج وخصم الخامات من المخزن.
 					يمكن بعد ذلك تسجيل عمليات البيع من شاشة المبيعات.
 				</p>
 
-				
-
 				<div class="mt-3 p-3 bg-light rounded border text-end">
 					<div>
 						<strong>رقم أمر الإنتاج:</strong>
-						<span id="confirmProductionOrderId"
-							  class="text-primary fw-bold">
-							-
-						</span>
+						<span id="confirmProductionOrderId" class="text-primary fw-bold">-</span>
 					</div>
 				</div>
-
 			</div>
 
 			<div class="modal-footer">
-
-				<button type="button"
-						class="btn btn-secondary"
-						data-bs-dismiss="modal">
-					إلغاء
-				</button>
-
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
 				<form asp-action="Confirm" method="post" id="confirmProductionForm">
 					@Html.AntiForgeryToken()
-
-					<input type="hidden"
-						   name="id"
-						   id="confirmProductionId" />
-
-					<button type="submit"
-							class="btn btn-success fw-bold">
-
-						<i class="fa-solid fa-check me-1"></i>
-						نعم، اعتماد أمر الإنتاج
+					<input type="hidden" name="id" id="confirmProductionId" />
+					<button type="submit" class="btn btn-success fw-bold">
+						<i class="fa-solid fa-check me-1"></i> نعم، اعتماد أمر الإنتاج
 					</button>
 				</form>
-
 			</div>
-
 		</div>
 	</div>
 </div>
@@ -454,7 +435,7 @@
 						const d = res.data;
 						document.getElementById('liveProductTypeName').innerText = d.productTypeName;
 						document.getElementById('liveTotalPieces').innerText = d.totalTargetPieces;
-						document.getElementById('liveBaskets').innerText = d.expectedBaskets + " باسيكت (" + d.remainingPieces + " قطعة متبقية)";
+						document.getElementById('liveBaskets').innerText = d.expectedBaskets + " باسكت (" + d.remainingPieces + " قطعة متبقية)";
 						document.getElementById('liveSalesVal').innerText = d.totalExpectedSalesValue.toFixed(2);
 
 						let hasShortage = false;
@@ -500,57 +481,58 @@
 			const result = order.OrderResults[0];
 
 			let html = `
-				<div class="row g-3 mb-3">
-					<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>النوع:</strong> ${order.SelectedProductTypeName}</div></div>
-					<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>عدد الشكاير:</strong> ${order.FlourSackCount} شكارة</div></div>
-					<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>الحالة:</strong> ${order.StatusName}</div></div>
-				</div>
-				<h6 class="fw-bold text-primary mb-2">المستهدف مقابل الفعلي:</h6>
-				<div class="table-responsive mb-3">
-					<table class="table table-bordered align-middle text-center">
-						<thead class="table-dark">
-							<tr>
-								<th>النوع</th>
-								<th>الكمية المستهدفة</th>
-								<th>الكمية الفعلية المُنتجة</th>
-								<th>الفرق</th>
-								<th>نسبة الإنجاز</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr>
-								<td class="fw-bold">${result.ProductTypeName}</td>
-								<td class="fw-bold text-primary">${result.TargetQuantity} قطعة</td>
-								<td>
-									<!-- يعرض الفعلي فقط ويمنع السوالب -->
-									<input type="number"
-										   id="actualQuantityInput"
-										   name="actualQuantity"
-										   value="${result.ActualQuantity || 0}"
-										   min="0"
-										   required
-										   oninput="if(this.value < 0) this.value = 0; recalculateOrderModal(${result.TargetQuantity}, ${order.ExpectedBaskets}, ${order.TotalExpectedSalesValue});"
-										   ${readonlyAttr}
-										   class="form-control form-control-sm text-center fw-bold text-success"
-										   style="max-width: 120px; margin: 0 auto;" />
-								</td>
-								<td id="calcDifferenceCell" class="fw-bold">0 قطعة</td>
-								<td><span id="calcBadgeCell" class="badge bg-success">0%</span></td>
-							</tr>
-						</tbody>
-					</table>
-				</div>
-				<div class="row g-2 mt-2 bg-light p-3 rounded">
-					<div class="col-md-6"><strong>الباسكت المستهدف:</strong> ${order.ExpectedBaskets} باسكت</div>
-					<div class="col-md-6"><strong>الباسكت الفعلي:</strong> <span id="calcActualBaskets" class="fw-bold text-success">0 باسكت</span></div>
-					<div class="col-md-6"><strong>قيمة المبيعات المتوقعة:</strong> ${order.TotalExpectedSalesValue.toFixed(2)} ج.م</div>
-					<div class="col-md-6"><strong>قيمة المبيعات الفعلية:</strong> <span id="calcActualSalesValue" class="fw-bold text-success">0.00 ج.م</span></div>
-				</div>
-				<div class="mt-3">
-					<label class="form-label fw-bold">ملاحظات أخرى:</label>
-					<input type="text" name="notes" value="${order.Notes || ''}" ${isConfirmed ? 'readonly' : ''} class="form-control" />
-				</div>
-			`;
+						<div class="row g-3 mb-3">
+							<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>النوع:</strong> ${order.SelectedProductTypeName}</div></div>
+							<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>عدد الشكاير:</strong> ${order.FlourSackCount} شكارة</div></div>
+							<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>الحالة:</strong> ${order.StatusName}</div></div>
+						</div>
+						<h6 class="fw-bold text-primary mb-2">المستهدف مقابل الفعلي:</h6>
+						<div class="table-responsive mb-3">
+							<table class="table table-bordered align-middle text-center">
+								<thead class="table-dark">
+									<tr>
+										<th>النوع</th>
+										<th>الكمية المستهدفة</th>
+										<th>الكمية الفعلية المُنتجة</th>
+										<th>الفرق</th>
+										<th>نسبة الإنجاز</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr>
+										<td class="fw-bold">${result.ProductTypeName}</td>
+										<td class="fw-bold text-primary">${result.TargetQuantity} قطعة</td>
+										<td>
+											<!-- يعرض الفعلي فقط ويمنع السوالب -->
+											<input type="number"
+												   step="0.01"
+												   id="actualQuantityInput"
+												   name="actualQuantity"
+												   value="${result.ActualQuantity || 0}"
+												   min="0"
+												   required
+												   oninput="if(this.value < 0) this.value = 0; recalculateOrderModal(${result.TargetQuantity}, ${order.ExpectedBaskets}, ${order.TotalExpectedSalesValue});"
+												   ${readonlyAttr}
+												   class="form-control form-control-sm text-center fw-bold text-success"
+												   style="max-width: 120px; margin: 0 auto;" />
+										</td>
+										<td id="calcDifferenceCell" class="fw-bold">0 قطعة</td>
+										<td><span id="calcBadgeCell" class="badge bg-success">0%</span></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+						<div class="row g-2 mt-2 bg-light p-3 rounded">
+							<div class="col-md-6"><strong>الباسكت المستهدف:</strong> ${order.ExpectedBaskets} باسكت</div>
+							<div class="col-md-6"><strong>الباسكت الفعلي:</strong> <span id="calcActualBaskets" class="fw-bold text-success">0 باسكت</span></div>
+							<div class="col-md-6"><strong>قيمة المبيعات المتوقعة:</strong> ${order.TotalExpectedSalesValue.toFixed(2)} ج.م</div>
+							<div class="col-md-6"><strong>قيمة المبيعات الفعلية:</strong> <span id="calcActualSalesValue" class="fw-bold text-success">0.00 ج.م</span></div>
+						</div>
+						<div class="mt-3">
+							<label class="form-label fw-bold">ملاحظات أخرى:</label>
+							<input type="text" name="notes" value="${order.Notes || ''}" ${isConfirmed ? 'readonly' : ''} class="form-control" />
+						</div>
+					`;
 
 			document.getElementById('modalOrderContent').innerHTML = html;
 			document.getElementById('saveActualBtn').style.display = isConfirmed ? 'none' : 'inline-block';
@@ -564,7 +546,7 @@
 		// دالة الحساب الفوري
 		function recalculateOrderModal(targetPieces, expectedBaskets, expectedSalesValue) {
 			const input = document.getElementById('actualQuantityInput');
-			let actualPieces = parseInt(input.value);
+			let actualPieces = parseFloat(input.value);
 
 			if (isNaN(actualPieces) || actualPieces < 0) {
 				actualPieces = 0;
@@ -573,7 +555,7 @@
 			// 1. حساب الفرق
 			const difference = actualPieces - targetPieces;
 			const diffCell = document.getElementById('calcDifferenceCell');
-			diffCell.innerText = (difference >= 0 ? `+${difference}` : difference) + " قطعة";
+			diffCell.innerText = (difference >= 0 ? `+${difference.toFixed(2)}` : difference.toFixed(2)) + " قطعة";
 			diffCell.className = `fw-bold ${difference >= 0 ? 'text-success' : 'text-danger'}`;
 
 			// 2. حساب نسبة الإنجاز
@@ -592,21 +574,14 @@
 			document.getElementById('calcActualSalesValue').innerText = `${actualSalesValue} ج.م`;
 		}
 
-
-
 		function openConfirmProductionModal(id) {
-
 			document.getElementById('confirmProductionId').value = id;
-
 			document.getElementById('confirmProductionOrderId').innerText = '#' + id;
 
 			const modalElement = document.getElementById('confirmProductionModal');
-
 			const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
-
 			modal.show();
 		}
-
 
 		function selectTodayProduction() {
 			const today = new Date();
@@ -629,6 +604,5 @@
 				form.submit();
 			}
 		}
-
 	</script>
 }

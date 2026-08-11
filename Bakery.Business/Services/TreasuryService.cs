@@ -55,19 +55,32 @@ namespace Bakery.Business.Services
             decimal remainingPayable = transactions.Where(t => t.TransactionType == TreasuryTransactionType.Expense).Sum(t => t.RemainingAmount);
 
             // Cash and Bank Balances
-            decimal cashIncomePaid = transactions.Where(t => t.TransactionType == TreasuryTransactionType.Income && t.PaymentMethod == PaymentMethod.Cash).Sum(t => t.PaidAmount);
-            decimal cashExpensePaid = transactions.Where(t => t.TransactionType == TreasuryTransactionType.Expense && (t.PaymentMethod == PaymentMethod.Cash || t.PaymentMethod == PaymentMethod.PartiallyPaid)).Sum(t => t.PaidAmount);
+            decimal cashIncomePaid = transactions
+                .Where(t => t.TransactionType == TreasuryTransactionType.Income && t.PaymentMethod == PaymentMethod.Cash)
+                .Sum(t => t.PaidAmount);
+
+            decimal cashExpensePaid = transactions
+                .Where(t => t.TransactionType == TreasuryTransactionType.Expense && t.PaymentMethod == PaymentMethod.Cash)
+                .Sum(t => t.PaidAmount);
+
             decimal cashBalance = cashIncomePaid - cashExpensePaid;
 
-            decimal bankIncomePaid = transactions.Where(t => t.TransactionType == TreasuryTransactionType.Income && t.PaymentMethod == PaymentMethod.BankTransfer).Sum(t => t.PaidAmount);
-            decimal bankExpensePaid = transactions.Where(t => t.TransactionType == TreasuryTransactionType.Expense && t.PaymentMethod == PaymentMethod.BankTransfer).Sum(t => t.PaidAmount);
+            decimal bankIncomePaid = transactions
+                .Where(t => t.TransactionType == TreasuryTransactionType.Income && t.PaymentMethod == PaymentMethod.BankTransfer)
+                .Sum(t => t.PaidAmount);
+
+            decimal bankExpensePaid = transactions
+                .Where(t => t.TransactionType == TreasuryTransactionType.Expense && t.PaymentMethod == PaymentMethod.BankTransfer)
+                .Sum(t => t.PaidAmount);
+
             decimal bankBalance = bankIncomePaid - bankExpensePaid;
 
             // Inventory & Actual Production Values
             decimal inventoryVal = await _context.RawMaterials.SumAsync(r => r.CurrentQuantity * r.UnitPrice);
+
             decimal actualProdVal = await _context.ProductionOrders
-                .Where(o => o.Status == ProductionStatus.Confirmed)
-                .SumAsync(o => o.TotalActualSalesValue);
+                .Where(o => o.Status == ProductionStatus.Confirmed && o.ActualBaskets > 0)
+                .SumAsync(o => o.ActualBaskets * o.BasketSellingPrice);
 
             return new TreasurySummaryDto
             {
@@ -106,16 +119,16 @@ namespace Bakery.Business.Services
             var today = date.Date;
 
             var todayOrders = await _context.ProductionOrders
-                .Where(o => 
+                .Where(o =>
                     o.ProductionDate >= today &&
-                    o.ProductionDate<today.AddDays(1))
+                    o.ProductionDate < today.AddDays(1))
                 .ToListAsync();
 
             decimal todaySacks = todayOrders.Sum(o => o.FlourSackCount);
             int todayTarget = todayOrders.Sum(o => o.TotalTargetPieces);
             int todayActual = todayOrders.Sum(o => o.TotalActualPieces);
-            int todayExpBaskets = todayOrders.Sum(o => o.ExpectedBaskets);
-            int todayActBaskets = todayOrders.Sum(o => o.ActualBaskets);
+            decimal todayExpBaskets = todayOrders.Sum(o => o.ExpectedBaskets);
+            decimal todayActBaskets = todayOrders.Sum(o => o.ActualBaskets);
 
             var treasurySummary = await GetTreasurySummaryAsync(today, today);
             var overallSummary = await GetTreasurySummaryAsync();
@@ -123,7 +136,7 @@ namespace Bakery.Business.Services
             var lowStock = await _context.RawMaterials
                 .Include(r => r.MeasurementUnit)
                 .Include(r => r.MaterialType)
-                .Where(r => r.CurrentQuantity <= 10) // low stock threshold
+                .Where(r => r.CurrentQuantity <= 10)
                 .Select(r => new LowStockMaterialDto
                 {
                     Id = r.Id,

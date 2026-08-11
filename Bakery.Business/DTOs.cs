@@ -11,7 +11,7 @@ namespace Bakery.Business.DTOs
         public string ProductTypeName { get; set; } = "";      // ← جديد
         public int TargetQuantity { get; set; }                // ← جديد
         public int TotalTargetPieces { get; set; }
-        public int ExpectedBaskets { get; set; }
+        public decimal ExpectedBaskets { get; set; }
         public int RemainingPieces { get; set; }
         public decimal BasketSellingPrice { get; set; }
         public decimal TotalExpectedSalesValue { get; set; }
@@ -42,8 +42,8 @@ namespace Bakery.Business.DTOs
         public string StatusName => Status == ProductionStatus.Confirmed ? "مؤكد" : "مسودة";
         public int TotalTargetPieces { get; set; }
         public int TotalActualPieces { get; set; }
-        public int ExpectedBaskets { get; set; }
-        public int ActualBaskets { get; set; }
+        public decimal ExpectedBaskets { get; set; }
+        public decimal ActualBaskets { get; set; }
         public int RemainingPieces { get; set; }
         public decimal TotalExpectedSalesValue { get; set; }
         public decimal TotalActualSalesValue { get; set; }
@@ -73,7 +73,7 @@ namespace Bakery.Business.DTOs
         public int TotalActualPieces { get; set; }
         public decimal TotalActualBaskets { get; set; }
         public int RemainingPieces { get; set; }
-        public int RemainingBasketsInOrder { get; set; } // المتبقي
+        public decimal RemainingBasketsInOrder { get; set; } // المتبقي
         
         public decimal SoldBaskets { get; set; }
         public decimal TotalAmount => SoldBaskets * BasketSellingPrice;
@@ -129,8 +129,8 @@ namespace Bakery.Business.DTOs
         public decimal TodayFlourSacks { get; set; }
         public int TodayTargetProduction { get; set; }
         public int TodayActualProduction { get; set; }
-        public int TodayExpectedBaskets { get; set; }
-        public int TodayActualBaskets { get; set; }
+        public decimal TodayExpectedBaskets { get; set; }
+        public decimal TodayActualBaskets { get; set; }
         public decimal InventoryTotalValue { get; set; }
         public decimal TodayIncome { get; set; }
         public decimal TodayExpenses { get; set; }

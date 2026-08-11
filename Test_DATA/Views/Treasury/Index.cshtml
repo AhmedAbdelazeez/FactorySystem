@@ -24,6 +24,7 @@
 		</div>
 	</div>
 </div>
+
 <!-- Net Profit & Treasury Summary Main Cards -->
 <div class="row g-3 mb-4">
 	<div class="col-md-4">
@@ -53,7 +54,7 @@
 		</div>
 	</div>
 	<div class="col-md-4">
-		<div class="card stat-card p-4 border-0 shadow-sm bg- @(summary.NetProfit >= 0 ? "bg-orange" : "bg-warning") text-white">
+		<div class="card stat-card p-4 border-0 shadow-sm @(summary.NetProfit >= 0 ? "bg-orange" : "bg-warning") text-white">
 			<div class="d-flex align-items-center justify-content-between">
 				<div>
 					<span class="text-white-50 small fw-bold d-block mb-1">صافي الربح الفعلي (الإيراد - المصروف)</span>
