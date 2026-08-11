@@ -53,7 +53,7 @@
 	</div>
 </div>
 
-<!-- 🔍 Compact Date Filter Box -->
+<!--  Compact Date Filter Box -->
 <div class="card border-0 shadow-sm rounded-4 mb-3">
 	<div class="card-body p-2 px-3 bg-light rounded-4 border">
 		<form asp-action="Index" method="get" id="productionDateFilterForm" class="d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -94,20 +94,20 @@
 <!-- Production Orders Table -->
 <div class="card card-custom">
 	<div class="card-body p-0">
-		<div class="table-custom">
-			<table class="table table-bakery mb-0">
+		<div class="table-responsive">
+			<table class="table table-bakery align-middle mb-0">
 				<thead>
 					<tr>
 						<th>رقم الأمر / التاريخ</th>
 						<th>النوع</th>
 						<th>عدد الشكاير</th>
-						<th>المستهدف (قطع / باسيكت)</th>
+						<th>المستهدف (قطع / باسكت)</th>
 						<th>الإنتاج الفعلي</th>
-						<th>الكمية المباعة والمتاحة</th>
+						<th>الكمية المباعة </th>
 						<th>القيمة المتوقعة</th>
-						<th>قيمة المباع فعليا</th>
+						<th>قيمة المباع فعلياً</th>
 						<th>حالة التشغيل</th>
-						<th class="text-center" style="min-width: 240px;">الإجراءات والاعتماد</th>
+						<th class="text-center" style="min-width: 210px;">الإجراءات والاعتماد</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -126,12 +126,12 @@
 								<td><span class="badge bg-amber">@order.SelectedProductTypeName</span></td>
 
 								<!-- عدد الشكاير -->
-								<td class="fw-bold fs-5">@order.FlourSackCount <small class="fs-6 text-muted">شكارة</small></td>
+								<td class="fw-bold fs-6">@order.FlourSackCount <small class="text-muted fw-normal">شكارة</small></td>
 
 								<!-- المستهدف -->
 								<td>
-									<div class="fw-bold text-dark">@order.TotalTargetPieces <small>قطعة</small></div>
-									<span class="badge bg-light text-dark border">@order.ExpectedBaskets باسيكت + @order.RemainingPieces قطعة</span>
+									<div class="fw-bold text-dark">@order.TotalTargetPieces <small class="fw-normal">قطعة</small></div>
+									<span class="badge bg-light text-dark border">@order.ExpectedBaskets باسكت + @order.RemainingPieces قطعة</span>
 								</td>
 
 								<!-- الإنتاج الفعلي -->
@@ -141,7 +141,7 @@
 										var piecesPerBasket = settings.PiecesPerBasket > 0 ? settings.PiecesPerBasket : 28;
 										var totalActualBasketsCalc = order.TotalActualPieces / piecesPerBasket;
 
-										<div class="fw-bold text-dark">@order.TotalActualPieces <small>قطعة</small></div>
+										<div class="fw-bold text-dark">@order.TotalActualPieces <small class="fw-normal">قطعة</small></div>
 										<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
 											(@totalActualBasketsCalc باسكت + @order.RemainingPieces قطعة)
 										</span>
@@ -156,7 +156,7 @@
 								<td>
 									@if (order.SoldBaskets > 0)
 									{
-										<div class="fw-bold text-primary fs-6">@order.SoldBaskets.ToString("0.##") <small class="text-muted">باسكت مباع</small></div>
+										<div class="fw-bold text-primary fs-6">@order.SoldBaskets.ToString("0.##") <small class="text-muted fw-normal">باسكت مباع</small></div>
 									}
 									else
 									{
@@ -166,14 +166,14 @@
 									@if (order.TotalActualPieces > 0)
 									{
 										<span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 d-inline-block">
-											المتاح: @order.ActualBaskets باسكت
+											المتاح: (@order.ActualBaskets باسكت + @order.RemainingPieces قطعة)
 										</span>
 									}
 								</td>
 
 								<!-- المبيعات المتوقعة والفعلية -->
-								<td class="fw-bold">@order.TotalExpectedSalesValue.ToString("N2") <small class="text-muted">ج.م</small></td>
-								<td class="fw-bold text-success">@order.TotalActualSalesValue.ToString("N2") <small>ج.م</small></td>
+								<td class="fw-bold">@order.TotalExpectedSalesValue.ToString("N2") <small class="text-muted fw-normal">ج.م</small></td>
+								<td class="fw-bold text-success">@order.TotalActualSalesValue.ToString("N2") <small class="fw-normal">ج.م</small></td>
 
 								<!-- حالة التشغيل -->
 								<td>
@@ -192,26 +192,26 @@
 								</td>
 
 								<!-- الإجراءات والاعتماد -->
-								<td class="text-center text-nowrap">
+								<td class="text-center">
 									<div class="d-inline-flex align-items-center justify-content-center gap-1">
 										@if (order.Status == ProductionStatus.Draft)
 										{
 											<button type="button"
-													class="btn btn-xs btn-outline-primary fw-bold text-nowrap py-1 px-2"
+													class="btn btn-sm btn-primary fw-bold text-white py-1 px-2"
 													title="إدخال وتسجيل الكميات الفعلية"
 													onclick="viewOrderDetails(@order.Id)">
-												<i class="fa-solid fa-pen-to-square me-1"></i>إدخال الفعلي
+												<i class="fa-solid fa-pen-to-square me-1"></i>الإنتاج الفعلي
 											</button>
 
 											<button type="button"
-													class="btn btn-xs btn-success fw-bold text-nowrap py-1 px-2"
+													class="btn btn-sm btn-success fw-bold py-1 px-2"
 													title="تأكيد الإنتاج"
 													onclick="openConfirmProductionModal(@order.Id)">
 												<i class="fa-solid fa-check me-1"></i>تأكيد
 											</button>
 
 											<button type="button"
-													class="btn btn-xs btn-outline-danger py-1 px-2"
+													class="btn btn-sm btn-outline-danger py-1 px-2"
 													title="حذف الأمر"
 													onclick="confirmDelete(@order.Id, '@Url.Action("Delete", "Production")', 'هل أنت متأكد من حذف هذا الأمر؟')">
 												<i class="fa-solid fa-trash"></i>
@@ -220,7 +220,7 @@
 										else
 										{
 											<button type="button"
-													class="btn btn-xs btn-outline-info fw-bold text-nowrap py-1 px-2"
+													class="btn btn-sm btn-outline-info fw-bold py-1 px-2"
 													title="عرض تفاصيل أمر الإنتاج"
 													onclick="viewOrderDetails(@order.Id)">
 												<i class="fa-solid fa-eye me-1"></i>عرض التفاصيل
@@ -363,10 +363,23 @@
 
 			<div class="modal-body text-center p-4">
 
+
+				<div class="alert alert-warning text-end mb-3">
+					<div class="fw-bold mb-1">
+						<i class="fa-solid fa-circle-info me-1"></i>
+						تنبيه
+					</div>
+
+					<h5>
+						بعد التأكيد لن يكون بالإمكان تعديل بيانات الإنتاج الفعلية.
+					</h5>
+				</div>
+
 				<div class="mb-3">
 					<i class="fa-solid fa-triangle-exclamation text-warning fs-1"></i>
 				</div>
 
+				
 				<h5 class="fw-bold mb-3">
 					هل أنت متأكد من اعتماد أمر الإنتاج؟
 				</h5>
@@ -376,16 +389,7 @@
 					يمكن بعد ذلك تسجيل عمليات البيع من شاشة المبيعات.
 				</p>
 
-				<div class="alert alert-warning text-end mb-0">
-					<div class="fw-bold mb-1">
-						<i class="fa-solid fa-circle-info me-1"></i>
-						تنبيه
-					</div>
-
-					<small>
-						بعد التأكيد لن يكون بالإمكان تعديل بيانات الإنتاج الفعلية.
-					</small>
-				</div>
+				
 
 				<div class="mt-3 p-3 bg-light rounded border text-end">
 					<div>
@@ -496,54 +500,96 @@
 			const result = order.OrderResults[0];
 
 			let html = `
-								<div class="row g-3 mb-3">
-									<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>النوع:</strong> ${order.SelectedProductTypeName}</div></div>
-									<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>عدد الشكاير:</strong> ${order.FlourSackCount} شكارة</div></div>
-									<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>الحالة:</strong> ${order.StatusName}</div></div>
-								</div>
-
-								<h6 class="fw-bold text-primary mb-2">المستهدف مقابل الفعلي:</h6>
-								<div class="table-responsive mb-3">
-									<table class="table table-bordered align-middle text-center">
-										<thead class="table-dark">
-											<tr>
-												<th>النوع</th>
-												<th>الكمية المستهدفة</th>
-												<th>الكمية الفعلية المُنتجة</th>
-												<th>الفرق</th>
-												<th>نسبة الإنجاز</th>
-											</tr>
-										</thead>
-										<tbody>
-											<tr>
-												<td class="fw-bold">${result.ProductTypeName}</td>
-												<td class="fw-bold text-primary">${result.TargetQuantity} قطعة</td>
-												<td>
-													<input type="number" name="actualQuantity" value="${result.ActualQuantity}" ${readonlyAttr} class="form-control form-control-sm text-center fw-bold text-success" style="max-width: 120px; margin: 0 auto;" />
-												</td>
-												<td class="fw-bold ${result.Difference >= 0 ? 'text-success' : 'text-danger'}">${result.Difference} قطعة</td>
-												<td><span class="badge ${result.AchievementPercentage >= 100 ? 'bg-success' : 'bg-warning text-dark'}">${result.AchievementPercentage}%</span></td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-
-								<div class="row g-2 mt-2 bg-light p-3 rounded">
-									<div class="col-md-6"><strong>الباسكيت المستهدف:</strong> ${order.ExpectedBaskets} باسيكت</div>
-									<div class="col-md-6"><strong>الباسكيت الفعلي:</strong> <span class="fw-bold text-success">${order.ActualBaskets} باسيكت</span></div>
-									<div class="col-md-6"><strong>قيمة المبيعات المتوقعة:</strong> ${order.TotalExpectedSalesValue.toFixed(2)} ج.م</div>
-									<div class="col-md-6"><strong>قيمة المبيعات الفعلية:</strong> <span class="fw-bold text-success">${order.TotalActualSalesValue.toFixed(2)} ج.م</span></div>
-								</div>
-
-								<div class="mt-3">
-									<label class="form-label fw-bold">ملاحظات أخرى:</label>
-									<input type="text" name="notes" value="${order.Notes || ''}" ${isConfirmed ? 'readonly' : ''} class="form-control" />
-								</div>
-							`;
+				<div class="row g-3 mb-3">
+					<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>النوع:</strong> ${order.SelectedProductTypeName}</div></div>
+					<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>عدد الشكاير:</strong> ${order.FlourSackCount} شكارة</div></div>
+					<div class="col-md-4"><div class="p-2 border rounded bg-light"><strong>الحالة:</strong> ${order.StatusName}</div></div>
+				</div>
+				<h6 class="fw-bold text-primary mb-2">المستهدف مقابل الفعلي:</h6>
+				<div class="table-responsive mb-3">
+					<table class="table table-bordered align-middle text-center">
+						<thead class="table-dark">
+							<tr>
+								<th>النوع</th>
+								<th>الكمية المستهدفة</th>
+								<th>الكمية الفعلية المُنتجة</th>
+								<th>الفرق</th>
+								<th>نسبة الإنجاز</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td class="fw-bold">${result.ProductTypeName}</td>
+								<td class="fw-bold text-primary">${result.TargetQuantity} قطعة</td>
+								<td>
+									<!-- يعرض الفعلي فقط ويمنع السوالب -->
+									<input type="number"
+										   id="actualQuantityInput"
+										   name="actualQuantity"
+										   value="${result.ActualQuantity || 0}"
+										   min="0"
+										   required
+										   oninput="if(this.value < 0) this.value = 0; recalculateOrderModal(${result.TargetQuantity}, ${order.ExpectedBaskets}, ${order.TotalExpectedSalesValue});"
+										   ${readonlyAttr}
+										   class="form-control form-control-sm text-center fw-bold text-success"
+										   style="max-width: 120px; margin: 0 auto;" />
+								</td>
+								<td id="calcDifferenceCell" class="fw-bold">0 قطعة</td>
+								<td><span id="calcBadgeCell" class="badge bg-success">0%</span></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="row g-2 mt-2 bg-light p-3 rounded">
+					<div class="col-md-6"><strong>الباسكت المستهدف:</strong> ${order.ExpectedBaskets} باسكت</div>
+					<div class="col-md-6"><strong>الباسكت الفعلي:</strong> <span id="calcActualBaskets" class="fw-bold text-success">0 باسكت</span></div>
+					<div class="col-md-6"><strong>قيمة المبيعات المتوقعة:</strong> ${order.TotalExpectedSalesValue.toFixed(2)} ج.م</div>
+					<div class="col-md-6"><strong>قيمة المبيعات الفعلية:</strong> <span id="calcActualSalesValue" class="fw-bold text-success">0.00 ج.م</span></div>
+				</div>
+				<div class="mt-3">
+					<label class="form-label fw-bold">ملاحظات أخرى:</label>
+					<input type="text" name="notes" value="${order.Notes || ''}" ${isConfirmed ? 'readonly' : ''} class="form-control" />
+				</div>
+			`;
 
 			document.getElementById('modalOrderContent').innerHTML = html;
 			document.getElementById('saveActualBtn').style.display = isConfirmed ? 'none' : 'inline-block';
+
+			// حساب القيم بناءً على القيمة الفعلية
+			recalculateOrderModal(result.TargetQuantity, order.ExpectedBaskets, order.TotalExpectedSalesValue);
+
 			new bootstrap.Modal(document.getElementById('orderDetailsModal')).show();
+		}
+
+		// دالة الحساب الفوري
+		function recalculateOrderModal(targetPieces, expectedBaskets, expectedSalesValue) {
+			const input = document.getElementById('actualQuantityInput');
+			let actualPieces = parseInt(input.value);
+
+			if (isNaN(actualPieces) || actualPieces < 0) {
+				actualPieces = 0;
+			}
+
+			// 1. حساب الفرق
+			const difference = actualPieces - targetPieces;
+			const diffCell = document.getElementById('calcDifferenceCell');
+			diffCell.innerText = (difference >= 0 ? `+${difference}` : difference) + " قطعة";
+			diffCell.className = `fw-bold ${difference >= 0 ? 'text-success' : 'text-danger'}`;
+
+			// 2. حساب نسبة الإنجاز
+			const achievement = targetPieces > 0 ? Math.round((actualPieces / targetPieces) * 100) : 0;
+			const badgeCell = document.getElementById('calcBadgeCell');
+			badgeCell.innerText = achievement + "%";
+			badgeCell.className = `badge ${achievement >= 100 ? 'bg-success' : 'bg-warning text-dark'}`;
+
+			// 3. حساب الباسكت الفعلي والمبيعات الفعلية
+			const piecesPerBasket = targetPieces > 0 && expectedBaskets > 0 ? (targetPieces / expectedBaskets) : 28;
+			const actualBaskets = (actualPieces / piecesPerBasket).toFixed(1);
+			const pricePerPiece = targetPieces > 0 ? (expectedSalesValue / targetPieces) : 0;
+			const actualSalesValue = (actualPieces * pricePerPiece).toFixed(2);
+
+			document.getElementById('calcActualBaskets').innerText = `${actualBaskets} باسكت`;
+			document.getElementById('calcActualSalesValue').innerText = `${actualSalesValue} ج.م`;
 		}
 
 

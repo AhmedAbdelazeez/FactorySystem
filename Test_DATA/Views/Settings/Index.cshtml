@@ -41,7 +41,7 @@
 				<div class="card-body p-4">
 					<label class="form-label fw-bold text-secondary">سعر بيع الباسكيت الواحد <span class="text-danger">*</span></label>
 					<div class="input-group input-group-lg">
-						<input type="number" step="0.01" name="BasketSellingPrice" value="@Model.BasketSellingPrice" required class="form-control fw-bold text-success border-secondary-subtle rounded-start-3" />
+						<input type="number" step="0.01" min="0.01" name="BasketSellingPrice" value="@Model.BasketSellingPrice" required class="form-control fw-bold text-success border-secondary-subtle rounded-start-3" />
 						<span class="input-group-text bg-light text-muted fw-bold rounded-end-3 fs-6">ج.م</span>
 					</div>
 					<div class="form-text mt-2 text-muted small">
@@ -67,7 +67,7 @@
 				<div class="card-body p-4">
 					<label class="form-label fw-bold text-secondary">عدد القطع داخل الباسكيت <span class="text-danger">*</span></label>
 					<div class="input-group input-group-lg">
-						<input type="number" step="1" name="PiecesPerBasket" value="@Model.PiecesPerBasket" required class="form-control fw-bold text-dark border-secondary-subtle rounded-start-3" />
+						<input type="number" step="1" min="1" name="PiecesPerBasket" value="@Model.PiecesPerBasket" required class="form-control fw-bold text-dark border-secondary-subtle rounded-start-3" />
 						<span class="input-group-text bg-light text-muted fw-bold rounded-end-3 fs-6">قطعة / باسيكت</span>
 					</div>
 					<div class="form-text mt-2 text-muted small">
@@ -96,7 +96,7 @@
 							<div class="p-3 bg-light rounded-3 border border-secondary-subtle">
 								<label class="form-label fw-bold text-dark d-block mb-2">قطع المبروم <span class="text-danger">*</span></label>
 								<div class="input-group">
-									<input type="number" step="1" name="MabroumPiecesPerSack" value="@Model.MabroumPiecesPerSack" required class="form-control fw-bold rounded-start-3" />
+									<input type="number" step="1" min="1" name="MabroumPiecesPerSack" value="@Model.MabroumPiecesPerSack" required class="form-control fw-bold rounded-start-3" />
 									<span class="input-group-text bg-white text-muted small rounded-end-3">قطعة/شكارة</span>
 								</div>
 							</div>
@@ -105,7 +105,7 @@
 							<div class="p-3 bg-light rounded-3 border border-secondary-subtle">
 								<label class="form-label fw-bold text-dark d-block mb-2">قطع البانيه <span class="text-danger">*</span></label>
 								<div class="input-group">
-									<input type="number" step="1" name="PanePiecesPerSack" value="@Model.PanePiecesPerSack" required class="form-control fw-bold rounded-start-3" />
+									<input type="number" step="1"  min="1" name="PanePiecesPerSack" value="@Model.PanePiecesPerSack" required class="form-control fw-bold rounded-start-3" />
 									<span class="input-group-text bg-white text-muted small rounded-end-3">قطعة/شكارة</span>
 								</div>
 							</div>
@@ -114,7 +114,7 @@
 							<div class="p-3 bg-light rounded-3 border border-secondary-subtle">
 								<label class="form-label fw-bold text-dark d-block mb-2">قطع الساندوتش <span class="text-danger">*</span></label>
 								<div class="input-group">
-									<input type="number" step="1" name="SandwichPiecesPerSack" value="@Model.SandwichPiecesPerSack" required class="form-control fw-bold rounded-start-3" />
+									<input type="number" step="1" min="1" name="SandwichPiecesPerSack" value="@Model.SandwichPiecesPerSack" required class="form-control fw-bold rounded-start-3" />
 									<span class="input-group-text bg-white text-muted small rounded-end-3">قطعة/شكارة</span>
 								</div>
 							</div>

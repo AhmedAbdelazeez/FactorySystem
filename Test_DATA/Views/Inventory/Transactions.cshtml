@@ -268,12 +268,12 @@
 
 															<div class="col-md-6">
 																<label class="form-label fw-bold">الكمية الجديدة <span class="text-danger">*</span></label>
-																<input type="number" step="0.001" name="newQuantity" id="qty-@tx.Id" class="form-control fw-bold" value="@tx.Quantity" required oninput="calculateEditTotal(@tx.Id)" />
+																<input type="number" step="0.001" min="0" name="newQuantity" id="qty-@tx.Id" class="form-control fw-bold" value="@tx.Quantity" required oninput="calculateEditTotal(@tx.Id)" />
 															</div>
 
 															<div class="col-md-6">
 																<label class="form-label fw-bold">سعر الوحدة (ج.م) <span class="text-danger">*</span></label>
-																<input type="number" step="0.01" name="newUnitPrice" id="price-@tx.Id" class="form-control fw-bold text-success" value="@tx.UnitPrice" required oninput="calculateEditTotal(@tx.Id)" />
+																<input type="number" step="0.01" min="0" name="newUnitPrice" id="price-@tx.Id" class="form-control fw-bold text-success" value="@tx.UnitPrice" required oninput="calculateEditTotal(@tx.Id)" />
 															</div>
 
 															<div class="col-md-6">
@@ -437,7 +437,7 @@
 					</div>
 					<div class="mb-3">
 						<label class="form-label fw-bold">المبلغ المدفوع الآن <span class="text-danger">*</span></label>
-						<input type="number" step="0.01" name="amountPaidNow" id="payNowVal" required class="form-control fw-bold" />
+						<input type="number" step="0.01" min="0.01" name="amountPaidNow" id="payNowVal" required class="form-control fw-bold" />
 					</div>
 					<div class="mb-3">
 						<label class="form-label fw-bold">طريقة السداد</label>

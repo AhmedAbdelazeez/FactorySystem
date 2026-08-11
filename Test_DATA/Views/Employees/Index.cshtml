@@ -210,11 +210,11 @@
 					</div>
 					<div class="col-md-6">
 						<label class="form-label fw-bold">السن (بالسنوات)</label>
-						<input type="number" name="Age" min="1" max="100" value="25" class="form-control" />
+						<input type="number" name="Age" min="1"  value="25" class="form-control" />
 					</div>
 					<div class="col-md-6">
 						<label class="form-label fw-bold">الراتب الشهري (ج.م) <span class="text-danger">*</span></label>
-						<input type="number" step="0.01" min="1" max="1000000" name="MonthlySalary" required class="form-control fw-bold text-success"
+						<input type="number" step="0.01" min="1" name="MonthlySalary" required class="form-control fw-bold text-success"
 							   oninvalid="this.setCustomValidity('يجب إدخال راتب شهري أكبر من الصفر')"
 							   oninput="this.setCustomValidity('')" placeholder="0.00" />
 					</div>
@@ -276,11 +276,11 @@
 					</div>
 					<div class="col-md-6">
 						<label class="form-label fw-bold">السن (بالسنوات)</label>
-						<input type="number" name="Age" min="1" max="100" id="editEmpAge" class="form-control" />
+						<input type="number" name="Age" min="1" id="editEmpAge" class="form-control" />
 					</div>
 					<div class="col-md-6">
 						<label class="form-label fw-bold">الراتب الشهري (ج.م) <span class="text-danger">*</span></label>
-						<input type="number" step="0.01" min="1" max="1000000" name="MonthlySalary" id="editEmpSalary" required class="form-control fw-bold text-success"
+						<input type="number" step="0.01" min="1" name="MonthlySalary" id="editEmpSalary" required class="form-control fw-bold text-success"
 							   oninvalid="this.setCustomValidity('يجب إدخال راتب شهري أكبر من الصفر')"
 							   oninput="this.setCustomValidity('')" />
 					</div>
@@ -380,7 +380,7 @@
 					</div>
 					<div class="col-md-6">
 						<label class="form-label fw-bold">قيمة السلفة (ج.م) <span class="text-danger">*</span></label>
-						<input type="number" step="0.01" name="advanceAmount" required class="form-control fw-bold text-warning-emphasis fs-5" placeholder="0.00" />
+						<input type="number" step="0.01" min="0.01" name="advanceAmount" required class="form-control fw-bold text-warning-emphasis fs-5" placeholder="0.00" />
 					</div>
 					<div class="col-md-6">
 						<label class="form-label fw-bold">طريقة الدفع</label>
