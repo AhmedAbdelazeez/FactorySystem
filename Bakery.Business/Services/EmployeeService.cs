@@ -324,12 +324,12 @@ namespace Bakery.Business.Services
             int totalDaysInMonth = DateTime.DaysInMonth(payPeriod.Year, payPeriod.Month);
             var lastDayOfRequestedMonth = new DateTime(payPeriod.Year, payPeriod.Month, totalDaysInMonth);
 
-            //if (DateTime.Now.Date < lastDayOfRequestedMonth)
-            //{
-            //    throw new InvalidOperationException(
-            //        $"لا يمكن صرف راتب شهر ({payPeriod:MM/yyyy}) قبل انتهاء الشهر في تاريخ ({lastDayOfRequestedMonth:yyyy/MM/dd}). " +
-            //        $"إذا كان العامل يحتاج مبلغاً مقدماً يمكنك إعطاؤه سلفة وسيتم خصمها تلقائياً عند صرف الراتب.");
-            //}
+            if (DateTime.Now.Date < lastDayOfRequestedMonth)
+            {
+                throw new InvalidOperationException(
+                    $"لا يمكن صرف راتب شهر ({payPeriod:MM/yyyy}) قبل انتهاء الشهر في تاريخ ({lastDayOfRequestedMonth:yyyy/MM/dd}). " +
+                    $"إذا كان العامل يحتاج مبلغاً مقدماً يمكنك إعطاؤه سلفة وسيتم خصمها تلقائياً عند صرف الراتب.");
+            }
 
 
             string targetMonthFormatted = payPeriod.ToString("MM/yyyy");
