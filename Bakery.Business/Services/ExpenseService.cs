@@ -229,6 +229,12 @@ namespace Bakery.Business.Services
 
                         if (matchingAdvance != null)
                         {
+                            if (matchingAdvance.IsPaid)
+                            {
+                                throw new InvalidOperationException(
+                                    "لا يمكن حذف هذه السلفة لأنه تم تسويتها وخصمها بالفعل ضمن راتب شهر صُرِف للعامل. يرجى إلغاء/حذف صرف الراتب أولاً لتتمكن من حذف السلفة.");
+                            }
+
                             _context.EmployeeAdvances.Remove(matchingAdvance);
                         }
                     }

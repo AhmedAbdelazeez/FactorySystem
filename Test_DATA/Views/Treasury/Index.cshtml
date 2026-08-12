@@ -244,7 +244,7 @@
 								</td>
 								<td class="fw-bold text-success">@tx.PaidAmount.ToString("N2") ج.م</td>
 								<td class="@(tx.RemainingAmount > 0 ? "fw-bold text-danger" : "text-muted")">@tx.RemainingAmount.ToString("N2") ج.م</td>
-								<td class="small text-secondary">@tx.Notes</td>
+								<td class="small text-secondary" title="@tx.Notes">@tx.Notes</td>
 							</tr>
 						}
 					}

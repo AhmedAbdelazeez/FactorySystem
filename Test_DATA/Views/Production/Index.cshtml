@@ -101,7 +101,7 @@
 						<th>رقم الأمر / التاريخ</th>
 						<th>النوع</th>
 						<th>عدد الشكاير</th>
-						<th>المستهدف (قطع / باسكت)</th>
+						<th>الانتاج المستهدف</th>
 						<th>الإنتاج الفعلي</th>
 						<th>الكمية المباعة </th>
 						<th>القيمة المتوقعة</th>
@@ -129,7 +129,7 @@
 								<td class="fw-bold fs-6">@order.FlourSackCount <small class="text-muted fw-normal">شكارة</small></td>
 
 								<!-- المستهدف -->
-								<td>
+								<td class="text-center">
 									<div class="fw-bold text-dark">@order.TotalTargetPieces <small class="fw-normal">قطعة</small></div>
 									<span class="badge bg-light text-dark border">@order.ExpectedBaskets باسكت </span>
 								</td>
@@ -188,8 +188,8 @@
 								</td>
 
 								<!-- المبيعات المتوقعة والفعلية -->
-								<td class="fw-bold">@order.TotalExpectedSalesValue.ToString("N2") <small class="text-muted fw-normal">ج.م</small></td>
-								<td class="fw-bold text-success">@order.TotalActualSalesValue.ToString("N2") <small class="fw-normal">ج.م</small></td>
+								<td class="fw-bold text-center">@order.TotalExpectedSalesValue.ToString("N2") <small class="text-muted fw-normal">ج.م</small></td>
+								<td class="fw-bold text-success text-center">@order.TotalActualSalesValue.ToString("N2") <small class="fw-normal">ج.م</small></td>
 
 								<!-- حالة التشغيل -->
 								<td>
