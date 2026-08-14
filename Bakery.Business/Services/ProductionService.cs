@@ -622,32 +622,30 @@ namespace Bakery.Business.Services
             using var dbTransaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                // ✅ FIX: Only update the ORIGINAL treasury record.
+                // Creating a new Income treasury record would double TotalIncome
+                // and produce a completely wrong NetProfit figure.
                 transaction.PaidAmount += amountToCollect;
                 transaction.RemainingAmount -= amountToCollect;
-                if (transaction.RemainingAmount == 0)
+                if (transaction.RemainingAmount <= 0)
                 {
+                    transaction.RemainingAmount = 0;
                     transaction.PaymentMethod = paymentMethod;
                 }
-                _context.TreasuryTransactions.Update(transaction);
-
-                var collectTx = new TreasuryTransaction
+                else
                 {
-                    Date = DateTime.Now,
-                    TransactionName = $"تحصيل متبقي مبيعات لأمر رقم {transaction.ProductionOrderId}",
-                    TransactionType = TreasuryTransactionType.Income,
-                    Category = "تحصيل متبقي مبيعات",
-                    Amount = amountToCollect,
-                    PaymentMethod = paymentMethod,
-                    PaidAmount = amountToCollect,
-                    RemainingAmount = 0,
-                    Notes = $"تحصيل متبقي للحركة #{transaction.Id} | {notes}",
-                    ProductionOrderId = transaction.ProductionOrderId
-                };
+                    transaction.PaymentMethod = PaymentMethod.PartiallyPaid;
+                }
 
-                await _treasuryRepo.AddAsync(collectTx);
-                await _treasuryRepo.SaveChangesAsync();
+                // Append collection note to the original record
+                string collectionNote = $"تحصيل {amountToCollect:N2} ج.م بتاريخ {DateTime.Now:yyyy/MM/dd}";
+                if (!string.IsNullOrEmpty(notes)) collectionNote += $" | {notes}";
+                transaction.Notes = string.IsNullOrEmpty(transaction.Notes)
+                    ? collectionNote
+                    : transaction.Notes + " | " + collectionNote;
+
+                _context.TreasuryTransactions.Update(transaction);
                 await _context.SaveChangesAsync();
-
                 await dbTransaction.CommitAsync();
                 return true;
             }
