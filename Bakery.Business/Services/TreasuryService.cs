@@ -38,10 +38,20 @@ namespace Bakery.Business.Services
 
             var transactions = await txQuery.ToListAsync();
 
-            decimal totalIncome = transactions.Where(t => t.TransactionType == TreasuryTransactionType.Income).Sum(t => t.Amount);
-            decimal totalExpenses = transactions.Where(t => t.TransactionType == TreasuryTransactionType.Expense).Sum(t => t.Amount);
+            decimal totalIncome = transactions
+                .Where(t => t.TransactionType == TreasuryTransactionType.Income)
+                .Sum(t => t.Amount);
 
-            // Expenses breakdown
+            // ✅ FIX: Exclude "سداد متبقيات" from TotalExpenses to prevent double-counting.
+            // When a deferred expense is paid, PayRemainingAsync creates a new treasury record
+            // with Category = "سداد متبقيات". The original record already holds the full TotalAmount,
+            // so including the payment record would count the same money twice.
+            decimal totalExpenses = transactions
+                .Where(t => t.TransactionType == TreasuryTransactionType.Expense
+                         && t.Category != "سداد متبقيات")
+                .Sum(t => t.Amount);
+
+            // Expenses breakdown — sourced from Expenses table for accuracy
             var expenseQuery = _context.Expenses.Include(e => e.ExpenseCategory).AsQueryable();
             if (startDate.HasValue) expenseQuery = expenseQuery.Where(e => e.Date >= startDate.Value.Date);
             if (endDate.HasValue) expenseQuery = expenseQuery.Where(e => e.Date <= endDate.Value.Date.AddDays(1).AddTicks(-1));
@@ -51,8 +61,12 @@ namespace Bakery.Business.Services
             decimal rawMaterial = expensesList.Where(e => e.ExpenseCategory?.Name == "مواد خام").Sum(e => e.TotalAmount);
             decimal operating = expensesList.Where(e => e.ExpenseCategory?.Name != "عمالة" && e.ExpenseCategory?.Name != "مواد خام").Sum(e => e.TotalAmount);
 
-            decimal paidAmounts = transactions.Sum(t => t.PaidAmount);
-            decimal remainingPayable = transactions.Where(t => t.TransactionType == TreasuryTransactionType.Expense).Sum(t => t.RemainingAmount);
+            decimal paidAmounts = transactions
+                .Where(t => t.Category != "سداد متبقيات") // avoid counting payment twice
+                .Sum(t => t.PaidAmount);
+
+            // RemainingAmountsPayable: pulled from Expenses table directly for accuracy
+            decimal remainingPayable = expensesList.Sum(e => e.RemainingAmount);
 
             // Cash and Bank Balances
             decimal cashIncomePaid = transactions
