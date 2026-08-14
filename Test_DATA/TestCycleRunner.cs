@@ -51,12 +51,17 @@ namespace Test_DATA
 
             // 3. Test Attendance Page logic
             Console.WriteLine("\n[3/5] 📋 تسجيل واختبار الحضور والانصراف:");
-            if (employees.Any())
+            if (employees.Count >= 1)
             {
                 var emp1 = employees[0];
-                var emp2 = employees[1];
                 await attendanceService.ConfirmAttendanceAsync(emp1.Id, DateTime.Today, true, "حضور مبكر");
-                await attendanceService.ConfirmAttendanceAsync(emp2.Id, DateTime.Today, false, "إجازة مرضية");
+
+                // ✅ FIX: Only access employees[1] if at least 2 employees exist
+                if (employees.Count >= 2)
+                {
+                    var emp2 = employees[1];
+                    await attendanceService.ConfirmAttendanceAsync(emp2.Id, DateTime.Today, false, "إجازة مرضية");
+                }
 
                 var dailyAttendance = (await attendanceService.GetDailyAttendanceAsync(DateTime.Today)).ToList();
                 Console.WriteLine($"  - إجمالي كشف الحضور لليوم: {dailyAttendance.Count}");
