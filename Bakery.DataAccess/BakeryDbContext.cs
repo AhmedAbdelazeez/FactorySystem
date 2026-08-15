@@ -30,6 +30,13 @@ namespace Bakery.DataAccess
         //materialtype lookup
         public DbSet<MaterialType> MaterialTypes { get; set; } = null!;
 
+        // Supplier DbSets
+        public DbSet<Supplier> Suppliers { get; set; } = null!;
+        public DbSet<SupplierRawMaterial> SupplierRawMaterials { get; set; } = null!;
+        public DbSet<SupplierInvoice> SupplierInvoices { get; set; } = null!;
+        public DbSet<SupplierInvoiceItem> SupplierInvoiceItems { get; set; } = null!;
+
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -212,6 +219,63 @@ namespace Bakery.DataAccess
                 .WithMany(e => e.Advances)
                 .HasForeignKey(a => a.EmployeeId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Supplier
+            modelBuilder.Entity<Supplier>()
+                .Property(s => s.Name)
+                .HasMaxLength(150)
+                .IsRequired();
+
+            // Supplier Raw Material (Checklist)
+            modelBuilder.Entity<SupplierRawMaterial>()
+                .HasOne(sm => sm.Supplier)
+                .WithMany(s => s.SuppliedMaterials)
+                .HasForeignKey(sm => sm.SupplierId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<SupplierRawMaterial>()
+                .HasOne(sm => sm.RawMaterial)
+                .WithMany()
+                .HasForeignKey(sm => sm.RawMaterialId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Supplier Invoice
+            modelBuilder.Entity<SupplierInvoice>()
+                .Property(i => i.InvoiceNumber)
+                .HasMaxLength(50);
+            modelBuilder.Entity<SupplierInvoice>()
+                .Property(i => i.TotalAmount).HasPrecision(18, 2);
+            modelBuilder.Entity<SupplierInvoice>()
+                .Property(i => i.PaidAmount).HasPrecision(18, 2);
+            modelBuilder.Entity<SupplierInvoice>()
+                .Property(i => i.RemainingAmount).HasPrecision(18, 2);
+
+            modelBuilder.Entity<SupplierInvoice>()
+                .HasOne(i => i.Supplier)
+                .WithMany(s => s.Invoices)
+                .HasForeignKey(i => i.SupplierId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Supplier Invoice Item
+            modelBuilder.Entity<SupplierInvoiceItem>()
+                .Property(item => item.Quantity).HasPrecision(18, 3);
+            modelBuilder.Entity<SupplierInvoiceItem>()
+                .Property(item => item.UnitPrice).HasPrecision(18, 2);
+            modelBuilder.Entity<SupplierInvoiceItem>()
+                .Property(item => item.TotalAmount).HasPrecision(18, 2);
+
+            modelBuilder.Entity<SupplierInvoiceItem>()
+                .HasOne(item => item.SupplierInvoice)
+                .WithMany(inv => inv.Items)
+                .HasForeignKey(item => item.SupplierInvoiceId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<SupplierInvoiceItem>()
+                .HasOne(item => item.RawMaterial)
+                .WithMany()
+                .HasForeignKey(item => item.RawMaterialId)
+                .OnDelete(DeleteBehavior.Restrict);
+
 
 
 

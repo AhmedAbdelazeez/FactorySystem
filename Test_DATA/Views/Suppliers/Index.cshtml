@@ -1,0 +1,655 @@
+@model IEnumerable<Bakery.Business.DTOs.SupplierSummaryDto>
+@{
+    ViewData["Title"] = "إدارة الموردين والفواتير";
+    var summary = ViewBag.FinancialSummary as Bakery.Business.DTOs.SupplierFinancialSummaryDto ?? new Bakery.Business.DTOs.SupplierFinancialSummaryDto();
+    var allInvoices = ViewBag.AllInvoices as IEnumerable<Bakery.Domain.Entities.SupplierInvoice> ?? new List<Bakery.Domain.Entities.SupplierInvoice>();
+    var rawMaterials = ViewBag.RawMaterials as IEnumerable<Bakery.Domain.Entities.RawMaterial> ?? new List<Bakery.Domain.Entities.RawMaterial>();
+}
+
+<!-- Page Header -->
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-truck-field text-warning me-2"></i> إدارة الموردين وفواتير التوريد</h2>
+        <p class="text-muted mb-0">متابعة حسابات الموردين، الفواتير، المديونيات، والربط التلقائي بمخزن الخامات والخزينة</p>
+    </div>
+    <div class="col-auto d-flex gap-2">
+        <button class="btn btn-success fw-bold" onclick="openAddInvoiceModal()">
+            <i class="fa-solid fa-file-invoice-dollar me-1"></i> إضافة فاتورة جديدة
+        </button>
+        <button class="btn btn-bakery fw-bold" data-bs-toggle="modal" data-bs-target="#addSupplierModal">
+            <i class="fa-solid fa-user-plus me-1"></i> إضافة مورد جديد
+        </button>
+    </div>
+</div>
+
+<!-- 📊 Top Summary Cards 📊 -->
+<div class="row g-3 mb-4">
+    <!-- Total Inventory Value -->
+    <div class="col-md-4">
+        <div class="card card-custom border-0 bg-amber text-white p-3 shadow-sm h-100">
+            <div class="d-flex align-items-center">
+                <div class="rounded-circle bg-white bg-opacity-25 p-3 me-3">
+                    <i class="fa-solid fa-vault fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h6 class="text-white-50 fw-bold mb-1">إجمالي القيمة التي في المخزن</h6>
+                    <h2 class="fw-extrabold mb-0">@summary.TotalInventoryValue.ToString("N2") <small class="fs-6">ج.م</small></h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Total Indebtedness -->
+    <div class="col-md-4">
+        <div class="card card-custom border-0 bg-danger text-white p-3 shadow-sm h-100">
+            <div class="d-flex align-items-center">
+                <div class="rounded-circle bg-white bg-opacity-25 p-3 me-3">
+                    <i class="fa-solid fa-hand-holding-dollar fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h6 class="text-white-50 fw-bold mb-1">إجمالي المديونية للموردين</h6>
+                    <h2 class="fw-extrabold mb-0">@summary.TotalIndebtedness.ToString("N2") <small class="fs-6">ج.م</small></h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Total Paid -->
+    <div class="col-md-4">
+        <div class="card card-custom border-0 bg-success text-white p-3 shadow-sm h-100">
+            <div class="d-flex align-items-center">
+                <div class="rounded-circle bg-white bg-opacity-25 p-3 me-3">
+                    <i class="fa-solid fa-circle-check fs-2 text-white"></i>
+                </div>
+                <div>
+                    <h6 class="text-white-50 fw-bold mb-1">إجمالي المدفوع للموردين</h6>
+                    <h2 class="fw-extrabold mb-0">@summary.TotalPaidToSuppliers.ToString("N2") <small class="fs-6">ج.م</small></h2>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Nav Tabs -->
+<ul class="nav nav-pills custom-pills mb-3" id="supplierTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-bold fs-6 px-4" id="suppliers-tab" data-bs-toggle="tab" data-bs-target="#suppliers-pane" type="button" role="tab">
+            <i class="fa-solid fa-users me-2"></i> جدول الموردين الرئيسي (@Model.Count())
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold fs-6 px-4" id="invoices-tab" data-bs-toggle="tab" data-bs-target="#invoices-pane" type="button" role="tab">
+            <i class="fa-solid fa-clock-rotate-left me-2"></i> سجل كافة الفواتير (History Log) (@allInvoices.Count())
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="supplierTabsContent">
+    <!-- TAB 1: Main Suppliers Table (1 Row per Supplier, Updates automatically) -->
+    <div class="tab-pane fade show active" id="suppliers-pane" role="tabpanel">
+        <div class="card card-custom">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bakery mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th>اسم المورد ورقم الهاتف</th>
+                                <th>قائمة خامات المورد (Check List)</th>
+                                <th>إجمالي الفواتير</th>
+                                <th>إجمالي المدفوع</th>
+                                <th>المتبقي (المديونية)</th>
+                                <th>تاريخ آخر تعامل</th>
+                                <th class="text-center">الإجراءات والتفاصيل</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Any())
+                            {
+                                foreach (var sup in Model)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-bold text-dark fs-6">
+                                                <i class="fa-solid fa-building text-primary me-2"></i> @sup.Name
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(sup.Phone))
+                                            {
+                                                <div class="small text-muted"><i class="fa-solid fa-phone me-1"></i> @sup.Phone</div>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (sup.SuppliedMaterialNames.Any())
+                                            {
+                                                foreach (var mat in sup.SuppliedMaterialNames)
+                                                {
+                                                    <span class="badge bg-light text-dark border me-1 mb-1"><i class="fa-solid fa-check text-success me-1"></i>@mat</span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small">لم تحدد خامات</span>
+                                            }
+                                        </td>
+                                        <td class="fw-bold text-dark">@sup.TotalInvoicesValue.ToString("N2") ج.م</td>
+                                        <td class="fw-bold text-success">@sup.TotalPaidAmount.ToString("N2") ج.م</td>
+                                        <td>
+                                            <span class="fw-bold fs-6 @(sup.TotalRemainingAmount > 0 ? "text-danger" : "text-success")">
+                                                @sup.TotalRemainingAmount.ToString("N2") ج.م
+                                            </span>
+                                        </td>
+                                        <td class="small text-muted">
+                                            @(sup.LastTransactionDate?.ToString("yyyy/MM/dd") ?? "-")
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-success" title="إضافة فاتورة" onclick="openAddInvoiceModalForSupplier(@sup.Id)">
+                                                    <i class="fa-solid fa-plus me-1"></i> فاتورة
+                                                </button>
+                                                <a asp-action="Details" asp-route-id="@sup.Id" class="btn btn-outline-primary" title="عرض التفاصيل وسجل الفواتير">
+                                                    <i class="fa-solid fa-eye me-1"></i> التفاصيل
+                                                </a>
+                                                <button class="btn btn-outline-secondary" title="تعديل المورد وقائمة الخامات" onclick="openEditSupplierModal(@sup.Id, '@sup.Name', '@sup.Phone', '@sup.Notes', [@string.Join(",", sup.SuppliedMaterialIds)])">
+                                                    <i class="fa-solid fa-pen"></i>
+                                                </button>
+                                                <form asp-action="DeleteSupplier" method="post" class="d-inline" onsubmit="return confirm('هل أنت تأكد من حذف المورد وكافة فواتيره؟');">
+                                                    <input type="hidden" name="id" value="@sup.Id" />
+                                                    <button type="submit" class="btn btn-outline-danger" title="حذف المورد"><i class="fa-solid fa-trash"></i></button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center p-4 text-muted">لا يوجد موردين مسجلين حالياً. اضغط على إضافة مورد جديد للبدء.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: All Invoices Log (History Table for every single invoice) -->
+    <div class="tab-pane fade" id="invoices-pane" role="tabpanel">
+        <div class="card card-custom">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bakery mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th>رقم الفاتورة</th>
+                                <th>اسم المورد</th>
+                                <th>تاريخ الفاتورة</th>
+                                <th>بيان الأصناف الموردة</th>
+                                <th>إجمالي قيمة الفاتورة</th>
+                                <th>المدفوع</th>
+                                <th>المتبقي</th>
+                                <th>حالة الدفع</th>
+                                <th class="text-center">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (allInvoices.Any())
+                            {
+                                foreach (var inv in allInvoices)
+                                {
+                                    <tr>
+                                        <td class="fw-bold text-primary">
+                                            <i class="fa-solid fa-receipt me-1"></i> @inv.InvoiceNumber
+                                        </td>
+                                        <td class="fw-bold text-dark">@(inv.Supplier?.Name ?? "-")</td>
+                                        <td class="small">@inv.InvoiceDate.ToString("yyyy/MM/dd")</td>
+                                        <td>
+                                            @if (inv.Items != null && inv.Items.Any())
+                                            {
+                                                foreach (var item in inv.Items)
+                                                {
+                                                    <span class="badge bg-light text-dark border me-1">
+                                                        @(item.RawMaterial?.MaterialName ?? "خامة") x @item.Quantity.ToString("0.###") (@item.UnitPrice.ToString("N0") ج.م)
+                                                    </span>
+
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small">لا توجد بنود</span>
+                                            }
+                                        </td>
+                                        <td class="fw-bold text-dark fs-6">@inv.TotalAmount.ToString("N2") ج.م</td>
+                                        <td class="fw-bold text-success">@inv.PaidAmount.ToString("N2") ج.م</td>
+                                        <td class="fw-bold @(inv.RemainingAmount > 0 ? "text-danger" : "text-muted")">
+                                            @inv.RemainingAmount.ToString("N2") ج.م
+                                        </td>
+                                        <td>
+                                            @if (inv.RemainingAmount == 0)
+                                            {
+                                                <span class="badge bg-success"><i class="fa-solid fa-check-double me-1"></i>مدفوع بالكامل</span>
+                                            }
+                                            else if (inv.PaidAmount > 0)
+                                            {
+                                                <span class="badge bg-warning text-dark"><i class="fa-solid fa-hourglass-half me-1"></i>مدفوع جزئياً</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>غير مدفوع</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group btn-group-sm">
+                                                <a asp-action="Details" asp-route-id="@inv.SupplierId" class="btn btn-outline-primary" title="عرض تفاصيل فاتورة المورد">
+                                                    <i class="fa-solid fa-eye"></i> التفاصيل
+                                                </a>
+                                                @if (inv.RemainingAmount > 0)
+                                                {
+                                                    <button class="btn btn-outline-success" onclick="openPayInvoiceModal(@inv.Id, '@inv.InvoiceNumber', '@(inv.Supplier?.Name)', @inv.RemainingAmount)">
+                                                        <i class="fa-solid fa-money-bill-wave me-1"></i> سداد
+                                                    </button>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="9" class="text-center p-4 text-muted">لا توجد فواتير مسجلة حتى الآن.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 🟢 Modal: Add Supplier (مع Check List للأصناف) 🟢 -->
+<div class="modal fade" id="addSupplierModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-amber text-white">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-1"></i> إضافة مورد جديد وتعيين الأصناف</h5>
+                <button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="CreateSupplier" method="post">
+                <div class="modal-body row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">اسم المورد / الشركة <span class="text-danger">*</span></label>
+                        <input type="text" name="Name" required class="form-control" placeholder="مثال: شركة النيل للمطاحن" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">رقم الهاتف</label>
+                        <input type="text" name="Phone" class="form-control" placeholder="01xxxxxxxxx" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold">ملاحظات / العنوان</label>
+                        <input type="text" name="Notes" class="form-control" placeholder="أي معلومات إضافية عن المورد..." />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold text-dark">
+                            <i class="fa-solid fa-list-check text-warning me-1"></i> قائمة فحص الأصناف التي يوردها المورد (Check List)
+                        </label>
+                        <p class="small text-muted mb-2">اختر المواد الخام التي يمكن لهذا المورد التوريد منها للمصنع:</p>
+                        <div class="row g-2 border rounded p-3 bg-light">
+                            @foreach (var mat in rawMaterials)
+                            {
+                                <div class="col-md-4 col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="SelectedRawMaterialIds" value="@mat.Id" id="add_mat_@mat.Id">
+                                        <label class="form-check-label fw-bold text-dark" for="add_mat_@mat.Id">
+                                            @mat.MaterialName <small class="text-muted">(@(mat.MeasurementUnit?.Name ?? ""))</small>
+                                        </label>
+
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-bakery fw-bold">حفظ المورد والقائمة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 🔵 Modal: Edit Supplier 🔵 -->
+<div class="modal fade" id="editSupplierModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen me-1"></i> تعديل بيانات المورد وقائمة الأصناف</h5>
+                <button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="EditSupplier" method="post">
+                <input type="hidden" name="Id" id="editSupplierId" />
+                <div class="modal-body row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">اسم المورد / الشركة <span class="text-danger">*</span></label>
+                        <input type="text" name="Name" id="editSupplierName" required class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">رقم الهاتف</label>
+                        <input type="text" name="Phone" id="editSupplierPhone" class="form-control" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold">ملاحظات / العنوان</label>
+                        <input type="text" name="Notes" id="editSupplierNotes" class="form-control" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold text-dark">
+                            <i class="fa-solid fa-list-check text-warning me-1"></i> قائمة فحص الأصناف (Check List)
+                        </label>
+                        <div class="row g-2 border rounded p-3 bg-light">
+                            @foreach (var mat in rawMaterials)
+                            {
+                                <div class="col-md-4 col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input edit-mat-checkbox" type="checkbox" name="SelectedRawMaterialIds" value="@mat.Id" id="edit_mat_@mat.Id">
+                                        <label class="form-check-label fw-bold text-dark" for="edit_mat_@mat.Id">
+                                            @mat.MaterialName <small class="text-muted">(@(mat.MeasurementUnit?.Name ?? ""))</small>
+                                        </label>
+
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary fw-bold">تعديل البيانات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 📜 Modal: Add Invoice (إضافة فاتورة توريد جديدة ينعكس أثرها فوراً على المخزن) 📜 -->
+<div class="modal fade" id="addInvoiceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-file-invoice-dollar me-1"></i> تسجيل فاتورة توريد جديدة للمورد</h5>
+                <button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="CreateInvoice" method="post">
+                <div class="modal-body row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">اختر المورد <span class="text-danger">*</span></label>
+                        <select name="SupplierId" id="invoiceSupplierSelect" required class="form-select fs-6 fw-bold">
+                            <option value="">-- اختر المورد --</option>
+                            @foreach (var sup in Model)
+                            {
+                                <option value="@sup.Id">@sup.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">رقم الفاتورة</label>
+                        <input type="text" name="InvoiceNumber" class="form-control" placeholder="تلقائي إن ترك فارغاً" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">تاريخ الفاتورة <span class="text-danger">*</span></label>
+                        <input type="date" name="InvoiceDate" value="@DateTime.Today.ToString("yyyy-MM-dd")" required class="form-control" />
+                    </div>
+
+                    <!-- Line Items Table -->
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-bold text-dark mb-0">
+                                <i class="fa-solid fa-boxes-stacked text-success me-1"></i> بنود الاصناف الموردة بالفاتورة
+                            </label>
+                            <button type="button" class="btn btn-sm btn-outline-success" onclick="addInvoiceItemRow()">
+                                <i class="fa-solid fa-plus me-1"></i> إضافة صنف بالفاتورة
+                            </button>
+                        </div>
+                        <div class="table-responsive border rounded">
+                            <table class="table table-bordered mb-0 align-middle" id="invoiceItemsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>اسم الخامة</th>
+                                        <th style="width: 140px;">الكمية</th>
+                                        <th style="width: 150px;">السعر</th>
+                                        <th style="width: 150px;">الإجمالي</th>
+                                        <th style="width: 50px;"></th>
+                                    </tr>
+
+                                </thead>
+                                <tbody id="invoiceItemsTbody">
+                                    <!-- Dynamic rows inserted by JS -->
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-warning fw-bold">
+                                        <td colspan="3" class="text-end">إجمالي قيمة الفاتورة الكلي:</td>
+                                        <td id="invoiceTotalDisplay" class="fs-5 text-dark">0.00 ج.م</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Payment Information -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">طريقة الدفع <span class="text-danger">*</span></label>
+                        <select name="PaymentMethod" id="invoicePaymentMethod" class="form-select fw-bold" onchange="toggleInvoicePaidInput()">
+                            <option value="1">كاش (مدفوع بالكامل)</option>
+                            <option value="2">تحويل بنكي (مدفوع بالكامل)</option>
+                            <option value="3" selected>مدفوع جزئياً</option>
+                            <option value="4">غير مدفوع (آجل بالكامل)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">المبلغ المدفوع الآن (ج.م)</label>
+                        <input type="number" step="0.01" name="PaidAmount" id="invoicePaidAmount" value="0" class="form-control fw-bold text-success" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">المتبقي (المديونية)</label>
+                        <input type="text" id="invoiceRemainingDisplay" readonly class="form-control fw-bold text-danger bg-light" value="0.00 ج.م" />
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-bold">ملاحظات عن الفاتورة</label>
+                        <input type="text" name="Notes" class="form-control" placeholder="تفاصيل أذونات الاستلام أو شروط السداد..." />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-success fw-bold">حفظ الفاتورة وتحديث المخزن فوراً</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 💰 Modal: Pay Remaining Invoice Balance 💰 -->
+<div class="modal fade" id="payInvoiceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-money-bill-wave me-1"></i> سداد جزء من مديونية الفاتورة</h5>
+                <button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="PayInvoice" method="post">
+                <input type="hidden" name="invoiceId" id="payInvoiceId" />
+                <div class="modal-body row g-3">
+                    <div class="col-12">
+                        <p class="fw-bold mb-1">الفاتورة: <span id="payInvoiceNum" class="text-primary fs-5"></span></p>
+                        <p class="fw-bold mb-1">المورد: <span id="paySupplierName" class="text-dark fs-6"></span></p>
+                        <p class="fw-bold mb-0">المبلغ المتبقي الحالي: <span id="payRemainingAmount" class="text-danger fs-5"></span> ج.م</p>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold">المبلغ المدفوع الآن (ج.م) <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" name="amountPaidNow" id="payAmountInput" required class="form-control fs-5 fw-bold text-success" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold">طريقة السداد <span class="text-danger">*</span></label>
+                        <select name="paymentMethod" class="form-select fw-bold">
+                            <option value="1">كاش</option>
+                            <option value="2">تحويل بنكي</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-success fw-bold">تأكيد السداد وتسجيل الحركة بالخزينة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const rawMaterialsData = [
+            @foreach (var mat in rawMaterials)
+            {
+                @:{ id: @mat.Id, name: '@mat.MaterialName', unit: '@(mat.MeasurementUnit?.Name ?? "")', unitPrice: @mat.UnitPrice },
+            }
+        ];
+
+
+        let itemRowIndex = 0;
+
+        function openEditSupplierModal(id, name, phone, notes, selectedIds) {
+            document.getElementById('editSupplierId').value = id;
+            document.getElementById('editSupplierName').value = name;
+            document.getElementById('editSupplierPhone').value = phone || '';
+            document.getElementById('editSupplierNotes').value = notes || '';
+
+            document.querySelectorAll('.edit-mat-checkbox').forEach(cb => {
+                cb.checked = selectedIds.includes(parseInt(cb.value));
+            });
+
+            new bootstrap.Modal(document.getElementById('editSupplierModal')).show();
+        }
+
+        function openAddInvoiceModal() {
+            document.getElementById('invoiceSupplierSelect').value = '';
+            document.getElementById('invoiceItemsTbody').innerHTML = '';
+            itemRowIndex = 0;
+            addInvoiceItemRow();
+            recalculateInvoiceTotal();
+            new bootstrap.Modal(document.getElementById('addInvoiceModal')).show();
+        }
+
+        function openAddInvoiceModalForSupplier(supplierId) {
+            document.getElementById('invoiceSupplierSelect').value = supplierId;
+            document.getElementById('invoiceItemsTbody').innerHTML = '';
+            itemRowIndex = 0;
+            addInvoiceItemRow();
+            recalculateInvoiceTotal();
+            new bootstrap.Modal(document.getElementById('addInvoiceModal')).show();
+        }
+
+        function addInvoiceItemRow() {
+            const tbody = document.getElementById('invoiceItemsTbody');
+            const rowId = `item_row_${itemRowIndex}`;
+            
+            let matOptions = '<option value="">-- اختر الخامة --</option>';
+            rawMaterialsData.forEach(m => {
+                matOptions += `<option value="${m.id}" data-price="${m.unitPrice}">${m.name} (${m.unit})</option>`;
+            });
+
+            const tr = document.createElement('tr');
+            tr.id = rowId;
+            tr.innerHTML = `
+                <td>
+                    <select name="Items[${itemRowIndex}].RawMaterialId" class="form-select mat-select" required onchange="onMatSelectChange('${rowId}')">
+                        ${matOptions}
+                    </select>
+                </td>
+                <td>
+                    <input type="number" step="0.001" name="Items[${itemRowIndex}].Quantity" class="form-control qty-input" value="1" required oninput="recalculateInvoiceTotal()" />
+                </td>
+                <td>
+                    <input type="number" step="0.01" name="Items[${itemRowIndex}].UnitPrice" class="form-control price-input" value="0" required oninput="recalculateInvoiceTotal()" />
+                </td>
+                <td class="fw-bold line-total text-dark">0.00 ج.م</td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeInvoiceItemRow('${rowId}')"><i class="fa-solid fa-xmark"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+            itemRowIndex++;
+            recalculateInvoiceTotal();
+        }
+
+        function removeInvoiceItemRow(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) {
+                row.remove();
+                recalculateInvoiceTotal();
+            }
+        }
+
+        function onMatSelectChange(rowId) {
+            const row = document.getElementById(rowId);
+            if (!row) return;
+            const select = row.querySelector('.mat-select');
+            const selectedOption = select.options[select.selectedIndex];
+            const priceInput = row.querySelector('.price-input');
+            
+            if (selectedOption && selectedOption.dataset.price) {
+                priceInput.value = selectedOption.dataset.price;
+            }
+            recalculateInvoiceTotal();
+        }
+
+        function recalculateInvoiceTotal() {
+            let total = 0;
+            const rows = document.querySelectorAll('#invoiceItemsTbody tr');
+            rows.forEach(r => {
+                const qty = parseFloat(r.querySelector('.qty-input')?.value || 0);
+                const price = parseFloat(r.querySelector('.price-input')?.value || 0);
+                const lineTotal = qty * price;
+                total += lineTotal;
+                const lineTotalCell = r.querySelector('.line-total');
+                if (lineTotalCell) {
+                    lineTotalCell.innerText = lineTotal.toFixed(2) + ' ج.م';
+                }
+            });
+
+            document.getElementById('invoiceTotalDisplay').innerText = total.toFixed(2) + ' ج.م';
+
+            const methodSelect = document.getElementById('invoicePaymentMethod');
+            const paidInput = document.getElementById('invoicePaidAmount');
+
+            if (methodSelect.value === "1" || methodSelect.value === "2") {
+                paidInput.value = total;
+                paidInput.readOnly = true;
+            } else if (methodSelect.value === "4") {
+                paidInput.value = 0;
+                paidInput.readOnly = true;
+            } else {
+                paidInput.readOnly = false;
+            }
+
+            const paidVal = parseFloat(paidInput.value || 0);
+            const remaining = Math.max(0, total - paidVal);
+            document.getElementById('invoiceRemainingDisplay').value = remaining.toFixed(2) + ' ج.م';
+        }
+
+        function toggleInvoicePaidInput() {
+            recalculateInvoiceTotal();
+        }
+
+        document.getElementById('invoicePaidAmount').addEventListener('input', recalculateInvoiceTotal);
+
+        function openPayInvoiceModal(id, num, supplierName, remaining) {
+            document.getElementById('payInvoiceId').value = id;
+            document.getElementById('payInvoiceNum').innerText = num;
+            document.getElementById('paySupplierName').innerText = supplierName || '';
+            document.getElementById('payRemainingAmount').innerText = remaining.toFixed(2);
+            document.getElementById('payAmountInput').value = remaining;
+            document.getElementById('payAmountInput').max = remaining;
+            new bootstrap.Modal(document.getElementById('payInvoiceModal')).show();
+        }
+    </script>
+}

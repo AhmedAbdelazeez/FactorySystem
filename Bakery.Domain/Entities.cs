@@ -52,10 +52,14 @@ namespace Bakery.Domain.Entities
     public class RawMaterial
     {
         public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         public int MaterialTypeId { get; set; }
         
         public MaterialType? MaterialType { get; set; }
+
+        public string MaterialName => !string.IsNullOrWhiteSpace(Name) ? Name : (MaterialType?.Name ?? "مادة خام");
+
         
         
         public decimal CurrentQuantity { get; set; }
@@ -227,6 +231,63 @@ namespace Bakery.Domain.Entities
         public decimal? SoldBaskets { get; set; }  // جديد - عشان نعرف بالظبط كام باسكيت اتباع في الحركة دي
         public int? ExpenseId { get; set; }
         public int? ProductionOrderId { get; set; }
-        public  ProductionOrder? ProductionOrder { get; set; }
+        public ProductionOrder? ProductionOrder { get; set; }
+        public int? SupplierInvoiceId { get; set; }
+    }
+
+    public class Supplier
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Phone { get; set; }
+        public string? Notes { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        public ICollection<SupplierRawMaterial> SuppliedMaterials { get; set; } = new List<SupplierRawMaterial>();
+        public ICollection<SupplierInvoice> Invoices { get; set; } = new List<SupplierInvoice>();
+    }
+
+    public class SupplierRawMaterial
+    {
+        public int Id { get; set; }
+        public int SupplierId { get; set; }
+        public Supplier? Supplier { get; set; }
+
+        public int RawMaterialId { get; set; }
+        public RawMaterial? RawMaterial { get; set; }
+    }
+
+    public class SupplierInvoice
+    {
+        public int Id { get; set; }
+        public int SupplierId { get; set; }
+        public Supplier? Supplier { get; set; }
+
+        public string InvoiceNumber { get; set; } = string.Empty;
+        public DateTime InvoiceDate { get; set; } = DateTime.Today;
+
+        public decimal TotalAmount { get; set; }
+        public decimal PaidAmount { get; set; }
+        public decimal RemainingAmount { get; set; }
+        public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;
+        public string? Notes { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        public ICollection<SupplierInvoiceItem> Items { get; set; } = new List<SupplierInvoiceItem>();
+    }
+
+    public class SupplierInvoiceItem
+    {
+        public int Id { get; set; }
+        public int SupplierInvoiceId { get; set; }
+        public SupplierInvoice? SupplierInvoice { get; set; }
+
+        public int RawMaterialId { get; set; }
+        public RawMaterial? RawMaterial { get; set; }
+
+        public decimal Quantity { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal TotalAmount { get; set; }
     }
 }
+

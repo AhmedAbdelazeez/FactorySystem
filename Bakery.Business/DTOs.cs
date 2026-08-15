@@ -216,4 +216,55 @@ namespace Bakery.Business.DTOs
         public string? Notes { get; set; }
     }
 
+    public class SupplierSummaryDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Phone { get; set; }
+        public string? Notes { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public List<string> SuppliedMaterialNames { get; set; } = new();
+        public List<int> SuppliedMaterialIds { get; set; } = new();
+        public decimal TotalInvoicesValue { get; set; }
+        public decimal TotalPaidAmount { get; set; }
+        public decimal TotalRemainingAmount { get; set; }
+        public int InvoicesCount { get; set; }
+        public DateTime? LastTransactionDate { get; set; }
+    }
+
+    public class SupplierFinancialSummaryDto
+    {
+        public decimal TotalInventoryValue { get; set; }
+        public decimal TotalIndebtedness { get; set; }
+        public decimal TotalPaidToSuppliers { get; set; }
+    }
+
+    public class CreateSupplierDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Phone { get; set; }
+        public string? Notes { get; set; }
+        public List<int> SelectedRawMaterialIds { get; set; } = new();
+    }
+
+    public class CreateSupplierInvoiceDto
+    {
+        public int SupplierId { get; set; }
+        public string? InvoiceNumber { get; set; }
+        public DateTime InvoiceDate { get; set; } = DateTime.Today;
+        public decimal PaidAmount { get; set; }
+        public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;
+        public string? Notes { get; set; }
+        public List<SupplierInvoiceItemInputDto> Items { get; set; } = new();
+    }
+
+    public class SupplierInvoiceItemInputDto
+    {
+        public int RawMaterialId { get; set; }
+        public decimal Quantity { get; set; }
+        public decimal UnitPrice { get; set; }
+    }
+
 }
+

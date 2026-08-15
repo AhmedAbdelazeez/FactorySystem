@@ -1,486 +1,73 @@
 @model IEnumerable<Bakery.Domain.Entities.RawMaterial>
-
 @{
-	ViewData["Title"] = "مخزن المواد الخام";
-	var units = ViewBag.MeasurementUnits as IEnumerable<Bakery.Domain.Entities.MeasurementUnit> ?? new List<Bakery.Domain.Entities.MeasurementUnit>();
-	decimal totalInventoryVal = ViewBag.TotalInventoryValue != null ? (decimal)ViewBag.TotalInventoryValue : 0;
-	var materialTypes = ViewBag.MaterialTypes as IEnumerable<Bakery.Domain.Entities.MaterialType> ?? new List<Bakery.Domain.Entities.MaterialType>();
+    ViewData["Title"] = "مخزن المواد الخام";
 }
 
-<!-- Header Box -->
-<div class="page-header-box mb-4">
-	<div class="row align-items-center g-3">
-		<div class="col-md-7">
-			<div class="d-flex align-items-center">
-				<div class="stat-icon-wrapper bg-warning-subtle text-warning me-3">
-					<i class="fa-solid fa-boxes-stacked"></i>
-				</div>
-				<div>
-					<h3 class="fw-bold text-dark mb-1">مخزن المواد الخام واللوازم</h3>
-					<p class="text-muted small mb-0">متابعة رصيد الدقيق والسكر والزبدة ومواد التغليف وإدارتها بكل سهولة</p>
-				</div>
-			</div>
-		</div>
-		<div class="col-md-5 text-md-end d-flex align-items-center justify-content-md-end gap-2">
-			<a asp-action="Transactions" class="btn btn-outline-secondary rounded-3 shadow-sm px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2">
-				<i class="fa-solid fa-clock-rotate-left"></i>
-				<span>سجل حركة المخزن</span>
-			</a>
-
-			<button class="btn btn-bakery text-white fw-bold px-3 py-2 rounded-3 shadow-sm d-inline-flex align-items-center gap-2"
-					data-bs-toggle="modal"
-					data-bs-target="#addMaterialModal">
-				<i class="fa-solid fa-plus"></i>
-				<span>إضافة مادة خام جديدة</span>
-			</button>
-		</div>
-	</div>
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h2 class="fw-bold text-dark mb-1"><i class="fa-solid fa-boxes-stacked text-warning me-2"></i> مخزن المواد الخام واللوازم</h2>
+        <p class="text-muted mb-0">متابعة أرصاد الخامات المتوفرة بالمخزن فقط (عرض الكميات المتاحة وسعر الشكارة/الوحدة)</p>
+    </div>
+    <div class="col-auto">
+        <a asp-action="Transactions" class="btn btn-outline-secondary"><i class="fa-solid fa-clock-rotate-left me-1"></i> سجل حركة المخزن</a>
+    </div>
 </div>
 
-<!-- Total Inventory Card Header -->
-<div class="card stat-card p-4 mb-4 bg-warning border-warning-subtle text-white shadow-sm">
-	<div class="row align-items-center">
-		<div class="col-md-8">
-			<h4 class="fw-bold mb-1 text-white"><i class="fa-solid fa-vault me-2"></i> إجمالي قيمة المخزون الحالي الفعلي</h4>
-			<p class="mb-0 text-white small">مجموع قيم كافة الخامات المتوفرة بالمخزن بناءً على الكمية الحالية وسعر الوحدة المرجح</p>
-		</div>
-		<div class="col-md-4 text-md-end mt-3 mt-md-0">
-			<h1 class="display-6 fw-bold mb-0 text-white">@totalInventoryVal.ToString("N2") <small class="fs-4 text-white fw-medium">ج.م</small></h1>
-		</div>
-	</div>
+<!-- Info Banner -->
+<div class="alert alert-info d-flex align-items-center mb-4 shadow-sm border-0 bg-light-info" role="alert">
+    <i class="fa-solid fa-circle-info fs-4 text-info me-3"></i>
+    <div>
+        هذه الصفحة مخصصة لـ <strong>الاطلاع والمتابعة على الكميات المتوفرة بالمخزن فقط</strong> قبيل دخول دورات الإنتاج.
+        يتم تحديث وزيادة رصيد الخامات وأسعارها تلقائياً عبر إضافة الفواتير من صفحة <a asp-controller="Suppliers" asp-action="Index" class="fw-bold text-primary text-decoration-underline me-1">الموردين والفواتير</a>.
+    </div>
 </div>
 
-<!-- Raw Materials Table -->
-<div class="card-custom">
-	<div class="table-responsive">
-		<table class="table table-custom align-middle mb-0">
-			<thead>
-				<tr>
-					<th>اسم المادة الخام</th>
-					<th>الكمية الحالية</th>
-					<th>وحدة القياس</th>
-					<th>سعر الوحدة</th>
-					<th>القيمة الإجمالية للمادة</th>
-					<th>تاريخ آخر تحديث</th>
-					<th class="text-center" style="min-width: 180px;">الإجراءات والتوريد</th>
-				</tr>
-			</thead>
-			<tbody>
-				@if (Model != null && Model.Any())
-				{
-					foreach (var item in Model)
-					{
-						<tr>
-							<td class="fw-bold text-dark">
-								<i class="fa-solid fa-box text-warning me-2"></i> @(item.MaterialType?.Name ?? "-")
-							</td>
-							<td>
-								<span class="fs-6 fw-bold @(item.CurrentQuantity <= 10 ? "text-danger" : "text-dark")">
-									@item.CurrentQuantity.ToString("0.###")
-								</span>
-								@if (item.CurrentQuantity <= 10)
-								{
-									<span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1">كمية منخفضة</span>
-								}
-							</td>
-							<td><span class="badge bg-light text-dark border">@(item.MeasurementUnit?.Name ?? "-")</span></td>
-							<td class="fw-semibold">@item.UnitPrice.ToString("N2") <small class="text-muted">ج.م</small></td>
-							<td class="fw-bold text-success">@item.TotalValue.ToString("N2") <small class="fw-normal text-muted">ج.م</small></td>
-							<td class="small text-muted">@item.LastUpdatedDate.ToString("yyyy/MM/dd HH:mm")</td>
-							<td class="text-center">
-								<div class="d-flex align-items-center justify-content-center gap-1">
-									<button class="btn btn-sm btn-success fw-semibold rounded-2 text-nowrap px-2"
-											onclick="openAddStockModal(@item.Id, '@item.MaterialType?.Name', @item.UnitPrice)">
-										<i class="fa-solid fa-truck-ramp-box me-1"></i> إضافة كمية
-									</button>
-
-									<button type="button" class="btn btn-action-icon btn-light text-danger border"
-											onclick="confirmDelete(@item.Id, '@Url.Action("Delete", "Inventory")', 'هل أنت متأكد من حذف هذه المادة الخام &quot;@item.MaterialType?.Name&quot;؟')"
-											title="حذف الخامة">
-										<i class="fa-solid fa-trash"></i>
-									</button>
-								</div>
-							</td>
-						</tr>
-					}
-				}
-				else
-				{
-					<tr>
-						<td colspan="7" class="text-center py-5 text-muted">
-							<i class="fa-solid fa-boxes-stacked fs-1 d-block mb-3 opacity-25"></i>
-							لا توجد مواد خام مسجلة بالمخزن حالياً. اضغط على "إضافة مادة خام جديدة" للبدء.
-						</td>
-					</tr>
-				}
-			</tbody>
-		</table>
-	</div>
+<!-- Raw Materials Stock Table (Read-Only) -->
+<div class="card card-custom">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bakery mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>اسم المادة الخام</th>
+                        <th>الكمية المتوفرة بالمخزن</th>
+                        <th>وحدة القياس</th>
+                        <th>سعر الشكارة / الوحدة</th>
+                        <th>تاريخ آخر تحديث</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="fw-bold text-dark fs-6">
+                                    <i class="fa-solid fa-box text-warning me-2"></i> @item.MaterialName
+                                </td>
+                                <td>
+                                    <span class="fs-5 fw-bold @(item.CurrentQuantity <= 10 ? "text-danger" : "text-dark")">
+                                        @item.CurrentQuantity.ToString("0.###")
+                                    </span>
+                                    @if (item.CurrentQuantity <= 10)
+                                    {
+                                        <span class="badge bg-danger ms-1">كمية منخفضة</span>
+                                    }
+                                </td>
+                                <td><span class="badge bg-light text-dark border fs-6">@(item.MeasurementUnit?.Name ?? "-")</span></td>
+                                <td class="fw-bold text-dark fs-6">@item.UnitPrice.ToString("N2") ج.م</td>
+                                <td class="small text-muted">@item.LastUpdatedDate.ToString("yyyy/MM/dd HH:mm")</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center p-4 text-muted">لا توجد مواد خام مسجلة بالمخزن حالياً. يتم إضافة وتحديث الخامات فور تسجيل الفواتير بصفحة الموردين.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
-
-<!-- Modal Add New Raw Material -->
-<div class="modal fade" id="addMaterialModal" tabindex="-1">
-	<div class="modal-dialog modal-dialog-centered modal-lg">
-		<div class="modal-content">
-			<div class="modal-header bg-amber text-white">
-				<h5 class="modal-title fw-bold"><i class="fa-solid fa-plus me-2"></i>إضافة مادة خام جديدة</h5>
-				<button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
-			</div>
-			<form asp-action="Create" method="post" id="addMaterialForm">
-				<div class="modal-body p-4 row g-3">
-					<div class="col-md-6">
-						<label class="form-label fw-bold">نوع المادة الخام <span class="text-danger">*</span></label>
-						<select name="MaterialTypeId" required class="form-select">
-							@foreach (var type in materialTypes)
-							{
-								<option value="@type.Id">@type.Name</option>
-							}
-						</select>
-					</div>
-					<div class="col-md-6">
-						<label class="form-label fw-bold">وحدة القياس <span class="text-danger">*</span></label>
-						<select name="MeasurementUnitId" required class="form-select">
-							@foreach (var unit in units)
-							{
-								<option value="@unit.Id">@unit.Name</option>
-							}
-						</select>
-					</div>
-
-					<div class="col-md-6">
-						<label class="form-label fw-bold">الكمية الافتتاحية بالمخزن</label>
-						<input type="number" step="0.001" min="0" name="CurrentQuantity" id="matQuantity" value="0" class="form-control fw-bold" placeholder="0.000" oninput="calculateMaterialTotal()" />
-					</div>
-					<div class="col-md-6">
-						<label class="form-label fw-bold">سعر الوحدة الافتراضي (ج.م)</label>
-						<input type="number" step="0.01" min="0" name="UnitPrice" id="matUnitPrice" value="0" class="form-control fw-bold text-success" placeholder="0.00" oninput="calculateMaterialTotal()" />
-					</div>
-
-					<div class="col-md-6">
-						<label class="form-label fw-bold">طريقة الدفع <span class="text-danger">*</span></label>
-						<select name="paymentMethod" id="matPaymentMethod" class="form-select fw-bold" onchange="toggleMaterialPaymentMethod()">
-							<option value="1">كاش (مدفوع بالكامل)</option>
-							<option value="2">تحويل بنكي (مدفوع بالكامل)</option>
-							<option value="3">مدفوع جزئياً</option>
-							<option value="4">آجل (غير مدفوع)</option>
-						</select>
-					</div>
-
-					<div class="col-md-6 d-none" id="matPaidContainer">
-						<label class="form-label fw-bold">المبلغ المدفوع (ج.م) <span class="text-danger">*</span></label>
-						<input type="number" step="0.01" min="0" name="PaidAmount" id="matPaidAmount" value="0" class="form-control fw-bold text-success" autocomplete="off" oninput="validateMaterialPartialPayment()" />
-						<div id="matPaidAmountError" class="text-danger small fw-bold mt-1 d-none"></div>
-					</div>
-
-					<!-- شريط إجمالي القيمة الافتتاحية -->
-					<div class="col-12">
-						<div class="p-3 bg-light rounded border text-center">
-							<span class="text-muted d-block mb-1">إجمالي قيمة الرصيد الافتتاحي: <strong id="matTotalDisp" class="text-dark">0.00</strong> ج.م</span>
-							<div id="matRemainingContainer" class="d-none mt-2 pt-2 border-top">
-								<span class="text-danger fw-bold">المتبقي (آجل): <span id="matRemainingDisp">0.00</span> ج.م</span>
-							</div>
-						</div>
-					</div>
-
-					<div class="col-12">
-						<label class="form-label fw-bold">ملاحظات / بيان التوريد الأول</label>
-						<input type="text" name="notes" class="form-control" placeholder="اسم المورد أو رقم الفاتورة..." />
-					</div>
-				</div>
-				<div class="modal-footer bg-light">
-					<button type="button" class="btn btn-secondary rounded-3 px-4" data-bs-dismiss="modal">إلغاء</button>
-					<button type="submit" id="submitMatBtn" class="btn btn-bakery text-white fw-bold rounded-3 px-4 shadow-sm">حفظ المادة الخام</button>
-				</div>
-			</form>
-		</div>
-	</div>
-</div>
-
-<!-- Modal Add Stock / Supply -->
-<div class="modal fade" id="addStockModal" tabindex="-1">
-	<div class="modal-dialog modal-dialog-centered modal-lg">
-		<div class="modal-content">
-			<div class="modal-header bg-success text-white">
-				<h5 class="modal-title fw-bold"><i class="fa-solid fa-truck-ramp-box me-2"></i>توريد كمية جديدة للمخزن</h5>
-				<button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
-			</div>
-			<form asp-action="AddStock" method="post" id="addStockForm">
-				<input type="hidden" name="rawMaterialId" id="stockMaterialId" />
-				<div class="modal-body p-4 row g-3">
-					<div class="col-12 bg-light p-3 rounded-3 border">
-						<span class="text-muted small d-block mb-1">المادة الخام الموردة:</span>
-						<h5 id="stockMaterialName" class="fw-bold text-primary mb-0"></h5>
-					</div>
-
-					<div class="col-md-6">
-						<label class="form-label fw-bold">الكمية الموردة <span class="text-danger">*</span></label>
-						<input type="number" step="0.001" min="0" name="quantity" id="stockQuantity" required class="form-control fw-bold" placeholder="أدخل الكمية المضافة..." oninput="calculateStockTotal()" />
-					</div>
-					<div class="col-md-6">
-						<label class="form-label fw-bold">سعر شراء الوحدة (ج.م) <span class="text-danger">*</span></label>
-						<input type="number" step="0.01" min="0" name="unitPrice" id="stockUnitPrice" class="form-control fw-bold text-success" placeholder="0.00" required oninput="calculateStockTotal()" />
-					</div>
-
-					<div class="col-md-6">
-						<label class="form-label fw-bold">طريقة الدفع <span class="text-danger">*</span></label>
-						<select name="paymentMethod" id="stockPaymentMethod" class="form-select fw-bold" onchange="toggleStockPaymentMethod()">
-							<option value="1">كاش (مدفوع بالكامل)</option>
-							<option value="2">تحويل بنكي (مدفوع بالكامل)</option>
-							<option value="3">مدفوع جزئياً</option>
-							<option value="4">آجل (غير مدفوع)</option>
-						</select>
-					</div>
-
-					<div class="col-md-6 d-none" id="stockPaidContainer">
-						<label class="form-label fw-bold">المبلغ المدفوع حالياً (ج.م) <span class="text-danger">*</span></label>
-						<input type="number" step="0.01" min="0" name="PaidAmount" id="stockPaidAmount" value="0" class="form-control fw-bold text-success" autocomplete="off" oninput="validateStockPartialPayment()" />
-						<div id="stockPaidAmountError" class="text-danger small fw-bold mt-1 d-none"></div>
-					</div>
-
-					<!-- شريط الإجمالي والمتبقي -->
-					<div class="col-12">
-						<div class="p-3 bg-light rounded border text-center">
-							<span class="text-muted d-block mb-1">إجمالي فاتورة التوريد: <strong id="stockTotalDisp" class="text-dark">0.00</strong> ج.م</span>
-							<div id="stockRemainingContainer" class="d-none mt-2 pt-2 border-top">
-								<span class="text-danger fw-bold">المتبقي (آجل على المخبز): <span id="stockRemainingDisp">0.00</span> ج.م</span>
-							</div>
-						</div>
-					</div>
-
-					<div class="col-12">
-						<label class="form-label fw-bold">ملاحظات / اسم المورد</label>
-						<input type="text" name="notes" class="form-control" placeholder="تفاصيل أذونات الاستلام أو الفاتورة..." />
-					</div>
-				</div>
-				<div class="modal-footer bg-light">
-					<button type="button" class="btn btn-outline-secondary rounded-3 px-4" data-bs-dismiss="modal">إلغاء</button>
-					<button type="submit" id="submitStockBtn" class="btn btn-success fw-bold rounded-3 px-4 shadow-sm">تأكيد التوريد وزيادة المخزن</button>
-				</div>
-			</form>
-		</div>
-	</div>
-</div>
-
-@section Scripts {
-
-	<script>
-		function openAddStockModal(id, name, currentUnitPrice) {
-			document.getElementById('stockMaterialId').value = id;
-			document.getElementById('stockMaterialName').innerText = name;
-			document.getElementById('stockUnitPrice').value = currentUnitPrice;
-
-			// تصفير الكمية وقيم الدفع
-			document.getElementById('stockQuantity').value = '';
-			document.getElementById('stockPaymentMethod').value = "1";
-
-			// تحديث الإجمالي والواجهة
-			calculateStockTotal();
-
-			// فتح المودال
-			new bootstrap.Modal(document.getElementById('addStockModal')).show();
-		}
-
-		
-		// 1. Stock / Supply Modal Logic
-
-		function calculateStockTotal() {
-			const qty = parseFloat(document.getElementById('stockQuantity').value) || 0;
-			const price = parseFloat(document.getElementById('stockUnitPrice').value) || 0;
-			const total = qty * price;
-
-			document.getElementById('stockTotalDisp').innerText = total.toFixed(2);
-			toggleStockPaymentMethod();
-		}
-
-		function toggleStockPaymentMethod() {
-			const method = document.getElementById('stockPaymentMethod').value;
-			const paidContainer = document.getElementById('stockPaidContainer');
-			const paidInput = document.getElementById('stockPaidAmount');
-			const remainingContainer = document.getElementById('stockRemainingContainer');
-			const submitBtn = document.getElementById('submitStockBtn');
-
-			const qty = parseFloat(document.getElementById('stockQuantity').value) || 0;
-			const price = parseFloat(document.getElementById('stockUnitPrice').value) || 0;
-			const total = qty * price;
-
-			// كاش (1) أو تحويل بنكي (2)
-			if (method === "1" || method === "2") {
-				paidContainer.classList.add('d-none');
-				remainingContainer.classList.add('d-none');
-				paidInput.value = total.toFixed(2);
-				paidInput.required = false;
-				submitBtn.disabled = false;
-				clearStockError();
-				return;
-			}
-
-			// آجل (4)
-			if (method === "4") {
-				paidContainer.classList.add('d-none');
-				remainingContainer.classList.add('d-none');
-				paidInput.value = "0.00";
-				paidInput.required = false;
-				submitBtn.disabled = false;
-				clearStockError();
-				return;
-			}
-
-			// دفع جزئي (3)
-			if (method === "3") {
-				paidContainer.classList.remove('d-none');
-				if (remainingContainer) remainingContainer.classList.remove('d-none');
-				paidInput.required = true;
-
-				let currentPaid = parseFloat(paidInput.value) || 0;
-
-				if (currentPaid === 0 || currentPaid >= total) {
-					paidInput.value = total > 0 ? (total / 2).toFixed(2) : "0.00";
-				}
-
-				validateStockPartialPayment();
-			}
-		}
-
-		function validateStockPartialPayment() {
-			const qty = parseFloat(document.getElementById('stockQuantity').value) || 0;
-			const price = parseFloat(document.getElementById('stockUnitPrice').value) || 0;
-			const total = qty * price;
-			const paid = parseFloat(document.getElementById('stockPaidAmount').value) || 0;
-
-			if (paid <= 0) {
-				showStockError("يجب إدخال مبلغ مدفوع أكبر من صفر.");
-				return false;
-			}
-
-			if (paid >= total && total > 0) {
-				showStockError("في الدفع الجزئي، يجب أن يكون المبلغ المدفوع أقل من الإجمالي.");
-				return false;
-			}
-
-			clearStockError();
-			const remaining = Math.max(total - paid, 0);
-			document.getElementById('stockRemainingDisp').innerText = remaining.toFixed(2);
-			return true;
-		}
-
-		function showStockError(msg) {
-			const err = document.getElementById('stockPaidAmountError');
-			const btn = document.getElementById('submitStockBtn');
-			if (err) { err.innerText = msg; err.classList.remove('d-none'); }
-			if (btn) btn.disabled = true;
-		}
-
-		function clearStockError() {
-			const err = document.getElementById('stockPaidAmountError');
-			const btn = document.getElementById('submitStockBtn');
-			if (err) err.classList.add('d-none');
-			if (btn) btn.disabled = false;
-		}
-
-		
-		// 2. Add Material Modal Logic
-
-		function calculateMaterialTotal() {
-			const qty = parseFloat(document.getElementById('matQuantity').value) || 0;
-			const price = parseFloat(document.getElementById('matUnitPrice').value) || 0;
-			const total = qty * price;
-
-			document.getElementById('matTotalDisp').innerText = total.toFixed(2);
-			toggleMaterialPaymentMethod();
-		}
-
-		function toggleMaterialPaymentMethod() {
-			const method = document.getElementById('matPaymentMethod').value;
-			const paidContainer = document.getElementById('matPaidContainer');
-			const paidInput = document.getElementById('matPaidAmount');
-			const remainingContainer = document.getElementById('matRemainingContainer');
-			const submitBtn = document.getElementById('submitMatBtn');
-
-			const qty = parseFloat(document.getElementById('matQuantity').value) || 0;
-			const price = parseFloat(document.getElementById('matUnitPrice').value) || 0;
-			const total = qty * price;
-
-			if (method === "1" || method === "2") {
-				paidContainer.classList.add('d-none');
-				remainingContainer.classList.add('d-none');
-				paidInput.value = total.toFixed(2);
-				paidInput.required = false;
-				submitBtn.disabled = false;
-				clearMaterialError();
-				return;
-			}
-
-			if (method === "4") {
-				paidContainer.classList.add('d-none');
-				remainingContainer.classList.add('d-none');
-				paidInput.value = "0.00";
-				paidInput.required = false;
-				submitBtn.disabled = false;
-				clearMaterialError();
-				return;
-			}
-
-			if (method === "3") {
-				paidContainer.classList.remove('d-none');
-				remainingContainer.classList.remove('d-none');
-				paidInput.required = true;
-
-				let currentPaid = parseFloat(paidInput.value) || 0;
-				if (currentPaid === 0 || currentPaid >= total) {
-					paidInput.value = total > 0 ? (total / 2).toFixed(2) : "0.00";
-				}
-
-				validateMaterialPartialPayment();
-			}
-		}
-
-		function validateMaterialPartialPayment() {
-			const qty = parseFloat(document.getElementById('matQuantity').value) || 0;
-			const price = parseFloat(document.getElementById('matUnitPrice').value) || 0;
-			const total = qty * price;
-			const paid = parseFloat(document.getElementById('matPaidAmount').value) || 0;
-
-			if (paid <= 0) {
-				showMaterialError("يجب إدخال مبلغ مدفوع أكبر من صفر.");
-				return false;
-			}
-
-			if (paid >= total && total > 0) {
-				showMaterialError("في الدفع الجزئي، يجب أن يكون المبلغ المدفوع أقل من الإجمالي.");
-				return false;
-			}
-
-			clearMaterialError();
-			const remaining = Math.max(total - paid, 0);
-			document.getElementById('matRemainingDisp').innerText = remaining.toFixed(2);
-			return true;
-		}
-
-		function showMaterialError(msg) {
-			const err = document.getElementById('matPaidAmountError');
-			const btn = document.getElementById('submitMatBtn');
-			if (err) { err.innerText = msg; err.classList.remove('d-none'); }
-			if (btn) btn.disabled = true;
-		}
-
-		function clearMaterialError() {
-			const err = document.getElementById('matPaidAmountError');
-			const btn = document.getElementById('submitMatBtn');
-			if (err) err.classList.add('d-none');
-			if (btn) btn.disabled = false;
-		}
-
-		// Submit Handlers
-		document.getElementById('addStockForm')?.addEventListener('submit', function(e) {
-			if (document.getElementById('stockPaymentMethod').value === "3" && !validateStockPartialPayment()) {
-				e.preventDefault();
-			}
-		});
-
-		document.getElementById('addMaterialForm')?.addEventListener('submit', function(e) {
-			if (document.getElementById('matPaymentMethod').value === "3" && !validateMaterialPartialPayment()) {
-				e.preventDefault();
-			}
-		});
-	</script>
-}
