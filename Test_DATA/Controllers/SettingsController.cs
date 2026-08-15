@@ -27,7 +27,7 @@ namespace Test_DATA.Controllers
             try
             {
                 await _productionService.UpdateProductionSettingsAsync(settings);
-                TempData["SuccessMessage"] = "تم تحديث إعدادات أسعار الباسكيت ومعدلات الإنتاج بنجاح!";
+                TempData["SuccessMessage"] = "تم تحديث إعدادات أسعار ومعدلات الباسكيت للإنتاج بنجاح!";
             }
             catch (Exception ex)
             {

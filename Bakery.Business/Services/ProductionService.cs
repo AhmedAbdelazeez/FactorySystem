@@ -159,13 +159,12 @@ namespace Bakery.Business.Services
 
             var price = customBasketPrice ?? setting.BasketSellingPrice;
 
-            decimal piecesPerSack = GetPiecesPerSackForType(setting, productType);
-            int totalTargetPieces = (int)Math.Round(flourSackCount * piecesPerSack);
-
+            decimal basketsPerSack = GetPiecesPerSackForType(setting, productType);
             int piecesPerBasket = setting.PiecesPerBasket > 0 ? setting.PiecesPerBasket : 28;
 
-            decimal expectedBaskets = Math.Round((decimal)totalTargetPieces / piecesPerBasket, 2);
-            int remainingPieces = totalTargetPieces % piecesPerBasket;
+            decimal expectedBaskets = Math.Round(flourSackCount * basketsPerSack, 2);
+            int totalTargetPieces = (int)Math.Round(expectedBaskets * piecesPerBasket);
+            int remainingPieces = 0;
 
             decimal totalExpectedValue = expectedBaskets * price;
 
@@ -279,18 +278,21 @@ namespace Bakery.Business.Services
             var setting = await GetProductionSettingsAsync();
             int piecesPerBasket = setting.PiecesPerBasket > 0 ? setting.PiecesPerBasket : 28;
 
+            decimal actualBaskets = actualQuantity;
+            int totalActualPieces = (int)Math.Round(actualBaskets * piecesPerBasket);
+
             var result = order.OrderResults.FirstOrDefault(r => r.ProductType == order.SelectedProductType);
             if (result != null)
             {
-                result.ActualQuantity = (int)actualQuantity;
-                result.Difference = (int)actualQuantity - result.TargetQuantity;
+                result.ActualQuantity = totalActualPieces;
+                result.Difference = totalActualPieces - result.TargetQuantity;
                 result.AchievementPercentage = result.TargetQuantity > 0
-                    ? Math.Round(actualQuantity / result.TargetQuantity * 100, 2) : 0;
+                    ? Math.Round((decimal)totalActualPieces / result.TargetQuantity * 100, 2) : 0;
             }
 
-            order.TotalActualPieces = (int)actualQuantity;
-            order.ActualBaskets = Math.Round(actualQuantity / piecesPerBasket, 2);
-            order.RemainingPieces = (int)actualQuantity % piecesPerBasket;
+            order.TotalActualPieces = totalActualPieces;
+            order.ActualBaskets = Math.Round(actualBaskets, 2);
+            order.RemainingPieces = 0;
 
             order.TotalActualSalesValue = order.ActualBaskets * order.BasketSellingPrice;
             if (!string.IsNullOrEmpty(notes)) order.Notes = notes;
