@@ -34,6 +34,12 @@ function hideBakeryLoader() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+
     // Intercept forms to display loader & prevent double submission
     const forms = document.querySelectorAll("form");
     forms.forEach(form => {

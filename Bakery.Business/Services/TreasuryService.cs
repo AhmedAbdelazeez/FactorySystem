@@ -96,9 +96,14 @@ namespace Bakery.Business.Services
                 .Where(o => o.Status == ProductionStatus.Confirmed && o.ActualBaskets > 0)
                 .SumAsync(o => o.ActualBaskets * o.BasketSellingPrice);
 
+            decimal totalIncomePaid = transactions
+                .Where(t => t.TransactionType == TreasuryTransactionType.Income)
+                .Sum(t => t.PaidAmount);  // فقط المبلغ المدفوع/المحصل فعلاً
+
             return new TreasurySummaryDto
             {
                 TotalIncome = totalIncome,
+                TotalActualCash = totalIncomePaid,
                 TotalExpenses = totalExpenses,
                 LaborExpenses = labor,
                 RawMaterialExpenses = rawMaterial,

@@ -83,7 +83,12 @@ namespace Bakery.Business.DTOs
 
         public decimal Income => PaidAmount;
         public string? Notes { get; set; }
+
+        // بيانات الوكيل
+        public int? AgentId { get; set; }
+        public string AgentName { get; set; } = "";
     }
+
 
     public class CreateProductSaleDto
     {
@@ -92,7 +97,7 @@ namespace Bakery.Business.DTOs
         public decimal BasketSellingPrice { get; set; }          // سعر الباسكيت
         public PaymentMethod PaymentMethod { get; set; }         // طريقة الدفع
         public decimal PaidAmount { get; set; }                  // المبلغ المدفوع
-                      
+        public int? AgentId { get; set; }                        // الوكيل المختار                
         public string? Notes { get; set; }                       // ملاحظات
     }
 
@@ -109,7 +114,8 @@ namespace Bakery.Business.DTOs
 
     public class TreasurySummaryDto
     {
-        public decimal TotalIncome { get; set; }
+        public decimal TotalIncome { get; set; }           // إجمالي قيمة المبيعات (الكامل)
+        public decimal TotalActualCash { get; set; }       // إجمالي المبلغ المحصل فعلاً
         public decimal TotalExpenses { get; set; }
         public decimal LaborExpenses { get; set; }
         public decimal RawMaterialExpenses { get; set; }
@@ -266,5 +272,30 @@ namespace Bakery.Business.DTOs
         public decimal UnitPrice { get; set; }
     }
 
-}
+    // ===== Agent DTOs =====
 
+    public class AgentDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Phone { get; set; }
+        public string? Notes { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
+
+        // Aggregated stats
+        public decimal TotalBasketsSold { get; set; }    // توتل عدد البساكت المباعة
+        public decimal TotalSalesAmount { get; set; }    // توتل قيمة المبيعات
+        public decimal TotalPaidAmount { get; set; }     // توتل المدفوع
+        public decimal TotalRemainingAmount { get; set; }// توتل المتبقي (عليه)
+    }
+
+    public class CreateAgentDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Phone { get; set; }
+        public string? Notes { get; set; }
+    }
+
+}

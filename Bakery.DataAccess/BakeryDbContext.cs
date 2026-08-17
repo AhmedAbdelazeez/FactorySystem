@@ -36,6 +36,8 @@ namespace Bakery.DataAccess
         public DbSet<SupplierInvoice> SupplierInvoices { get; set; } = null!;
         public DbSet<SupplierInvoiceItem> SupplierInvoiceItems { get; set; } = null!;
 
+        // Agent (وكيل البيع والتوزيع)
+        public DbSet<Agent> Agents { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -276,10 +278,19 @@ namespace Bakery.DataAccess
                 .HasForeignKey(item => item.RawMaterialId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Agent configuration
+            modelBuilder.Entity<Agent>()
+                .Property(a => a.Name)
+                .HasMaxLength(150)
+                .IsRequired();
+
+            modelBuilder.Entity<TreasuryTransaction>()
+                .HasOne(t => t.Agent)
+                .WithMany(a => a.SaleTransactions)
+                .HasForeignKey(t => t.AgentId)
+                .OnDelete(DeleteBehavior.SetNull);
 
 
-
-           
             // Seed Lookup Data
             modelBuilder.Entity<ExpenseCategory>().HasData(
                 new ExpenseCategory { Id = 1, Name = "عمالة", IsSystem = true },

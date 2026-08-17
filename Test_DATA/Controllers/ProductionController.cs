@@ -11,11 +11,17 @@ namespace Test_DATA.Controllers
     public class ProductionController : Controller
     {
         private readonly IProductionService _productionService;
+        private readonly IAgentService _agentService;
 
-        public ProductionController(IProductionService productionService)
+        public ProductionController(IProductionService productionService, IAgentService agentService)
         {
             _productionService = productionService;
+            _agentService = agentService;
         }
+
+        // ─────────────────────────────────────────────────────────
+        // Production Orders
+        // ─────────────────────────────────────────────────────────
 
         public async Task<IActionResult> Index(DateTime? startDate, DateTime? endDate)
         {
@@ -46,7 +52,7 @@ namespace Test_DATA.Controllers
         {
             try
             {
-                var order = await _productionService.CreateProductionOrderAsync(flourSackCount, productType, notes, customBasketPrice);
+                await _productionService.CreateProductionOrderAsync(flourSackCount, productType, notes, customBasketPrice);
                 TempData["SuccessMessage"] = $"تم إنشاء أمر إنتاج لعدد ({flourSackCount}) شكارة دقيق بنجاح!";
             }
             catch (Exception ex)
@@ -101,13 +107,17 @@ namespace Test_DATA.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // sale recording
+        // ─────────────────────────────────────────────────────────
+        // Sales + Agents
+        // ─────────────────────────────────────────────────────────
 
         [HttpGet]
         public async Task<IActionResult> Sales(DateTime? filterDate)
         {
             try
             {
+                var agents = await _agentService.GetAllAgentsAsync();
+                ViewBag.Agents = agents;
                 ViewBag.AvailableOrders = await _productionService.GetAvailableOrdersForSaleAsync();
                 ViewBag.FilterDate = filterDate?.ToString("yyyy-MM-dd");
                 var salesHistory = await _productionService.GetSalesHistoryAsync(filterDate);
@@ -116,6 +126,7 @@ namespace Test_DATA.Controllers
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"حدث خطأ أثناء تحميل بيانات المبيعات: {ex.Message}";
+                ViewBag.Agents = new List<AgentDto>();
                 ViewBag.AvailableOrders = new List<ProductionOrderDto>();
                 return View(new List<ProductOrderSalesHistoryDto>());
             }
@@ -164,6 +175,69 @@ namespace Test_DATA.Controllers
                 TempData["ErrorMessage"] = ex.Message;
             }
             return RedirectToAction(nameof(Sales));
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // Agent CRUD
+        // ─────────────────────────────────────────────────────────
+
+        [HttpPost]
+        public async Task<IActionResult> CreateAgent(CreateAgentDto dto)
+        {
+            try
+            {
+                await _agentService.CreateAgentAsync(dto);
+                TempData["SuccessMessage"] = $"تم إضافة الوكيل '{dto.Name}' بنجاح.";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+            return RedirectToAction(nameof(Sales));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateAgent(CreateAgentDto dto)
+        {
+            try
+            {
+                await _agentService.UpdateAgentAsync(dto);
+                TempData["SuccessMessage"] = "تم تحديث بيانات الوكيل بنجاح.";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+            return RedirectToAction(nameof(Sales));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteAgent(int id)
+        {
+            try
+            {
+                await _agentService.DeleteAgentAsync(id);
+                TempData["SuccessMessage"] = "تم حذف/تعطيل الوكيل بنجاح.";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+            return RedirectToAction(nameof(Sales));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> AgentSummaryApi(int agentId)
+        {
+            try
+            {
+                var summary = await _agentService.GetAgentWithSummaryAsync(agentId);
+                return Json(new { success = true, data = summary });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
     }
 }

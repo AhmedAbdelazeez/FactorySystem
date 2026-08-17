@@ -230,6 +230,20 @@ namespace Bakery.DataAccess
                 context.SupplierInvoices.Add(inv1);
                 await context.SaveChangesAsync();
             }
+
+            // 6. Seed default agent if none exist
+            if (!await context.Agents.AnyAsync())
+            {
+                context.Agents.Add(new Agent
+                {
+                    Name = "الوكيل الرئيسي",
+                    Phone = "",
+                    Notes = "الوكيل الافتراضي للبيع المباشر",
+                    IsActive = true,
+                    CreatedAt = DateTime.Now
+                });
+                await context.SaveChangesAsync();
+            }
         }
 
 

@@ -233,6 +233,23 @@ namespace Bakery.Domain.Entities
         public int? ProductionOrderId { get; set; }
         public ProductionOrder? ProductionOrder { get; set; }
         public int? SupplierInvoiceId { get; set; }
+
+        // الوكيل المرتبط بحركة بيع الإنتاج
+        public int? AgentId { get; set; }
+        public Agent? Agent { get; set; }
+    }
+
+    /// <summary>وكيل التوزيع والبيع</summary>
+    public class Agent
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Phone { get; set; }
+        public string? Notes { get; set; }
+        public bool IsActive { get; set; } = true;
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        public ICollection<TreasuryTransaction> SaleTransactions { get; set; } = new List<TreasuryTransaction>();
     }
 
     public class Supplier

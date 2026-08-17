@@ -313,6 +313,10 @@ namespace Bakery.Business.Services
             if (order == null) throw new KeyNotFoundException("أمر الإنتاج غير موجود.");
             if (order.Status == ProductionStatus.Confirmed) throw new InvalidOperationException("أمر الإنتاج مؤكد بالفعل.");
 
+            // ✅ Validation: لا يمكن التأكيد بدون إدخال الإنتاج الفعلي أولاً
+            if (order.ActualBaskets <= 0)
+                throw new InvalidOperationException("⚠️ يجب تسجيل الإنتاج الفعلي (عدد الباسكيت) أولاً قبل تأكيد أمر الإنتاج. اضغط على 'الإنتاج الفعلي' وأدخل الكميات.");
+
             var calc = await CalculateProductionTargetAsync(order.FlourSackCount, order.SelectedProductType, order.BasketSellingPrice);
             var insufficientList = calc.RequiredMaterials.Where(m => !m.IsSufficient).ToList();
 
@@ -404,7 +408,8 @@ namespace Bakery.Business.Services
                     RemainingAmount = remainingAmount > 0 ? remainingAmount : 0,
                     Notes = dto.Notes,
                     ProductionOrderId = order.Id,
-                    SoldBaskets = dto.SoldBaskets
+                    SoldBaskets = dto.SoldBaskets,
+                    AgentId = dto.AgentId      // ← ربط الوكيل
                 };
 
                 await _treasuryRepo.AddAsync(treasuryTx);
@@ -434,7 +439,7 @@ namespace Bakery.Business.Services
 
         public async Task<IEnumerable<ProductOrderSalesHistoryDto>> GetSalesHistoryAsync(DateTime? filterDate = null)
         {
-            var query = from t in _context.TreasuryTransactions
+            var query = from t in _context.TreasuryTransactions.Include(t => t.Agent)
                         join o in _context.ProductionOrders on t.ProductionOrderId equals o.Id into orders
                         from o in orders.DefaultIfEmpty()
                         where t.TransactionType == TreasuryTransactionType.Income
@@ -500,7 +505,9 @@ namespace Bakery.Business.Services
                     SoldBaskets = currentSold,
                     PaidAmount = t.PaidAmount,
                     PaymentMethod = t.PaymentMethod,
-                    Notes = t.Notes
+                    Notes = t.Notes,
+                    AgentId = t.AgentId,
+                    AgentName = t.Agent?.Name ?? ""
                 });
             }
 
