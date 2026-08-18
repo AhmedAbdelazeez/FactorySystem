@@ -17,6 +17,7 @@ namespace Test_DATA.Controllers
 
         public async Task<IActionResult> Index()
         {
+            await _lookupService.SyncRawMaterialsAsync();
             ViewBag.Categories = await _lookupService.GetExpenseCategoriesAsync();
             ViewBag.Units = await _lookupService.GetMeasurementUnitsAsync();
             ViewBag.MaterialTypes = await _lookupService.GetMaterialTypesAsync();

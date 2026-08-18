@@ -23,6 +23,7 @@ namespace Bakery.Business.Services
         Task AddMaterialTypeAsync(string name);
         List<string> GetWeekdays();
         List<string> GetDefaultJobTitles();
+        Task SyncRawMaterialsAsync();
     }
 
     public class LookupService : ILookupService
@@ -76,6 +77,41 @@ namespace Bakery.Business.Services
             {
                 await _context.MaterialTypes.AddAsync(new MaterialType { Name = name.Trim() });
                 await _context.SaveChangesAsync();
+                await SyncRawMaterialsAsync();
+            }
+        }
+
+        public async Task SyncRawMaterialsAsync()
+        {
+            var materialTypesWithoutRawMaterial = await _context.MaterialTypes
+                .Where(mt => !_context.RawMaterials.Any(rm => rm.MaterialTypeId == mt.Id))
+                .ToListAsync();
+
+            if (materialTypesWithoutRawMaterial.Any())
+            {
+                var unit = await _context.MeasurementUnits.FirstOrDefaultAsync();
+                if (unit == null)
+                {
+                    unit = new MeasurementUnit { Name = "وحدة" };
+                    await _context.MeasurementUnits.AddAsync(unit);
+                    await _context.SaveChangesAsync();
+                }
+
+                foreach (var mt in materialTypesWithoutRawMaterial)
+                {
+                    var rawMat = new RawMaterial
+                    {
+                        Name = "",
+                        MaterialTypeId = mt.Id,
+                        MeasurementUnitId = unit.Id,
+                        CurrentQuantity = 0,
+                        UnitPrice = 0,
+                        TotalValue = 0,
+                        LastUpdatedDate = DateTime.Now
+                    };
+                    await _context.RawMaterials.AddAsync(rawMat);
+                }
+                await _context.SaveChangesAsync();
             }
         }
 
@@ -109,10 +145,27 @@ namespace Bakery.Business.Services
         public async Task DeleteMaterialAsync(int id)
         {
             var mat = await _context.MaterialTypes.FindAsync(id);
-            var hasRelatedRecords = await _context.RawMaterials.AnyAsync(r => r.MaterialTypeId == id);
+            if (mat == null) return;
 
-            if (hasRelatedRecords)
-                throw new InvalidOperationException("لا يمكن حذف هذه المادة الخام لأنها مستخدمة في عمليات مخزنية قائمة.");
+            var rawMaterialsOfThisType = await _context.RawMaterials
+                .Where(r => r.MaterialTypeId == id)
+                .ToListAsync();
+
+            var rawMaterialIds = rawMaterialsOfThisType.Select(r => r.Id).ToList();
+
+            if (rawMaterialIds.Any())
+            {
+                bool hasTransactions = await _context.InventoryTransactions.AnyAsync(t => rawMaterialIds.Contains(t.RawMaterialId));
+                bool hasRecipeItems = await _context.ProductionRecipeItems.AnyAsync(ri => rawMaterialIds.Contains(ri.RawMaterialId));
+                bool hasSupplierMaterials = await _context.SupplierRawMaterials.AnyAsync(sm => rawMaterialIds.Contains(sm.RawMaterialId));
+
+                if (hasTransactions || hasRecipeItems || hasSupplierMaterials)
+                {
+                    throw new InvalidOperationException("لا يمكن حذف هذه المادة الخام لأنها مستخدمة في عمليات مخزنية، أو وصفات إنتاج، أو موردين.");
+                }
+
+                _context.RawMaterials.RemoveRange(rawMaterialsOfThisType);
+            }
 
             _context.MaterialTypes.Remove(mat);
             await _context.SaveChangesAsync();

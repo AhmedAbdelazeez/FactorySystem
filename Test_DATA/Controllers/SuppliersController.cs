@@ -13,15 +13,18 @@ namespace Test_DATA.Controllers
     {
         private readonly ISupplierService _supplierService;
         private readonly IInventoryService _inventoryService;
+        private readonly ILookupService _lookupService;
 
-        public SuppliersController(ISupplierService supplierService, IInventoryService inventoryService)
+        public SuppliersController(ISupplierService supplierService, IInventoryService inventoryService, ILookupService lookupService)
         {
             _supplierService = supplierService;
             _inventoryService = inventoryService;
+            _lookupService = lookupService;
         }
 
         public async Task<IActionResult> Index()
         {
+            await _lookupService.SyncRawMaterialsAsync();
             ViewBag.FinancialSummary = await _supplierService.GetFinancialSummaryAsync();
             ViewBag.AllInvoices = await _supplierService.GetAllInvoicesAsync();
             ViewBag.RawMaterials = await _inventoryService.GetAllRawMaterialsAsync();
@@ -32,6 +35,7 @@ namespace Test_DATA.Controllers
 
         public async Task<IActionResult> Details(int id)
         {
+            await _lookupService.SyncRawMaterialsAsync();
             var supplier = await _supplierService.GetSupplierDetailsByIdAsync(id);
             if (supplier == null)
             {

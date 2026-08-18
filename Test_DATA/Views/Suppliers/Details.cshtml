@@ -233,7 +233,7 @@
                 <h5 class="modal-title fw-bold"><i class="fa-solid fa-file-invoice-dollar me-1"></i> تسجيل فاتورة توريد جديدة لـ (@Model.Name)</h5>
                 <button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
             </div>
-            <form asp-action="CreateInvoice" method="post">
+            <form asp-action="CreateInvoice" method="post" id="addInvoiceForm" onsubmit="return validateInvoiceForm('addInvoiceForm')">
                 <input type="hidden" name="SupplierId" value="@Model.Id" />
                 <input type="hidden" name="returnSupplierId" value="@Model.Id" />
                 <div class="modal-body row g-3">
@@ -250,31 +250,26 @@
                     <div class="col-12">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <label class="form-label fw-bold text-dark mb-0">
-                                <i class="fa-solid fa-boxes-stacked text-success me-1"></i> بنود أصناف الفاتورة
+                                <i class="fa-solid fa-boxes-stacked text-success me-1"></i> بنود أصناف الفاتورة (قائمة فحص المواد الخام)
                             </label>
-                            <button type="button" class="btn btn-sm btn-outline-success" onclick="addInvoiceItemRow()">
-                                <i class="fa-solid fa-plus me-1"></i> إضافة صنف بالفاتورة
-                            </button>
                         </div>
-                        <div class="table-responsive border rounded">
+                        <div class="table-responsive border rounded" style="max-height: 350px; overflow-y: auto;">
                             <table class="table table-bordered mb-0 align-middle" id="invoiceItemsTable">
-                                <thead class="table-light">
+                                <thead class="table-light sticky-top">
                                     <tr>
+                                        <th style="width: 50px;"></th>
                                         <th>اسم الخامة</th>
                                         <th style="width: 140px;">الكمية</th>
-                                        <th style="width: 150px;">السعر</th>
+                                        <th style="width: 150px;">سعر الوحدة</th>
                                         <th style="width: 150px;">الإجمالي</th>
-                                        <th style="width: 50px;"></th>
                                     </tr>
-
                                 </thead>
                                 <tbody id="invoiceItemsTbody">
                                 </tbody>
                                 <tfoot>
                                     <tr class="table-warning fw-bold">
-                                        <td colspan="3" class="text-end">إجمالي قيمة الفاتورة الكلي:</td>
+                                        <td colspan="4" class="text-end">إجمالي قيمة الفاتورة الكلي:</td>
                                         <td id="invoiceTotalDisplay" class="fs-5 text-dark">0.00 ج.م</td>
-                                        <td></td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -359,7 +354,7 @@
                 <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-1"></i> تعديل فاتورة التوريد</h5>
                 <button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
             </div>
-            <form asp-action="EditInvoice" method="post">
+            <form asp-action="EditInvoice" method="post" id="editInvoiceForm" onsubmit="return validateInvoiceForm('editInvoiceForm')">
                 <input type="hidden" name="Id" id="editInvoiceId" />
                 <input type="hidden" name="SupplierId" value="@Model.Id" />
                 <input type="hidden" name="returnSupplierId" value="@Model.Id" />
@@ -381,31 +376,27 @@
                     <div class="col-12">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <label class="form-label fw-bold text-dark mb-0">
-                                <i class="fa-solid fa-boxes-stacked text-primary me-1"></i> بنود الاصناف الموردة بالفاتورة
+                                <i class="fa-solid fa-boxes-stacked text-primary me-1"></i> بنود الاصناف الموردة بالفاتورة (قائمة فحص المواد الخام)
                             </label>
-                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addEditInvoiceItemRow()">
-                                <i class="fa-solid fa-plus me-1"></i> إضافة صنف بالفاتورة
-                            </button>
                         </div>
-                        <div class="table-responsive border rounded">
+                        <div class="table-responsive border rounded" style="max-height: 350px; overflow-y: auto;">
                             <table class="table table-bordered mb-0 align-middle" id="editInvoiceItemsTable">
-                                <thead class="table-light">
+                                <thead class="table-light sticky-top">
                                     <tr>
+                                        <th style="width: 50px;"></th>
                                         <th>اسم الخامة</th>
                                         <th style="width: 140px;">الكمية</th>
-                                        <th style="width: 150px;">السعر</th>
+                                        <th style="width: 150px;">سعر الوحدة</th>
                                         <th style="width: 150px;">الإجمالي</th>
-                                        <th style="width: 50px;"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="editInvoiceItemsTbody">
-                                    <!-- Dynamic rows inserted by JS -->
+                                    <!-- Populated statically via JS on modal load -->
                                 </tbody>
                                 <tfoot>
                                     <tr class="table-warning fw-bold">
-                                        <td colspan="3" class="text-end">إجمالي قيمة الفاتورة الكلي:</td>
+                                        <td colspan="4" class="text-end">إجمالي قيمة الفاتورة الكلي:</td>
                                         <td id="editInvoiceTotalDisplay" class="fs-5 text-dark">0.00 ج.م</td>
-                                        <td></td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -447,99 +438,102 @@
 
 @section Scripts {
     <script>
-        const rawMaterialsData = [
-            @foreach (var mat in rawMaterials)
-            {
-                @:{ id: @mat.Id, name: '@mat.MaterialName', unit: '@(mat.MeasurementUnit?.Name ?? "")', unitPrice: @mat.UnitPrice },
-            }
-        ];
+        const rawMaterialsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(rawMaterials.Select(m => new { id = m.Id, name = m.MaterialName, unit = m.MeasurementUnit?.Name ?? "", unitPrice = m.UnitPrice })));
 
 
-        let itemRowIndex = 0;
 
         function openAddInvoiceModalForSupplier(supplierId) {
-            document.getElementById('invoiceItemsTbody').innerHTML = '';
-            itemRowIndex = 0;
-            addInvoiceItemRow();
-            recalculateInvoiceTotal();
+            const tbody = document.getElementById('invoiceItemsTbody');
+            tbody.innerHTML = '';
+            
+            rawMaterialsData.forEach(m => {
+                const tr = document.createElement('tr');
+                tr.className = 'invoice-item-row';
+                tr.id = `item_row_${m.id}`;
+                tr.innerHTML = `
+                    <td class="text-center">
+                        <input class="form-check-input mat-checkbox" type="checkbox" id="chk_${m.id}" onchange="toggleRowInputs(${m.id}, 'add')" />
+                    </td>
+                    <td>
+                        <label class="fw-bold text-dark mb-0" for="chk_${m.id}">
+                            ${m.name} <small class="text-muted">(${m.unit})</small>
+                        </label>
+                        <input type="hidden" class="mat-id-input" value="${m.id}" />
+                    </td>
+                    <td>
+                        <input type="number" step="0.001" class="form-control form-control-sm qty-input text-center fw-bold" value="0" disabled oninput="recalculateInvoiceTotal('add')" />
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" class="form-control form-control-sm price-input text-center fw-bold text-success" value="${m.unitPrice}" disabled oninput="recalculateInvoiceTotal('add')" />
+                    </td>
+                    <td class="fw-bold line-total text-dark text-center fs-7">0.00 ج.م</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            recalculateInvoiceTotal('add');
             new bootstrap.Modal(document.getElementById('addInvoiceModal')).show();
         }
 
-        function addInvoiceItemRow() {
-            const tbody = document.getElementById('invoiceItemsTbody');
-            const rowId = `item_row_${itemRowIndex}`;
-
-            let matOptions = '<option value="">-- اختر الخامة --</option>';
-            rawMaterialsData.forEach(m => {
-                matOptions += `<option value="${m.id}" data-price="${m.unitPrice}">${m.name} (${m.unit})</option>`;
-            });
-
-            const tr = document.createElement('tr');
-            tr.id = rowId;
-            tr.innerHTML = `
-                <td>
-                    <select name="Items[${itemRowIndex}].RawMaterialId" class="form-select mat-select" required onchange="onMatSelectChange('${rowId}')">
-                        ${matOptions}
-                    </select>
-                </td>
-                <td>
-                    <input type="number" step="0.001" name="Items[${itemRowIndex}].Quantity" class="form-control qty-input" value="1" required oninput="recalculateInvoiceTotal()" />
-                </td>
-                <td>
-                    <input type="number" step="0.01" name="Items[${itemRowIndex}].UnitPrice" class="form-control price-input" value="0" required oninput="recalculateInvoiceTotal()" />
-                </td>
-                <td class="fw-bold line-total text-dark">0.00 ج.م</td>
-                <td class="text-center">
-                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeInvoiceItemRow('${rowId}')"><i class="fa-solid fa-xmark"></i></button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-            itemRowIndex++;
-            recalculateInvoiceTotal();
-        }
-
-        function removeInvoiceItemRow(rowId) {
-            const row = document.getElementById(rowId);
-            if (row) {
-                row.remove();
-                recalculateInvoiceTotal();
-            }
-        }
-
-        function onMatSelectChange(rowId) {
-            const row = document.getElementById(rowId);
+        function toggleRowInputs(matId, mode) {
+            const tbodyId = mode === 'add' ? 'invoiceItemsTbody' : 'editInvoiceItemsTbody';
+            const row = document.querySelector(`#${tbodyId} #item_row_${matId}`);
             if (!row) return;
-            const select = row.querySelector('.mat-select');
-            const selectedOption = select.options[select.selectedIndex];
+
+            const checkbox = row.querySelector('.mat-checkbox');
+            const qtyInput = row.querySelector('.qty-input');
             const priceInput = row.querySelector('.price-input');
 
-            if (selectedOption && selectedOption.dataset.price) {
-                priceInput.value = selectedOption.dataset.price;
+            if (checkbox.checked) {
+                qtyInput.disabled = false;
+                priceInput.disabled = false;
+                if (parseFloat(qtyInput.value) === 0) {
+                    qtyInput.value = 1;
+                }
+            } else {
+                qtyInput.disabled = true;
+                priceInput.disabled = true;
+                qtyInput.value = 0;
             }
-            recalculateInvoiceTotal();
+
+            recalculateInvoiceTotal(mode);
         }
 
-        function recalculateInvoiceTotal() {
+        function recalculateInvoiceTotal(mode) {
             let total = 0;
-            const rows = document.querySelectorAll('#invoiceItemsTbody tr');
+            const tbodyId = mode === 'add' ? 'invoiceItemsTbody' : 'editInvoiceItemsTbody';
+            const displayId = mode === 'add' ? 'invoiceTotalDisplay' : 'editInvoiceTotalDisplay';
+            const methodSelectId = mode === 'add' ? 'invoicePaymentMethod' : 'editInvoicePaymentMethod';
+            const paidInputId = mode === 'add' ? 'invoicePaidAmount' : 'editInvoicePaidAmount';
+            const remainingId = mode === 'add' ? 'invoiceRemainingDisplay' : 'editInvoiceRemainingDisplay';
+
+            const rows = document.querySelectorAll(`#${tbodyId} .invoice-item-row`);
             rows.forEach(r => {
-                const qty = parseFloat(r.querySelector('.qty-input')?.value || 0);
-                const price = parseFloat(r.querySelector('.price-input')?.value || 0);
-                const lineTotal = qty * price;
-                total += lineTotal;
-                const lineTotalCell = r.querySelector('.line-total');
-                if (lineTotalCell) {
-                    lineTotalCell.innerText = lineTotal.toFixed(2) + ' ج.م';
+                const checkbox = r.querySelector('.mat-checkbox');
+                if (checkbox && checkbox.checked) {
+                    const qty = parseFloat(r.querySelector('.qty-input')?.value || 0);
+                    const price = parseFloat(r.querySelector('.price-input')?.value || 0);
+                    const lineTotal = qty * price;
+                    total += lineTotal;
+                    const lineTotalCell = r.querySelector('.line-total');
+                    if (lineTotalCell) {
+                        lineTotalCell.innerText = lineTotal.toFixed(2) + ' ج.م';
+                    }
+                } else {
+                    const lineTotalCell = r.querySelector('.line-total');
+                    if (lineTotalCell) {
+                        lineTotalCell.innerText = '0.00 ج.م';
+                    }
                 }
             });
 
-            document.getElementById('invoiceTotalDisplay').innerText = total.toFixed(2) + ' ج.م';
+            document.getElementById(displayId).innerText = total.toFixed(2) + ' ج.م';
 
-            const methodSelect = document.getElementById('invoicePaymentMethod');
-            const paidInput = document.getElementById('invoicePaidAmount');
+            const methodSelect = document.getElementById(methodSelectId);
+            const paidInput = document.getElementById(paidInputId);
 
             if (methodSelect.value === "1" || methodSelect.value === "2") {
-                paidInput.value = total;
+                paidInput.value = total.toFixed(2);
                 paidInput.readOnly = true;
             } else if (methodSelect.value === "4") {
                 paidInput.value = 0;
@@ -549,26 +543,21 @@
             }
 
             const paidVal = parseFloat(paidInput.value || 0);
+            
+            // Client-side validation: paidAmount cannot exceed total!
+            paidInput.max = total;
+
             const remaining = Math.max(0, total - paidVal);
-            document.getElementById('invoiceRemainingDisplay').value = remaining.toFixed(2) + ' ج.م';
+            document.getElementById(remainingId).value = remaining.toFixed(2) + ' ج.م';
         }
 
         function toggleInvoicePaidInput() {
-            recalculateInvoiceTotal();
+            recalculateInvoiceTotal('add');
         }
 
-        document.getElementById('invoicePaidAmount').addEventListener('input', recalculateInvoiceTotal);
-
-        function openPayInvoiceModal(id, num, supplierName, remaining) {
-            document.getElementById('payInvoiceId').value = id;
-            document.getElementById('payInvoiceNum').innerText = num;
-            document.getElementById('payRemainingAmount').innerText = remaining.toFixed(2);
-            document.getElementById('payAmountInput').value = remaining;
-            document.getElementById('payAmountInput').max = remaining;
-            new bootstrap.Modal(document.getElementById('payInvoiceModal')).show();
+        function toggleEditInvoicePaidInput() {
+            recalculateInvoiceTotal('edit');
         }
-
-        let editItemRowIndex = 0;
 
         async function openEditInvoiceModal(id) {
             try {
@@ -588,17 +577,42 @@
 
                 const tbody = document.getElementById('editInvoiceItemsTbody');
                 tbody.innerHTML = '';
-                editItemRowIndex = 0;
 
+                // Create a map of raw material ID to invoice item details
+                const invoiceItemsMap = {};
                 data.items.forEach(item => {
-                    addEditInvoiceItemRow(item.rawMaterialId, item.quantity, item.unitPrice);
+                    invoiceItemsMap[item.rawMaterialId] = item;
                 });
 
-                if (data.items.length === 0) {
-                    addEditInvoiceItemRow();
-                }
+                rawMaterialsData.forEach(m => {
+                    const invoiceItem = invoiceItemsMap[m.id];
+                    const isChecked = invoiceItem !== undefined;
+                    
+                    const tr = document.createElement('tr');
+                    tr.className = 'invoice-item-row';
+                    tr.id = `item_row_${m.id}`;
+                    tr.innerHTML = `
+                        <td class="text-center">
+                            <input class="form-check-input mat-checkbox" type="checkbox" id="edit_chk_${m.id}" ${isChecked ? 'checked' : ''} onchange="toggleRowInputs(${m.id}, 'edit')" />
+                        </td>
+                        <td>
+                            <label class="fw-bold text-dark mb-0" for="edit_chk_${m.id}">
+                                ${m.name} <small class="text-muted">(${m.unit})</small>
+                            </label>
+                            <input type="hidden" class="mat-id-input" value="${m.id}" />
+                        </td>
+                        <td>
+                            <input type="number" step="0.001" class="form-control form-control-sm qty-input text-center fw-bold" value="${isChecked ? invoiceItem.quantity : 0}" ${isChecked ? '' : 'disabled'} oninput="recalculateInvoiceTotal('edit')" />
+                        </td>
+                        <td>
+                            <input type="number" step="0.01" class="form-control form-control-sm price-input text-center fw-bold text-success" value="${isChecked ? invoiceItem.unitPrice : m.unitPrice}" ${isChecked ? '' : 'disabled'} oninput="recalculateInvoiceTotal('edit')" />
+                        </td>
+                        <td class="fw-bold line-total text-dark text-center fs-7">0.00 ج.م</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
 
-                recalculateEditInvoiceTotal();
+                recalculateInvoiceTotal('edit');
                 new bootstrap.Modal(document.getElementById('editInvoiceModal')).show();
             } catch (err) {
                 console.error(err);
@@ -606,100 +620,72 @@
             }
         }
 
-        function addEditInvoiceItemRow(selectedMatId = '', quantity = 1, unitPrice = 0) {
-            const tbody = document.getElementById('editInvoiceItemsTbody');
-            const rowId = `edit_item_row_${editItemRowIndex}`;
+        function validateInvoiceForm(formId) {
+            const form = document.getElementById(formId);
             
-            let matOptions = '<option value="">-- اختر الخامة --</option>';
-            rawMaterialsData.forEach(m => {
-                const selected = m.id == selectedMatId ? 'selected' : '';
-                matOptions += `<option value="${m.id}" data-price="${m.unitPrice}" ${selected}>${m.name} (${m.unit})</option>`;
+            const totalDisplay = form.querySelector('[id$="TotalDisplay"]').innerText;
+            const total = parseFloat(totalDisplay.replace(/[^\d.-]/g, '')) || 0;
+            
+            const paidInput = form.querySelector('[id$="PaidAmount"]');
+            const paidVal = parseFloat(paidInput.value) || 0;
+            
+            if (paidVal > total + 0.001) {
+                alert("خطأ: المبلغ المدفوع لا يمكن أن يكون أكبر من إجمالي قيمة الفاتورة!");
+                paidInput.focus();
+                return false;
+            }
+
+            let hasChecked = false;
+            const checkboxes = form.querySelectorAll('.mat-checkbox');
+            checkboxes.forEach(chk => {
+                if (chk.checked) hasChecked = true;
             });
 
-            const tr = document.createElement('tr');
-            tr.id = rowId;
-            tr.innerHTML = `
-                <td>
-                    <select name="Items[${editItemRowIndex}].RawMaterialId" class="form-select edit-mat-select" required onchange="onEditMatSelectChange('${rowId}')">
-                        ${matOptions}
-                    </select>
-                </td>
-                <td>
-                    <input type="number" step="0.001" name="Items[${editItemRowIndex}].Quantity" class="form-control edit-qty-input" value="${quantity}" required oninput="recalculateEditInvoiceTotal()" />
-                </td>
-                <td>
-                    <input type="number" step="0.01" name="Items[${editItemRowIndex}].UnitPrice" class="form-control edit-price-input" value="${unitPrice}" required oninput="recalculateEditInvoiceTotal()" />
-                </td>
-                <td class="fw-bold edit-line-total text-dark">0.00 ج.م</td>
-                <td class="text-center">
-                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeEditInvoiceItemRow('${rowId}')"><i class="fa-solid fa-xmark"></i></button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-            editItemRowIndex++;
-            recalculateEditInvoiceTotal();
-        }
-
-        function removeEditInvoiceItemRow(rowId) {
-            const row = document.getElementById(rowId);
-            if (row) {
-                row.remove();
-                recalculateEditInvoiceTotal();
+            if (!hasChecked) {
+                alert("خطأ: يجب اختيار مادة خام واحدة على الأقل وتوريدها بالفاتورة!");
+                return false;
             }
+
+            prepareInvoiceSubmit(formId);
+            return true;
         }
 
-        function onEditMatSelectChange(rowId) {
-            const row = document.getElementById(rowId);
-            if (!row) return;
-            const select = row.querySelector('.edit-mat-select');
-            const selectedOption = select.options[select.selectedIndex];
-            const priceInput = row.querySelector('.edit-price-input');
+        function prepareInvoiceSubmit(formId) {
+            const form = document.getElementById(formId);
+            let seqIndex = 0;
             
-            if (selectedOption && selectedOption.dataset.price) {
-                priceInput.value = selectedOption.dataset.price;
-            }
-            recalculateEditInvoiceTotal();
-        }
-
-        function recalculateEditInvoiceTotal() {
-            let total = 0;
-            const rows = document.querySelectorAll('#editInvoiceItemsTbody tr');
-            rows.forEach(r => {
-                const qty = parseFloat(r.querySelector('.edit-qty-input')?.value || 0);
-                const price = parseFloat(r.querySelector('.edit-price-input')?.value || 0);
-                const lineTotal = qty * price;
-                total += lineTotal;
-                const lineTotalCell = r.querySelector('.edit-line-total');
-                if (lineTotalCell) {
-                    lineTotalCell.innerText = lineTotal.toFixed(2) + ' ج.م';
+            const rows = form.querySelectorAll('.invoice-item-row');
+            rows.forEach(row => {
+                const checkbox = row.querySelector('.mat-checkbox');
+                const matSelect = row.querySelector('.mat-id-input');
+                const qtyInput = row.querySelector('.qty-input');
+                const priceInput = row.querySelector('.price-input');
+                
+                if (checkbox && checkbox.checked) {
+                    matSelect.name = `Items[${seqIndex}].RawMaterialId`;
+                    qtyInput.name = `Items[${seqIndex}].Quantity`;
+                    priceInput.name = `Items[${seqIndex}].UnitPrice`;
+                    seqIndex++;
+                } else {
+                    matSelect.removeAttribute('name');
+                    qtyInput.removeAttribute('name');
+                    priceInput.removeAttribute('name');
                 }
             });
-
-            document.getElementById('editInvoiceTotalDisplay').innerText = total.toFixed(2) + ' ج.م';
-
-            const methodSelect = document.getElementById('editInvoicePaymentMethod');
-            const paidInput = document.getElementById('editInvoicePaidAmount');
-
-            if (methodSelect.value === "1" || methodSelect.value === "2") {
-                paidInput.value = total;
-                paidInput.readOnly = true;
-            } else if (methodSelect.value === "4") {
-                paidInput.value = 0;
-                paidInput.readOnly = true;
-            } else {
-                paidInput.readOnly = false;
-            }
-
-            const paidVal = parseFloat(paidInput.value || 0);
-            const remaining = Math.max(0, total - paidVal);
-            document.getElementById('editInvoiceRemainingDisplay').value = remaining.toFixed(2) + ' ج.م';
+            return true;
         }
 
-        function toggleEditInvoicePaidInput() {
-            recalculateEditInvoiceTotal();
-        }
+        document.getElementById('invoicePaidAmount').addEventListener('input', () => recalculateInvoiceTotal('add'));
+        document.getElementById('editInvoicePaidAmount').addEventListener('input', () => recalculateInvoiceTotal('edit'));
 
-        document.getElementById('editInvoicePaidAmount').addEventListener('input', recalculateEditInvoiceTotal);
+        function openPayInvoiceModal(id, num, supplierName, remaining) {
+            document.getElementById('payInvoiceId').value = id;
+            document.getElementById('payInvoiceNum').innerText = num;
+            document.getElementById('payRemainingAmount').innerText = remaining.toFixed(2);
+            document.getElementById('payAmountInput').value = remaining;
+            document.getElementById('payAmountInput').max = remaining;
+            new bootstrap.Modal(document.getElementById('payInvoiceModal')).show();
+        }
 
         function confirmDeleteInvoice(id, invoiceNumber, supplierId) {
             if (confirm(`هل أنت متأكد من حذف الفاتورة رقم #${invoiceNumber}؟\nسيتم عكس جميع الكميات المضافة للمخازن، وحذف المصروفات وحركات الخزينة التابعة لها بالكامل.`)) {

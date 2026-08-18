@@ -121,6 +121,11 @@ namespace Test_DATA.Controllers
                 ViewBag.AvailableOrders = await _productionService.GetAvailableOrdersForSaleAsync();
                 ViewBag.FilterDate = filterDate?.ToString("yyyy-MM-dd");
                 var salesHistory = await _productionService.GetSalesHistoryAsync(filterDate);
+
+                ViewBag.MabroumStock = await _productionService.GetProductTypeStockAsync(ProductType.Mabroum);
+                ViewBag.PaneStock = await _productionService.GetProductTypeStockAsync(ProductType.Pane);
+                ViewBag.SandwichStock = await _productionService.GetProductTypeStockAsync(ProductType.Sandwich);
+
                 return View(salesHistory);
             }
             catch (Exception ex)

@@ -28,6 +28,7 @@ namespace Bakery.Business.Services
         Task<IEnumerable<ProductionOrderDto>> GetAvailableOrdersForSaleAsync();
         Task<bool> CancelProductSaleAsync(int treasuryTransactionId);
         Task<bool> CollectRemainingSaleAmountAsync(int treasuryTransactionId, decimal amountToCollect, PaymentMethod paymentMethod, string? notes);
+        Task<decimal> GetProductTypeStockAsync(ProductType productType);
         //-------------------------------------------------------------------------
         Task<ProductionRecipe> GetActiveRecipeAsync();
         Task SaveRecipeItemsAsync(List<ProductionRecipeItem> items);
@@ -366,8 +367,14 @@ namespace Bakery.Business.Services
             if (dto.SoldBaskets <= 0)
                 throw new InvalidOperationException("عدد الباسكيت المباع يجب أن يكون أكبر من الصفر.");
 
-            if (dto.SoldBaskets > order.ActualBaskets + 0.001m)
-                throw new InvalidOperationException($"الكمية المطلوبة ({dto.SoldBaskets}) أكبر من المتاح حالياً بالإنتاج ({order.ActualBaskets} باسكت).");
+            decimal alreadySold = await _context.TreasuryTransactions
+                .Where(t => t.ProductionOrderId == order.Id && t.Category == "مبيعات إنتاج")
+                .SumAsync(t => t.SoldBaskets) ?? 0;
+
+            decimal availableBaskets = order.ActualBaskets - alreadySold;
+
+            if (dto.SoldBaskets > availableBaskets + 0.001m)
+                throw new InvalidOperationException($"الكمية المطلوبة ({dto.SoldBaskets}) أكبر من المتاح حالياً بالإنتاج ({availableBaskets} باسكت).");
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -392,9 +399,7 @@ namespace Bakery.Business.Services
 
                 decimal remainingAmount = totalSaleAmount - paidAmount;
 
-                order.ActualBaskets = Math.Max(0, order.ActualBaskets - dto.SoldBaskets);
-                _context.ProductionOrders.Update(order);
-                await _context.SaveChangesAsync();
+                // order.ActualBaskets remains unchanged in the database!
 
                 var treasuryTx = new TreasuryTransaction
                 {
@@ -430,11 +435,27 @@ namespace Bakery.Business.Services
         {
             var list = await _context.ProductionOrders
                 .Include(o => o.OrderResults)
-                .Where(o => o.Status == ProductionStatus.Confirmed && o.ActualBaskets > 0)
+                .Where(o => o.Status == ProductionStatus.Confirmed)
                 .OrderByDescending(o => o.ProductionDate)
                 .ToListAsync();
 
-            return list.Select(MapToDto);
+            var result = new List<ProductionOrderDto>();
+            foreach (var order in list)
+            {
+                decimal sold = await _context.TreasuryTransactions
+                    .Where(t => t.ProductionOrderId == order.Id && t.Category == "مبيعات إنتاج")
+                    .SumAsync(t => t.SoldBaskets) ?? 0;
+
+                decimal available = order.ActualBaskets - sold;
+                if (available > 0)
+                {
+                    var dto = MapToDto(order);
+                    dto.ActualBaskets = available; // Overwrite in DTO to show available stock in dropdown
+                    result.Add(dto);
+                }
+            }
+
+            return result;
         }
 
         public async Task<IEnumerable<ProductOrderSalesHistoryDto>> GetSalesHistoryAsync(DateTime? filterDate = null)
@@ -574,18 +595,9 @@ namespace Bakery.Business.Services
             using var dbTransaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 1. إرجاع الباسكت المباع إلى رصيد أمر الإنتاج
+                // 1. إرجاع الباسكت المباع إلى رصيد أمر الإنتاج (الحذف التلقائي لمعاملة البيع يعيد إتاحتها للبيع تلقائياً)
                 if (transaction.ProductionOrderId.HasValue)
                 {
-                    var order = await _context.ProductionOrders
-                        .FirstOrDefaultAsync(o => o.Id == transaction.ProductionOrderId.Value);
-
-                    if (order != null)
-                    {
-                        decimal restoredBaskets = transaction.SoldBaskets ?? 0;
-                        order.ActualBaskets += restoredBaskets;
-                        _context.ProductionOrders.Update(order);
-                    }
 
                     // 2. البحث عن جميع حركات الخزينة الفرعية (الخاصة بتحصيل المتبقي من هذه الحركة)
                     string searchTag = $"تحصيل متبقي للحركة #{transaction.Id}";
@@ -753,6 +765,19 @@ namespace Bakery.Business.Services
             };
         }
 
+        public async Task<decimal> GetProductTypeStockAsync(ProductType productType)
+        {
+            decimal produced = await _context.ProductionOrders
+                .Where(o => o.Status == ProductionStatus.Confirmed && o.SelectedProductType == productType)
+                .SumAsync(o => o.ActualBaskets);
 
+            decimal sold = await _context.TreasuryTransactions
+                .Where(t => t.TransactionType == TreasuryTransactionType.Income 
+                         && t.Category == "مبيعات إنتاج" 
+                         && t.ProductionOrder!.SelectedProductType == productType)
+                .SumAsync(t => t.SoldBaskets) ?? 0;
+
+            return Math.Max(0, produced - sold);
+        }
     }
 }

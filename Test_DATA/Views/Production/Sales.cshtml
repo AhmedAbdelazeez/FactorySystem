@@ -46,6 +46,49 @@
 	</div>
 </div>
 
+<!-- 📦 Available Baskets Stock Cards (Up-To-Date) 📦 -->
+<div class="row g-3 mb-4">
+	<div class="col-md-4">
+		<div class="card border-0 shadow-sm rounded-4 text-white" style="background: linear-gradient(135deg, #1565c0, #1e88e5);">
+			<div class="card-body p-3 d-flex align-items-center justify-content-between">
+				<div>
+					<span class="small opacity-75 d-block mb-1">رصيد مبروم متاح للبيع</span>
+					<span class="fs-3 fw-bold">@((ViewBag.MabroumStock as decimal? ?? 0).ToString("0.##")) <small class="fs-6 fw-normal">باسكت</small></span>
+				</div>
+				<div class="fs-1 opacity-25">
+					<i class="fa-solid fa-cookie"></i>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-4">
+		<div class="card border-0 shadow-sm rounded-4 text-white" style="background: linear-gradient(135deg, #2e7d32, #43a047);">
+			<div class="card-body p-3 d-flex align-items-center justify-content-between">
+				<div>
+					<span class="small opacity-75 d-block mb-1">رصيد بانيه متاح للبيع</span>
+					<span class="fs-3 fw-bold">@((ViewBag.PaneStock as decimal? ?? 0).ToString("0.##")) <small class="fs-6 fw-normal">باسكت</small></span>
+				</div>
+				<div class="fs-1 opacity-25">
+					<i class="fa-solid fa-cookie-bite"></i>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-4">
+		<div class="card border-0 shadow-sm rounded-4 text-white" style="background: linear-gradient(135deg, #d84315, #f4511e);">
+			<div class="card-body p-3 d-flex align-items-center justify-content-between">
+				<div>
+					<span class="small opacity-75 d-block mb-1">رصيد ساندوتش متاح للبيع</span>
+					<span class="fs-3 fw-bold">@((ViewBag.SandwichStock as decimal? ?? 0).ToString("0.##")) <small class="fs-6 fw-normal">باسكت</small></span>
+				</div>
+				<div class="fs-1 opacity-25">
+					<i class="fa-solid fa-bread-slice"></i>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
 <!-- ==========================================
      Landing Page: بطاقات الوكلاء (ملخص كلي)
      ========================================== -->

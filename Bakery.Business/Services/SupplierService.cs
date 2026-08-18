@@ -210,6 +210,9 @@ namespace Bakery.Business.Services
             decimal totalAmount = validItems.Sum(i => i.Quantity * i.UnitPrice);
 
             decimal paidAmount = dto.PaidAmount;
+            if (paidAmount > totalAmount)
+                throw new InvalidOperationException("المبلغ المدفوع لا يمكن أن يكون أكبر من إجمالي قيمة الفاتورة.");
+
             if (dto.PaymentMethod == PaymentMethod.Cash || dto.PaymentMethod == PaymentMethod.BankTransfer)
             {
                 paidAmount = totalAmount;
@@ -220,7 +223,6 @@ namespace Bakery.Business.Services
             }
             else // PartiallyPaid
             {
-                if (paidAmount > totalAmount) paidAmount = totalAmount;
                 if (paidAmount < 0) paidAmount = 0;
             }
 
@@ -377,6 +379,9 @@ namespace Bakery.Business.Services
                 decimal totalAmount = validItems.Sum(i => i.Quantity * i.UnitPrice);
 
                 decimal paidAmount = dto.PaidAmount;
+                if (paidAmount > totalAmount)
+                    throw new InvalidOperationException("المبلغ المدفوع لا يمكن أن يكون أكبر من إجمالي قيمة الفاتورة.");
+
                 if (dto.PaymentMethod == PaymentMethod.Cash || dto.PaymentMethod == PaymentMethod.BankTransfer)
                 {
                     paidAmount = totalAmount;
@@ -387,7 +392,6 @@ namespace Bakery.Business.Services
                 }
                 else // PartiallyPaid
                 {
-                    if (paidAmount > totalAmount) paidAmount = totalAmount;
                     if (paidAmount < 0) paidAmount = 0;
                 }
 
