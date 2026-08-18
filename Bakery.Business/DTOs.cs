@@ -265,6 +265,18 @@ namespace Bakery.Business.DTOs
         public List<SupplierInvoiceItemInputDto> Items { get; set; } = new();
     }
 
+    public class EditSupplierInvoiceDto
+    {
+        public int Id { get; set; }
+        public int SupplierId { get; set; }
+        public string? InvoiceNumber { get; set; }
+        public DateTime InvoiceDate { get; set; } = DateTime.Today;
+        public decimal PaidAmount { get; set; }
+        public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;
+        public string? Notes { get; set; }
+        public List<SupplierInvoiceItemInputDto> Items { get; set; } = new();
+    }
+
     public class SupplierInvoiceItemInputDto
     {
         public int RawMaterialId { get; set; }

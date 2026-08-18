@@ -57,6 +57,7 @@ namespace Bakery.Business.Services
             if (endDate.HasValue) expenseQuery = expenseQuery.Where(e => e.Date <= endDate.Value.Date.AddDays(1).AddTicks(-1));
 
             var expensesList = await expenseQuery.ToListAsync();
+
             decimal labor = expensesList.Where(e => e.ExpenseCategory?.Name == "عمالة").Sum(e => e.TotalAmount);
             decimal rawMaterial = expensesList.Where(e => e.ExpenseCategory?.Name == "مواد خام").Sum(e => e.TotalAmount);
             decimal operating = expensesList.Where(e => e.ExpenseCategory?.Name != "عمالة" && e.ExpenseCategory?.Name != "مواد خام").Sum(e => e.TotalAmount);

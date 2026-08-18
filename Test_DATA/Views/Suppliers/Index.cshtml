@@ -241,6 +241,12 @@
                                                 <a asp-action="Details" asp-route-id="@inv.SupplierId" class="btn btn-outline-primary" title="عرض تفاصيل فاتورة المورد">
                                                     <i class="fa-solid fa-eye"></i> التفاصيل
                                                 </a>
+                                                <button class="btn btn-outline-warning" title="تعديل الفاتورة" onclick="openEditInvoiceModal(@inv.Id)">
+                                                    <i class="fa-solid fa-pen"></i>
+                                                </button>
+                                                <button class="btn btn-outline-danger" title="حذف الفاتورة" onclick="confirmDeleteInvoice(@inv.Id, '@inv.InvoiceNumber')">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
                                                 @if (inv.RemainingAmount > 0)
                                                 {
                                                     <button class="btn btn-outline-success" onclick="openPayInvoiceModal(@inv.Id, '@inv.InvoiceNumber', '@(inv.Supplier?.Name)', @inv.RemainingAmount)">
@@ -505,6 +511,104 @@
     </div>
 </div>
 
+<!-- 📜 Modal: Edit Invoice 📜 -->
+<div class="modal fade" id="editInvoiceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-1"></i> تعديل فاتورة التوريد</h5>
+                <button type="button" class="btn-close btn-close-white ms-0 me-auto" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="EditInvoice" method="post">
+                <input type="hidden" name="Id" id="editInvoiceId" />
+                <div class="modal-body row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">اختر المورد <span class="text-danger">*</span></label>
+                        <select name="SupplierId" id="editInvoiceSupplierSelect" required class="form-select fs-6 fw-bold">
+                            <option value="">-- اختر المورد --</option>
+                            @foreach (var sup in Model)
+                            {
+                                <option value="@sup.Id">@sup.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">رقم الفاتورة <span class="text-danger">*</span></label>
+                        <input type="text" name="InvoiceNumber" id="editInvoiceNumber" required class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">تاريخ الفاتورة <span class="text-danger">*</span></label>
+                        <input type="date" name="InvoiceDate" id="editInvoiceDate" required class="form-control" />
+                    </div>
+
+                    <!-- Line Items Table -->
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-bold text-dark mb-0">
+                                <i class="fa-solid fa-boxes-stacked text-primary me-1"></i> بنود الاصناف الموردة بالفاتورة
+                            </label>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addEditInvoiceItemRow()">
+                                <i class="fa-solid fa-plus me-1"></i> إضافة صنف بالفاتورة
+                            </button>
+                        </div>
+                        <div class="table-responsive border rounded">
+                            <table class="table table-bordered mb-0 align-middle" id="editInvoiceItemsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>اسم الخامة</th>
+                                        <th style="width: 140px;">الكمية</th>
+                                        <th style="width: 150px;">السعر</th>
+                                        <th style="width: 150px;">الإجمالي</th>
+                                        <th style="width: 50px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="editInvoiceItemsTbody">
+                                    <!-- Dynamic rows inserted by JS -->
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-warning fw-bold">
+                                        <td colspan="3" class="text-end">إجمالي قيمة الفاتورة الكلي:</td>
+                                        <td id="editInvoiceTotalDisplay" class="fs-5 text-dark">0.00 ج.م</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Payment Information -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">طريقة الدفع <span class="text-danger">*</span></label>
+                        <select name="PaymentMethod" id="editInvoicePaymentMethod" class="form-select fw-bold" onchange="toggleEditInvoicePaidInput()">
+                            <option value="1">كاش (مدفوع بالكامل)</option>
+                            <option value="2">تحويل بنكي (مدفوع بالكامل)</option>
+                            <option value="3">مدفوع جزئياً</option>
+                            <option value="4">غير مدفوع (آجل بالكامل)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">المبلغ المدفوع (ج.م)</label>
+                        <input type="number" step="0.01" name="PaidAmount" id="editInvoicePaidAmount" value="0" class="form-control fw-bold text-success" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">المتبقي (المديونية)</label>
+                        <input type="text" id="editInvoiceRemainingDisplay" readonly class="form-control fw-bold text-danger bg-light" value="0.00 ج.م" />
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-bold">ملاحظات عن الفاتورة</label>
+                        <input type="text" name="Notes" id="editInvoiceNotes" class="form-control" placeholder="تفاصيل إضافية..." />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary fw-bold">حفظ التعديلات وتحديث المخزن والخزينة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         const rawMaterialsData = [
@@ -650,6 +754,157 @@
             document.getElementById('payAmountInput').value = remaining;
             document.getElementById('payAmountInput').max = remaining;
             new bootstrap.Modal(document.getElementById('payInvoiceModal')).show();
+        }
+
+        let editItemRowIndex = 0;
+
+        async function openEditInvoiceModal(id) {
+            try {
+                const response = await fetch(`/Suppliers/GetInvoiceDetailsJson/${id}`);
+                if (!response.ok) {
+                    alert('خطأ أثناء تحميل بيانات الفاتورة.');
+                    return;
+                }
+                const data = await response.json();
+
+                document.getElementById('editInvoiceId').value = data.id;
+                document.getElementById('editInvoiceSupplierSelect').value = data.supplierId;
+                document.getElementById('editInvoiceNumber').value = data.invoiceNumber;
+                document.getElementById('editInvoiceDate').value = data.invoiceDate;
+                document.getElementById('editInvoicePaymentMethod').value = data.paymentMethod;
+                document.getElementById('editInvoicePaidAmount').value = data.paidAmount;
+                document.getElementById('editInvoiceNotes').value = data.notes || '';
+
+                const tbody = document.getElementById('editInvoiceItemsTbody');
+                tbody.innerHTML = '';
+                editItemRowIndex = 0;
+
+                data.items.forEach(item => {
+                    addEditInvoiceItemRow(item.rawMaterialId, item.quantity, item.unitPrice);
+                });
+
+                if (data.items.length === 0) {
+                    addEditInvoiceItemRow();
+                }
+
+                recalculateEditInvoiceTotal();
+                new bootstrap.Modal(document.getElementById('editInvoiceModal')).show();
+            } catch (err) {
+                console.error(err);
+                alert('خطأ في الاتصال بالخادم.');
+            }
+        }
+
+        function addEditInvoiceItemRow(selectedMatId = '', quantity = 1, unitPrice = 0) {
+            const tbody = document.getElementById('editInvoiceItemsTbody');
+            const rowId = `edit_item_row_${editItemRowIndex}`;
+            
+            let matOptions = '<option value="">-- اختر الخامة --</option>';
+            rawMaterialsData.forEach(m => {
+                const selected = m.id == selectedMatId ? 'selected' : '';
+                matOptions += `<option value="${m.id}" data-price="${m.unitPrice}" ${selected}>${m.name} (${m.unit})</option>`;
+            });
+
+            const tr = document.createElement('tr');
+            tr.id = rowId;
+            tr.innerHTML = `
+                <td>
+                    <select name="Items[${editItemRowIndex}].RawMaterialId" class="form-select edit-mat-select" required onchange="onEditMatSelectChange('${rowId}')">
+                        ${matOptions}
+                    </select>
+                </td>
+                <td>
+                    <input type="number" step="0.001" name="Items[${editItemRowIndex}].Quantity" class="form-control edit-qty-input" value="${quantity}" required oninput="recalculateEditInvoiceTotal()" />
+                </td>
+                <td>
+                    <input type="number" step="0.01" name="Items[${editItemRowIndex}].UnitPrice" class="form-control edit-price-input" value="${unitPrice}" required oninput="recalculateEditInvoiceTotal()" />
+                </td>
+                <td class="fw-bold edit-line-total text-dark">0.00 ج.م</td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeEditInvoiceItemRow('${rowId}')"><i class="fa-solid fa-xmark"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+            editItemRowIndex++;
+            recalculateEditInvoiceTotal();
+        }
+
+        function removeEditInvoiceItemRow(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) {
+                row.remove();
+                recalculateEditInvoiceTotal();
+            }
+        }
+
+        function onEditMatSelectChange(rowId) {
+            const row = document.getElementById(rowId);
+            if (!row) return;
+            const select = row.querySelector('.edit-mat-select');
+            const selectedOption = select.options[select.selectedIndex];
+            const priceInput = row.querySelector('.edit-price-input');
+            
+            if (selectedOption && selectedOption.dataset.price) {
+                priceInput.value = selectedOption.dataset.price;
+            }
+            recalculateEditInvoiceTotal();
+        }
+
+        function recalculateEditInvoiceTotal() {
+            let total = 0;
+            const rows = document.querySelectorAll('#editInvoiceItemsTbody tr');
+            rows.forEach(r => {
+                const qty = parseFloat(r.querySelector('.edit-qty-input')?.value || 0);
+                const price = parseFloat(r.querySelector('.edit-price-input')?.value || 0);
+                const lineTotal = qty * price;
+                total += lineTotal;
+                const lineTotalCell = r.querySelector('.edit-line-total');
+                if (lineTotalCell) {
+                    lineTotalCell.innerText = lineTotal.toFixed(2) + ' ج.م';
+                }
+            });
+
+            document.getElementById('editInvoiceTotalDisplay').innerText = total.toFixed(2) + ' ج.م';
+
+            const methodSelect = document.getElementById('editInvoicePaymentMethod');
+            const paidInput = document.getElementById('editInvoicePaidAmount');
+
+            if (methodSelect.value === "1" || methodSelect.value === "2") {
+                paidInput.value = total;
+                paidInput.readOnly = true;
+            } else if (methodSelect.value === "4") {
+                paidInput.value = 0;
+                paidInput.readOnly = true;
+            } else {
+                paidInput.readOnly = false;
+            }
+
+            const paidVal = parseFloat(paidInput.value || 0);
+            const remaining = Math.max(0, total - paidVal);
+            document.getElementById('editInvoiceRemainingDisplay').value = remaining.toFixed(2) + ' ج.م';
+        }
+
+        function toggleEditInvoicePaidInput() {
+            recalculateEditInvoiceTotal();
+        }
+
+        document.getElementById('editInvoicePaidAmount').addEventListener('input', recalculateEditInvoiceTotal);
+
+        function confirmDeleteInvoice(id, invoiceNumber) {
+            if (confirm(`هل أنت متأكد من حذف الفاتورة رقم #${invoiceNumber}؟\nسيتم عكس جميع الكميات المضافة للمخازن، وحذف المصروفات وحركات الخزينة التابعة لها بالكامل.`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/Suppliers/DeleteInvoice';
+                
+                const idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = 'id';
+                idInput.value = id;
+                form.appendChild(idInput);
+
+                document.body.appendChild(form);
+                form.submit();
+            }
         }
     </script>
 }

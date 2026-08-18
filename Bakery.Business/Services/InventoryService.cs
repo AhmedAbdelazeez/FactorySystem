@@ -17,7 +17,7 @@ namespace Bakery.Business.Services
         Task AddRawMaterialAsync(RawMaterial material, PaymentMethod paymentMethod, decimal paidAmount = 0, string? notes = null);
         Task DeleteRawMaterialAsync(int id);
         Task<decimal> GetTotalInventoryValueAsync();
-        Task AddStockAsync(int rawMaterialId, decimal quantity, decimal unitPrice, PaymentMethod paymentMethod, decimal paidAmount = 0, string? notes = null, int? expenseId = null);
+        Task AddStockAsync(int rawMaterialId, decimal quantity, decimal unitPrice, PaymentMethod paymentMethod, decimal paidAmount = 0, string? notes = null, int? expenseId = null, int? supplierInvoiceId = null);
         Task DeductStockAsync(int rawMaterialId, decimal quantity, int productionOrderId, string? notes = null);
         Task<IEnumerable<InventoryTransaction>> GetTransactionsAsync(int? rawMaterialId = null);
         Task<InventoryTransaction?> GetTransactionByIdAsync(int id);
@@ -133,7 +133,7 @@ namespace Bakery.Business.Services
             return await _context.RawMaterials.SumAsync(r => r.CurrentQuantity * r.UnitPrice);
         }
 
-        public async Task AddStockAsync(int rawMaterialId, decimal quantity, decimal unitPrice, PaymentMethod paymentMethod, decimal paidAmount = 0, string? notes = null, int? expenseId = null)
+        public async Task AddStockAsync(int rawMaterialId, decimal quantity, decimal unitPrice, PaymentMethod paymentMethod, decimal paidAmount = 0, string? notes = null, int? expenseId = null, int? supplierInvoiceId = null)
         {
             if (quantity <= 0) throw new InvalidOperationException("يجب أن تكون الكمية أكبر من الصفر.");
 
@@ -200,21 +200,24 @@ namespace Bakery.Business.Services
                     await _expenseRepo.SaveChangesAsync();
                     linkedExpenseId = purchaseExpense.Id;
 
-                    var treasuryTx = new TreasuryTransaction
+                    if (supplierInvoiceId == null)
                     {
-                        Date = purchaseExpense.Date,
-                        TransactionName = purchaseExpense.Name,
-                        TransactionType = TreasuryTransactionType.Expense,
-                        Category = "مواد خام",
-                        Amount = purchaseExpense.TotalAmount,
-                        PaymentMethod = purchaseExpense.PaymentMethod,
-                        PaidAmount = purchaseExpense.PaidAmount,
-                        RemainingAmount = purchaseExpense.RemainingAmount,
-                        Notes = purchaseExpense.Notes,
-                        ExpenseId = purchaseExpense.Id
-                    };
-                    await _treasuryRepo.AddAsync(treasuryTx);
-                    await _treasuryRepo.SaveChangesAsync();
+                        var treasuryTx = new TreasuryTransaction
+                        {
+                            Date = purchaseExpense.Date,
+                            TransactionName = purchaseExpense.Name,
+                            TransactionType = TreasuryTransactionType.Expense,
+                            Category = "مواد خام",
+                            Amount = purchaseExpense.TotalAmount,
+                            PaymentMethod = purchaseExpense.PaymentMethod,
+                            PaidAmount = purchaseExpense.PaidAmount,
+                            RemainingAmount = purchaseExpense.RemainingAmount,
+                            Notes = purchaseExpense.Notes,
+                            ExpenseId = purchaseExpense.Id
+                        };
+                        await _treasuryRepo.AddAsync(treasuryTx);
+                        await _treasuryRepo.SaveChangesAsync();
+                    }
                 }
 
                 var invTransaction = new InventoryTransaction
@@ -226,6 +229,7 @@ namespace Bakery.Business.Services
                     TotalAmount = newBatchValue,
                     TransactionDate = DateTime.Now,
                     ExpenseId = linkedExpenseId,
+                    SupplierInvoiceId = supplierInvoiceId,
                     Notes = notes ?? "إضافة / توريد مخزون"
                 };
 
@@ -310,6 +314,9 @@ namespace Bakery.Business.Services
 
             var tx = await _context.InventoryTransactions.FirstOrDefaultAsync(t => t.Id == transactionId);
             if (tx == null) throw new KeyNotFoundException("الحركة غير موجودة.");
+
+            if (tx.SupplierInvoiceId.HasValue || (tx.Notes != null && tx.Notes.Contains("فاتورة مورد")))
+                throw new InvalidOperationException("لا يمكن تعديل هذه الحركة من المخزن لأنها مرتبطة بفاتورة مورد. يرجى تعديل الفاتورة من صفحة الموردين.");
 
             if (tx.TransactionType != TransactionType.Purchase)
                 throw new InvalidOperationException("لا يمكن تعديل حركات خصم الاستهلاك الناتجة عن أوامر الإنتاج.");
@@ -398,6 +405,9 @@ namespace Bakery.Business.Services
         {
             var tx = await _context.InventoryTransactions.FirstOrDefaultAsync(t => t.Id == transactionId);
             if (tx == null) return;
+
+            if (tx.SupplierInvoiceId.HasValue || (tx.Notes != null && tx.Notes.Contains("فاتورة مورد")))
+                throw new InvalidOperationException("لا يمكن حذف هذه الحركة من المخزن لأنها مرتبطة بفاتورة مورد. يرجى حذف الفاتورة من صفحة الموردين.");
 
             if (tx.TransactionType != TransactionType.Purchase)
                 throw new InvalidOperationException("لا يمكن حذف حركات خصم الاستهلاك الناتجة عن أوامر الإنتاج.");

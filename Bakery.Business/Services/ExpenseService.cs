@@ -297,6 +297,14 @@ namespace Bakery.Business.Services
                 var expense = await _expenseRepo.GetByIdAsync(expenseId);
                 if (expense == null) throw new KeyNotFoundException("المصروف غير موجود.");
 
+                bool isLinkedToInvoice = await _context.InventoryTransactions
+                    .AnyAsync(t => t.ExpenseId == expenseId && (t.SupplierInvoiceId != null || (t.Notes != null && t.Notes.Contains("فاتورة مورد"))));
+
+                if (isLinkedToInvoice)
+                {
+                    throw new InvalidOperationException("هذا المصروف مرتبط بفاتورة مورد. لا يمكن سداد مديونيته من هنا، السداد يجب أن يتم من صفحة الموردين حصراً.");
+                }
+
                 if (amountPaidNow > expense.RemainingAmount)
                     throw new InvalidOperationException($"المبلغ المدفوع ({amountPaidNow:N2}) أكبر من المتبقي ({expense.RemainingAmount:N2}).");
 

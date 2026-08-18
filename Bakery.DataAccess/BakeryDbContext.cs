@@ -194,6 +194,12 @@ namespace Bakery.DataAccess
                 .HasForeignKey(t => t.ExpenseId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            modelBuilder.Entity<InventoryTransaction>()
+                .HasOne(t => t.SupplierInvoice)
+                .WithMany()
+                .HasForeignKey(t => t.SupplierInvoiceId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             // Employee
             modelBuilder.Entity<Employee>()
                 .Property(e => e.MonthlySalary).HasPrecision(18, 2);

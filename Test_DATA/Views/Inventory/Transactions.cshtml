@@ -218,32 +218,41 @@
 									<td class="small text-secondary text-truncate" style="max-width: 150px;">@(string.IsNullOrWhiteSpace(tx.Notes) ? "-" : tx.Notes)</td>
 									<td class="text-center">
 										<div class="d-flex align-items-center justify-content-center gap-1">
-											@if (tx.Expense?.RemainingAmount > 0)
+											@if (tx.SupplierInvoiceId.HasValue || (tx.Notes != null && tx.Notes.Contains("فاتورة مورد")))
 											{
+												<span class="badge bg-light text-muted border px-2 py-1" title="مرتبطة بفاتورة مورد. الإجراءات تتم من صفحة الموردين.">
+													<i class="fa-solid fa-lock me-1"></i> فاتورة مورد
+												</span>
+											}
+											else
+											{
+												@if (tx.Expense?.RemainingAmount > 0)
+												{
+													<button type="button"
+															class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1"
+															onclick="openPayModal(@tx.ExpenseId, '@tx.Expense.Name', @(tx.Expense?.RemainingAmount ?? 0))"
+															title="سداد المتبقي">
+														<i class="fa-solid fa-hand-holding-dollar"></i>
+														<span>سداد</span>
+													</button>
+												}
+
 												<button type="button"
-														class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1"
-														onclick="openPayModal(@tx.ExpenseId, '@tx.Expense.Name', @(tx.Expense?.RemainingAmount ?? 0))"
-														title="سداد المتبقي">
-													<i class="fa-solid fa-hand-holding-dollar"></i>
-													<span>سداد</span>
+														class="btn btn-action-icon btn-light text-primary border"
+														data-bs-toggle="modal"
+														data-bs-target="#editModal-@tx.Id"
+														title="تعديل الحركة">
+													<i class="fa-solid fa-pen"></i>
+												</button>
+
+												<button type="button"
+														class="btn btn-action-icon btn-light text-danger border"
+														data-bs-toggle="modal"
+														data-bs-target="#deleteModal-@tx.Id"
+														title="حذف الحركة">
+													<i class="fa-solid fa-trash"></i>
 												</button>
 											}
-
-											<button type="button"
-													class="btn btn-action-icon btn-light text-primary border"
-													data-bs-toggle="modal"
-													data-bs-target="#editModal-@tx.Id"
-													title="تعديل الحركة">
-												<i class="fa-solid fa-pen"></i>
-											</button>
-
-											<button type="button"
-													class="btn btn-action-icon btn-light text-danger border"
-													data-bs-toggle="modal"
-													data-bs-target="#deleteModal-@tx.Id"
-													title="حذف الحركة">
-												<i class="fa-solid fa-trash"></i>
-											</button>
 										</div>
 
 

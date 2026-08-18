@@ -165,6 +165,9 @@ namespace Bakery.Domain.Entities
         public int? ExpenseId { get; set; }
         public Expense? Expense { get; set; }
 
+        public int? SupplierInvoiceId { get; set; }
+        public SupplierInvoice? SupplierInvoice { get; set; }
+
         public string? Notes { get; set; }
     }
 

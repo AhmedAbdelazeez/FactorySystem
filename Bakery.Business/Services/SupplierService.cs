@@ -20,6 +20,8 @@ namespace Bakery.Business.Services
         Task UpdateSupplierAsync(CreateSupplierDto dto);
         Task DeleteSupplierAsync(int id);
         Task<SupplierInvoice> AddInvoiceAsync(CreateSupplierInvoiceDto dto);
+        Task UpdateInvoiceAsync(EditSupplierInvoiceDto dto);
+        Task DeleteInvoiceAsync(int invoiceId);
         Task PayInvoiceRemainingAsync(int invoiceId, decimal amountPaidNow, PaymentMethod paymentMethod);
         Task<IEnumerable<SupplierInvoice>> GetAllInvoicesAsync();
         Task<SupplierInvoice?> GetInvoiceByIdAsync(int id);
@@ -256,15 +258,21 @@ namespace Bakery.Business.Services
             await _invoiceRepo.SaveChangesAsync();
 
             // ⚡ AUTOMATIC INVENTORY STOCK UPDATE FOR EACH ITEM IN INVOICE ⚡
+            decimal paidRatio = totalAmount > 0 ? paidAmount / totalAmount : 0;
             foreach (var item in validItems)
             {
+                decimal itemTotal = item.Quantity * item.UnitPrice;
+                decimal itemPaid = Math.Round(itemTotal * paidRatio, 2);
+
                 await _inventoryService.AddStockAsync(
                     item.RawMaterialId,
                     item.Quantity,
                     item.UnitPrice,
                     invoice.PaymentMethod,
-                    0,
-                    $"توريد بموجب فاتورة مورد #{invoice.InvoiceNumber} - {supplier.Name}"
+                    itemPaid,
+                    $"توريد بموجب فاتورة مورد #{invoice.InvoiceNumber} - {supplier.Name}",
+                    null,
+                    invoice.Id
                 );
             }
 
@@ -290,6 +298,285 @@ namespace Bakery.Business.Services
             }
 
             return invoice;
+        }
+
+        public async Task UpdateInvoiceAsync(EditSupplierInvoiceDto dto)
+        {
+            var invoice = await _context.SupplierInvoices
+                .Include(i => i.Supplier)
+                .Include(i => i.Items)
+                .FirstOrDefaultAsync(i => i.Id == dto.Id);
+
+            if (invoice == null)
+                throw new KeyNotFoundException("الفاتورة غير موجودة.");
+
+            var supplier = await _context.Suppliers.FindAsync(dto.SupplierId);
+            if (supplier == null)
+                throw new KeyNotFoundException("المورد غير موجود.");
+
+            if (dto.Items == null || !dto.Items.Any(i => i.Quantity > 0 && i.UnitPrice >= 0))
+                throw new InvalidOperationException("الفاتورة يجب أن تحتوي على بنود مادية صحيحة (كمية وسعر).");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // 1. Revert stock of the OLD invoice items
+                foreach (var oldItem in invoice.Items)
+                {
+                    var material = await _context.RawMaterials.FindAsync(oldItem.RawMaterialId);
+                    if (material != null)
+                    {
+                        decimal projectedQuantity = material.CurrentQuantity - oldItem.Quantity;
+                        if (projectedQuantity < 0)
+                        {
+                            throw new InvalidOperationException($"لا يمكن تعديل الفاتورة لأن الكمية المتبقية من المادة الخام ({material.MaterialName}) ستصبح سالبة ({projectedQuantity}). قد يكون تم استخدام جزء من الكمية القديمة في أوامر إنتاج لاحقة.");
+                        }
+
+                        if (projectedQuantity == 0)
+                        {
+                            material.CurrentQuantity = 0;
+                            material.UnitPrice = 0;
+                            material.TotalValue = 0;
+                        }
+                        else
+                        {
+                            decimal materialValueWithoutBatch = material.TotalValue - oldItem.TotalAmount;
+                            material.CurrentQuantity = projectedQuantity;
+                            material.TotalValue = materialValueWithoutBatch < 0 ? 0 : Math.Round(materialValueWithoutBatch, 2);
+                            material.UnitPrice = Math.Round(material.TotalValue / projectedQuantity, 4);
+                        }
+                        material.LastUpdatedDate = DateTime.Now;
+                        _context.RawMaterials.Update(material);
+                    }
+                }
+                await _context.SaveChangesAsync();
+
+                // 2. Remove old Inventory Transactions and their associated Expense records
+                var oldInvTxs = await _context.InventoryTransactions
+                    .Where(t => t.SupplierInvoiceId == invoice.Id)
+                    .ToListAsync();
+
+                var oldExpenseIds = oldInvTxs.Where(t => t.ExpenseId.HasValue).Select(t => t.ExpenseId.Value).ToList();
+                if (oldExpenseIds.Any())
+                {
+                    var oldExpenses = await _context.Expenses
+                        .Where(e => oldExpenseIds.Contains(e.Id))
+                        .ToListAsync();
+                    _context.Expenses.RemoveRange(oldExpenses);
+                }
+
+                _context.InventoryTransactions.RemoveRange(oldInvTxs);
+                await _context.SaveChangesAsync();
+
+                // 3. Remove old SupplierInvoiceItems
+                _context.SupplierInvoiceItems.RemoveRange(invoice.Items);
+                await _context.SaveChangesAsync();
+
+                // 4. Calculate new amounts
+                var validItems = dto.Items.Where(i => i.Quantity > 0 && i.UnitPrice >= 0).ToList();
+                decimal totalAmount = validItems.Sum(i => i.Quantity * i.UnitPrice);
+
+                decimal paidAmount = dto.PaidAmount;
+                if (dto.PaymentMethod == PaymentMethod.Cash || dto.PaymentMethod == PaymentMethod.BankTransfer)
+                {
+                    paidAmount = totalAmount;
+                }
+                else if (dto.PaymentMethod == PaymentMethod.Unpaid)
+                {
+                    paidAmount = 0;
+                }
+                else // PartiallyPaid
+                {
+                    if (paidAmount > totalAmount) paidAmount = totalAmount;
+                    if (paidAmount < 0) paidAmount = 0;
+                }
+
+                decimal remainingAmount = totalAmount - paidAmount;
+
+                string invNum = string.IsNullOrWhiteSpace(dto.InvoiceNumber)
+                    ? $"INV-{DateTime.Now:yyyyMMdd}-{new Random().Next(1000, 9999)}"
+                    : dto.InvoiceNumber.Trim();
+
+                // 5. Update invoice header properties
+                invoice.SupplierId = dto.SupplierId;
+                invoice.InvoiceNumber = invNum;
+                invoice.InvoiceDate = dto.InvoiceDate;
+                invoice.TotalAmount = totalAmount;
+                invoice.PaidAmount = paidAmount;
+                invoice.RemainingAmount = remainingAmount;
+                invoice.PaymentMethod = dto.PaymentMethod;
+                invoice.Notes = dto.Notes;
+
+                // 6. Add new SupplierInvoiceItems
+                foreach (var item in validItems)
+                {
+                    invoice.Items.Add(new SupplierInvoiceItem
+                    {
+                        RawMaterialId = item.RawMaterialId,
+                        Quantity = item.Quantity,
+                        UnitPrice = item.UnitPrice,
+                        TotalAmount = item.Quantity * item.UnitPrice
+                    });
+                }
+                _context.SupplierInvoices.Update(invoice);
+                await _context.SaveChangesAsync();
+
+                // 7. Add stock for new items (which creates new inventory transactions and new Expense records)
+                decimal paidRatio = totalAmount > 0 ? paidAmount / totalAmount : 0;
+                foreach (var item in validItems)
+                {
+                    decimal itemTotal = item.Quantity * item.UnitPrice;
+                    decimal itemPaid = Math.Round(itemTotal * paidRatio, 2);
+
+                    await _inventoryService.AddStockAsync(
+                        item.RawMaterialId,
+                        item.Quantity,
+                        item.UnitPrice,
+                        invoice.PaymentMethod,
+                        itemPaid,
+                        $"توريد بموجب فاتورة مورد #{invoice.InvoiceNumber} - {supplier.Name}",
+                        null,
+                        invoice.Id
+                    );
+                }
+
+                // 8. Update or record Treasury Transaction
+                var treasuryTx = await _context.TreasuryTransactions
+                    .FirstOrDefaultAsync(t => t.SupplierInvoiceId == invoice.Id);
+
+                if (paidAmount > 0)
+                {
+                    if (treasuryTx != null)
+                    {
+                        treasuryTx.Date = invoice.InvoiceDate;
+                        treasuryTx.TransactionName = $"فاتورة توريد خامات #{invoice.InvoiceNumber} ({supplier.Name})";
+                        treasuryTx.PaymentMethod = invoice.PaymentMethod;
+                        treasuryTx.Amount = totalAmount;
+                        treasuryTx.PaidAmount = paidAmount;
+                        treasuryTx.RemainingAmount = remainingAmount;
+                        treasuryTx.Notes = $"مورد: {supplier.Name} | {dto.Notes}";
+                        _context.TreasuryTransactions.Update(treasuryTx);
+                    }
+                    else
+                    {
+                        var newTreasuryTx = new TreasuryTransaction
+                        {
+                            Date = invoice.InvoiceDate,
+                            TransactionName = $"فاتورة توريد خامات #{invoice.InvoiceNumber} ({supplier.Name})",
+                            TransactionType = TreasuryTransactionType.Expense,
+                            Category = "مواد خام",
+                            Amount = totalAmount,
+                            PaymentMethod = invoice.PaymentMethod,
+                            PaidAmount = paidAmount,
+                            RemainingAmount = remainingAmount,
+                            Notes = $"مورد: {supplier.Name} | {dto.Notes}",
+                            SupplierInvoiceId = invoice.Id
+                        };
+                        await _context.TreasuryTransactions.AddAsync(newTreasuryTx);
+                    }
+                }
+                else
+                {
+                    if (treasuryTx != null)
+                    {
+                        _context.TreasuryTransactions.Remove(treasuryTx);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task DeleteInvoiceAsync(int invoiceId)
+        {
+            var invoice = await _context.SupplierInvoices
+                .Include(i => i.Items)
+                .FirstOrDefaultAsync(i => i.Id == invoiceId);
+
+            if (invoice == null)
+                throw new KeyNotFoundException("الفاتورة غير موجودة.");
+
+            using (var dbTransaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // 1. Check and Revert Raw Material stock counts
+                    foreach (var oldItem in invoice.Items)
+                    {
+                        var material = await _context.RawMaterials.FindAsync(oldItem.RawMaterialId);
+                        if (material != null)
+                        {
+                            decimal projectedQuantity = material.CurrentQuantity - oldItem.Quantity;
+                            if (projectedQuantity < 0)
+                            {
+                                throw new InvalidOperationException($"لا يمكن حذف الفاتورة لأن الكمية المتبقية من المادة الخام ({material.MaterialName}) ستصبح سالبة ({projectedQuantity}). قد يكون تم استخدام جزء من الكمية القديمة في أوامر إنتاج لاحقة.");
+                            }
+
+                            if (projectedQuantity == 0)
+                            {
+                                material.CurrentQuantity = 0;
+                                material.UnitPrice = 0;
+                                material.TotalValue = 0;
+                            }
+                            else
+                            {
+                                decimal materialValueWithoutBatch = material.TotalValue - oldItem.TotalAmount;
+                                material.CurrentQuantity = projectedQuantity;
+                                material.TotalValue = materialValueWithoutBatch < 0 ? 0 : Math.Round(materialValueWithoutBatch, 2);
+                                material.UnitPrice = Math.Round(material.TotalValue / projectedQuantity, 4);
+                            }
+                            material.LastUpdatedDate = DateTime.Now;
+                            _context.RawMaterials.Update(material);
+                        }
+                    }
+                    await _context.SaveChangesAsync();
+
+                    // 2. Remove associated Inventory Transactions and Expense records
+                    var invTxs = await _context.InventoryTransactions
+                        .Where(t => t.SupplierInvoiceId == invoice.Id)
+                        .ToListAsync();
+
+                    var expenseIds = invTxs.Where(t => t.ExpenseId.HasValue).Select(t => t.ExpenseId.Value).ToList();
+                    if (expenseIds.Any())
+                    {
+                        var expenses = await _context.Expenses
+                            .Where(e => expenseIds.Contains(e.Id))
+                            .ToListAsync();
+                        _context.Expenses.RemoveRange(expenses);
+                    }
+
+                    _context.InventoryTransactions.RemoveRange(invTxs);
+                    await _context.SaveChangesAsync();
+
+                    // 3. Remove associated Treasury Transaction
+                    var treasuryTx = await _context.TreasuryTransactions
+                        .FirstOrDefaultAsync(t => t.SupplierInvoiceId == invoice.Id);
+                    if (treasuryTx != null)
+                    {
+                        _context.TreasuryTransactions.Remove(treasuryTx);
+                    }
+
+                    // 4. Remove supplier invoice items
+                    _context.SupplierInvoiceItems.RemoveRange(invoice.Items);
+
+                    // 5. Remove the invoice itself
+                    _context.SupplierInvoices.Remove(invoice);
+
+                    await _context.SaveChangesAsync();
+                    await dbTransaction.CommitAsync();
+                }
+                catch (Exception)
+                {
+                    await dbTransaction.RollbackAsync();
+                    throw;
+                }
+            }
         }
 
         public async Task PayInvoiceRemainingAsync(int invoiceId, decimal amountPaidNow, PaymentMethod paymentMethod)
@@ -352,6 +639,28 @@ namespace Bakery.Business.Services
                 };
                 await _treasuryRepo.AddAsync(newTreasuryTx);
                 await _treasuryRepo.SaveChangesAsync();
+            }
+
+            // Update corresponding Expense records for items
+            var invTxs = await _context.InventoryTransactions
+                .Where(t => t.SupplierInvoiceId == invoice.Id)
+                .ToListAsync();
+            var expenseIds = invTxs.Where(t => t.ExpenseId.HasValue).Select(t => t.ExpenseId.Value).ToList();
+            if (expenseIds.Any())
+            {
+                var expenses = await _context.Expenses
+                    .Where(e => expenseIds.Contains(e.Id))
+                    .ToListAsync();
+
+                decimal paidRatio = invoice.TotalAmount > 0 ? invoice.PaidAmount / invoice.TotalAmount : 0;
+                foreach (var exp in expenses)
+                {
+                    exp.PaidAmount = Math.Round(exp.TotalAmount * paidRatio, 2);
+                    exp.RemainingAmount = exp.TotalAmount - exp.PaidAmount;
+                    exp.PaymentMethod = invoice.PaymentMethod;
+                    _context.Expenses.Update(exp);
+                }
+                await _context.SaveChangesAsync();
             }
         }
 

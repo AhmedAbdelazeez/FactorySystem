@@ -115,6 +115,78 @@ namespace Test_DATA.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetInvoiceDetailsJson(int id)
+        {
+            var invoice = await _supplierService.GetInvoiceByIdAsync(id);
+            if (invoice == null)
+            {
+                return NotFound(new { message = "الفاتورة غير موجودة." });
+            }
+
+            var result = new
+            {
+                id = invoice.Id,
+                supplierId = invoice.SupplierId,
+                invoiceNumber = invoice.InvoiceNumber,
+                invoiceDate = invoice.InvoiceDate.ToString("yyyy-MM-dd"),
+                paymentMethod = (int)invoice.PaymentMethod,
+                paidAmount = invoice.PaidAmount,
+                totalAmount = invoice.TotalAmount,
+                remainingAmount = invoice.RemainingAmount,
+                notes = invoice.Notes,
+                items = invoice.Items.Select(item => new
+                {
+                    rawMaterialId = item.RawMaterialId,
+                    quantity = item.Quantity,
+                    unitPrice = item.UnitPrice,
+                    totalAmount = item.TotalAmount
+                }).ToList()
+            };
+
+            return Json(result);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> EditInvoice([FromForm] EditSupplierInvoiceDto dto, int? returnSupplierId)
+        {
+            try
+            {
+                await _supplierService.UpdateInvoiceAsync(dto);
+                TempData["SuccessMessage"] = $"تم تعديل الفاتورة بنجاح رقم #{dto.InvoiceNumber} وتحديث حسابات المخزن والخزينة!";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+
+            if (returnSupplierId.HasValue && returnSupplierId.Value > 0)
+            {
+                return RedirectToAction(nameof(Details), new { id = returnSupplierId.Value });
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteInvoice(int id, int? returnSupplierId)
+        {
+            try
+            {
+                await _supplierService.DeleteInvoiceAsync(id);
+                TempData["SuccessMessage"] = "تم حذف الفاتورة وإعادة احتساب الأرصدة والمخزون بنجاح!";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+
+            if (returnSupplierId.HasValue && returnSupplierId.Value > 0)
+            {
+                return RedirectToAction(nameof(Details), new { id = returnSupplierId.Value });
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
         [HttpPost]
         public async Task<IActionResult> PayInvoice(int invoiceId, decimal amountPaidNow, PaymentMethod paymentMethod, int? returnSupplierId)
         {
