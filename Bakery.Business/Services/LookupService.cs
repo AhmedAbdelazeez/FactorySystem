@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,11 +17,11 @@ namespace Bakery.Business.Services
         Task UpdateMeasurementUnitAsync(MeasurementUnit unit);
         Task DeleteMeasurementUnitAsync(int id);
         Task<IEnumerable<MaterialType>> GetMaterialTypesAsync();
-        Task<MaterialType> GetMatrialByIdAsync(int id);
-        Task UpdateMaterialAsync(MaterialType mType);
+        Task<MaterialType?> GetMatrialByIdAsync(int id);
+        Task UpdateMaterialAsync(int id, string name, int measurementUnitId);
         Task DeleteMaterialAsync(int id);
         Task AddMeasurementUnitAsync(string name);
-        Task AddMaterialTypeAsync(string name);
+        Task AddMaterialTypeAsync(string name, int measurementUnitId);
         List<string> GetWeekdays();
         List<string> GetDefaultJobTitles();
         Task SyncRawMaterialsAsync();
@@ -57,7 +58,12 @@ namespace Bakery.Business.Services
 
         public async Task<IEnumerable<MaterialType>> GetMaterialTypesAsync()
         {
-            return await _context.MaterialTypes.OrderBy(t => t.Id).ToListAsync();
+            // تضمين RawMaterials ووحدة القياس لعرضها في الـ View
+            return await _context.MaterialTypes
+                .Include(t => t.RawMaterials)
+                    .ThenInclude(rm => rm.MeasurementUnit)
+                .OrderBy(t => t.Id)
+                .ToListAsync();
         }
 
         public async Task AddMeasurementUnitAsync(string name)
@@ -70,14 +76,34 @@ namespace Bakery.Business.Services
             }
         }
 
-        public async Task AddMaterialTypeAsync(string name)
+        public async Task AddMaterialTypeAsync(string name, int measurementUnitId)
         {
             if (string.IsNullOrWhiteSpace(name)) return;
-            if (!await _context.MaterialTypes.AnyAsync( m=>m.Name == name.Trim()))
+
+            var trimmedName = name.Trim();
+
+            // التأكد من عدم وجود المادة مسبقاً
+            if (!await _context.MaterialTypes.AnyAsync(m => m.Name == trimmedName))
             {
-                await _context.MaterialTypes.AddAsync(new MaterialType { Name = name.Trim() });
+                // 1. إضافة نوع المادة
+                var materialType = new MaterialType { Name = trimmedName };
+                await _context.MaterialTypes.AddAsync(materialType);
                 await _context.SaveChangesAsync();
-                await SyncRawMaterialsAsync();
+
+                // 2. إنشاء الصنف المخزني (RawMaterial) وتعيين وحدة القياس المختارة له مباشرةً
+                var rawMat = new RawMaterial
+                {
+                    Name = trimmedName,
+                    MaterialTypeId = materialType.Id,
+                    MeasurementUnitId = measurementUnitId,
+                    CurrentQuantity = 0,
+                    UnitPrice = 0,
+                    TotalValue = 0,
+                    LastUpdatedDate = DateTime.Now
+                };
+
+                await _context.RawMaterials.AddAsync(rawMat);
+                await _context.SaveChangesAsync();
             }
         }
 
@@ -101,7 +127,7 @@ namespace Bakery.Business.Services
                 {
                     var rawMat = new RawMaterial
                     {
-                        Name = "",
+                        Name = mt.Name,
                         MaterialTypeId = mt.Id,
                         MeasurementUnitId = unit.Id,
                         CurrentQuantity = 0,
@@ -128,17 +154,45 @@ namespace Bakery.Business.Services
         public async Task<MaterialType?> GetMatrialByIdAsync(int id)
         {
             return await _context.MaterialTypes.FirstOrDefaultAsync(m => m.Id == id);
-            
         }
 
-        public async Task UpdateMaterialAsync(MaterialType mType)
+        // --- التعديل الرئيسي: تحديث نوع المادة الخام والصنف المخزني المرتبط بها ووحدة قياسه ---
+        public async Task UpdateMaterialAsync(int id, string name, int measurementUnitId)
         {
-            var existing = await GetMatrialByIdAsync(mType.Id);
+            if (string.IsNullOrWhiteSpace(name)) return;
 
+            var existing = await GetMatrialByIdAsync(id);
             if (existing == null)
-                throw new KeyNotFoundException("الماده غير موجوده.");
-            existing.Name = mType.Name;
+                throw new KeyNotFoundException("المادة غير موجودة.");
+
+            existing.Name = name.Trim();
             _context.MaterialTypes.Update(existing);
+
+            // تحديث اسم المادة الخام ووحدة القياس في جدول الاصناف المخزنية RawMaterial
+            var rawMat = await _context.RawMaterials.FirstOrDefaultAsync(r => r.MaterialTypeId == id);
+            if (rawMat != null)
+            {
+                rawMat.Name = name.Trim();
+                rawMat.MeasurementUnitId = measurementUnitId;
+                rawMat.LastUpdatedDate = DateTime.Now;
+                _context.RawMaterials.Update(rawMat);
+            }
+            else
+            {
+                // إنشاء صنف مخزني في حال عدم وجوده مسبقاً
+                rawMat = new RawMaterial
+                {
+                    Name = name.Trim(),
+                    MaterialTypeId = id,
+                    MeasurementUnitId = measurementUnitId,
+                    CurrentQuantity = 0,
+                    UnitPrice = 0,
+                    TotalValue = 0,
+                    LastUpdatedDate = DateTime.Now
+                };
+                await _context.RawMaterials.AddAsync(rawMat);
+            }
+
             await _context.SaveChangesAsync();
         }
 
@@ -194,7 +248,6 @@ namespace Bakery.Business.Services
             if (unit == null)
                 throw new KeyNotFoundException("وحدة القياس غير موجودة.");
 
-            // التحقق من أن وحدة القياس غير مرتبطة بأي مواد خام في المخزن
             var hasRelatedRecords = await _context.RawMaterials.AnyAsync(r => r.MeasurementUnitId == id);
 
             if (hasRelatedRecords)

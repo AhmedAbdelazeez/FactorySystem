@@ -25,11 +25,11 @@ namespace Test_DATA.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddMaterialType(string name)
+        public async Task<IActionResult> AddMaterialType(string name, int measurementUnitId)
         {
             try
             {
-                await _lookupService.AddMaterialTypeAsync(name);
+                await _lookupService.AddMaterialTypeAsync(name, measurementUnitId);
                 TempData["SuccessMessage"] = "تم إضافة نوع المادة الخام بنجاح.";
             }
             catch (Exception ex)
@@ -39,19 +39,18 @@ namespace Test_DATA.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // --- التعديل هنا: استقبال وحدات القياس مع الاسم والمعرف ---
         [HttpPost]
-        public async Task<IActionResult> EditMaterialType(MaterialType mtype)
+        public async Task<IActionResult> EditMaterialType(int id, string name, int measurementUnitId)
         {
             try
             {
-                await _lookupService.UpdateMaterialAsync(mtype);
+                await _lookupService.UpdateMaterialAsync(id, name, measurementUnitId);
                 TempData["SuccessMessage"] = "تم تعديل نوع المادة الخام بنجاح.";
-
             }
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = ex.Message;
-         
             }
             return RedirectToAction(nameof(Index));
         }
@@ -70,7 +69,6 @@ namespace Test_DATA.Controllers
             }
             return RedirectToAction(nameof(Index));
         }
-
 
         [HttpPost]
         public async Task<IActionResult> AddCategory(string name)
