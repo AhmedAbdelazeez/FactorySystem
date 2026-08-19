@@ -403,6 +403,8 @@
 						document.getElementById('liveTotalPieces').innerText = d.totalTargetPieces + " قطعة";
 						document.getElementById('liveBaskets').innerText = d.expectedBaskets + " باسكت";
 
+						document.getElementById('liveSalesVal').innerText = d.expectedSalesValue ?? d.totalExpectedSalesValue ?? 0; 
+
 						let hasShortage = false;
 						let matHtml = `<table class="table table-sm table-bordered bg-white text-end mb-0"><thead><tr class="table-secondary"><th>المادة الخام</th><th>المطلوب لـ ${sacks} شكارة</th><th>المتاح بالمخزن</th><th>الحالة</th></tr></thead><tbody>`;
 						d.requiredMaterials.forEach(m => {
