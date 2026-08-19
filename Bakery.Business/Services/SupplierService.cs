@@ -202,104 +202,96 @@ namespace Bakery.Business.Services
             if (supplier == null)
                 throw new KeyNotFoundException("المورد المأخوذ منه الفاتورة غير موجود.");
 
-            if (dto.Items == null || !dto.Items.Any(i => i.Quantity > 0 && i.UnitPrice >= 0))
+            var validItems = dto.Items?.Where(i => i.Quantity > 0 && i.UnitPrice >= 0).ToList();
+            if (validItems == null || !validItems.Any())
                 throw new InvalidOperationException("الفاتورة يجب أن تحتوي على بنود مادية صحيحة (كمية وسعر).");
 
-            var validItems = dto.Items.Where(i => i.Quantity > 0 && i.UnitPrice >= 0).ToList();
-
             decimal totalAmount = validItems.Sum(i => i.Quantity * i.UnitPrice);
-
-            decimal paidAmount = dto.PaidAmount;
-            if (paidAmount > totalAmount)
-                throw new InvalidOperationException("المبلغ المدفوع لا يمكن أن يكون أكبر من إجمالي قيمة الفاتورة.");
-
-            if (dto.PaymentMethod == PaymentMethod.Cash || dto.PaymentMethod == PaymentMethod.BankTransfer)
-            {
-                paidAmount = totalAmount;
-            }
-            else if (dto.PaymentMethod == PaymentMethod.Unpaid)
-            {
-                paidAmount = 0;
-            }
-            else // PartiallyPaid
-            {
-                if (paidAmount < 0) paidAmount = 0;
-            }
-
+            decimal paidAmount = CalculatePaidAmount(dto.PaymentMethod, dto.PaidAmount, totalAmount);
             decimal remainingAmount = totalAmount - paidAmount;
 
             string invNum = string.IsNullOrWhiteSpace(dto.InvoiceNumber)
-                ? $"INV-{DateTime.Now:yyyyMMdd}-{new Random().Next(1000, 9999)}"
+                ? $"INV-{DateTime.Now:yyyyMMdd}-{Random.Shared.Next(1000, 9999)}"
                 : dto.InvoiceNumber.Trim();
 
-            var invoice = new SupplierInvoice
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                SupplierId = dto.SupplierId,
-                InvoiceNumber = invNum,
-                InvoiceDate = dto.InvoiceDate,
-                TotalAmount = totalAmount,
-                PaidAmount = paidAmount,
-                RemainingAmount = remainingAmount,
-                PaymentMethod = dto.PaymentMethod,
-                Notes = dto.Notes,
-                CreatedAt = DateTime.Now
-            };
-
-            foreach (var item in validItems)
-            {
-                invoice.Items.Add(new SupplierInvoiceItem
+                var invoice = new SupplierInvoice
                 {
-                    RawMaterialId = item.RawMaterialId,
-                    Quantity = item.Quantity,
-                    UnitPrice = item.UnitPrice,
-                    TotalAmount = item.Quantity * item.UnitPrice
-                });
-            }
-
-            await _invoiceRepo.AddAsync(invoice);
-            await _invoiceRepo.SaveChangesAsync();
-
-            // ⚡ AUTOMATIC INVENTORY STOCK UPDATE FOR EACH ITEM IN INVOICE ⚡
-            decimal paidRatio = totalAmount > 0 ? paidAmount / totalAmount : 0;
-            foreach (var item in validItems)
-            {
-                decimal itemTotal = item.Quantity * item.UnitPrice;
-                decimal itemPaid = Math.Round(itemTotal * paidRatio, 2);
-
-                await _inventoryService.AddStockAsync(
-                    item.RawMaterialId,
-                    item.Quantity,
-                    item.UnitPrice,
-                    invoice.PaymentMethod,
-                    itemPaid,
-                    $"توريد بموجب فاتورة مورد #{invoice.InvoiceNumber} - {supplier.Name}",
-                    null,
-                    invoice.Id
-                );
-            }
-
-
-            // ⚡ TREASURY TRANSACTION RECORD ⚡
-            if (paidAmount > 0)
-            {
-                var treasuryTx = new TreasuryTransaction
-                {
-                    Date = invoice.InvoiceDate,
-                    TransactionName = $"فاتورة توريد خامات #{invoice.InvoiceNumber} ({supplier.Name})",
-                    TransactionType = TreasuryTransactionType.Expense,
-                    Category = "مواد خام",
-                    Amount = totalAmount,
-                    PaymentMethod = invoice.PaymentMethod,
+                    SupplierId = dto.SupplierId,
+                    InvoiceNumber = invNum,
+                    InvoiceDate = dto.InvoiceDate,
+                    TotalAmount = totalAmount,
                     PaidAmount = paidAmount,
                     RemainingAmount = remainingAmount,
-                    Notes = $"مورد: {supplier.Name} | {dto.Notes}",
-                    SupplierInvoiceId = invoice.Id
+                    PaymentMethod = dto.PaymentMethod,
+                    Notes = dto.Notes,
+                    CreatedAt = DateTime.Now
                 };
-                await _treasuryRepo.AddAsync(treasuryTx);
-                await _treasuryRepo.SaveChangesAsync();
-            }
 
-            return invoice;
+                foreach (var item in validItems)
+                {
+                    invoice.Items.Add(new SupplierInvoiceItem
+                    {
+                        RawMaterialId = item.RawMaterialId,
+                        Quantity = item.Quantity,
+                        UnitPrice = item.UnitPrice,
+                        TotalAmount = item.Quantity * item.UnitPrice
+                    });
+                }
+
+                await _context.SupplierInvoices.AddAsync(invoice);
+                await _context.SaveChangesAsync(); // للحصول على invoice.Id
+
+                // ⚡ إضافة المخزون للبنود ⚡
+                decimal paidRatio = totalAmount > 0 ? paidAmount / totalAmount : 0;
+                foreach (var item in validItems)
+                {
+                    decimal itemTotal = item.Quantity * item.UnitPrice;
+                    decimal itemPaid = Math.Round(itemTotal * paidRatio, 2);
+
+                    await _inventoryService.AddStockAsync(
+                        item.RawMaterialId,
+                        item.Quantity,
+                        item.UnitPrice,
+                        invoice.PaymentMethod,
+                        itemPaid,
+                        $"توريد بموجب فاتورة مورد #{invoice.InvoiceNumber} - {supplier.Name}",
+                        null,
+                        invoice.Id
+                    );
+                }
+
+                // ⚡ تسجيل حركة الخزينة ⚡
+                if (paidAmount > 0)
+                {
+                    var treasuryTx = new TreasuryTransaction
+                    {
+                        Date = invoice.InvoiceDate,
+                        TransactionName = $"فاتورة توريد خامات #{invoice.InvoiceNumber} ({supplier.Name})",
+                        TransactionType = TreasuryTransactionType.Expense,
+                        Category = "مواد خام",
+                        Amount = totalAmount,
+                        PaymentMethod = invoice.PaymentMethod,
+                        PaidAmount = paidAmount,
+                        RemainingAmount = remainingAmount,
+                        Notes = $"مورد: {supplier.Name} | {dto.Notes}",
+                        SupplierInvoiceId = invoice.Id
+                    };
+                    await _context.TreasuryTransactions.AddAsync(treasuryTx);
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return invoice;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task UpdateInvoiceAsync(EditSupplierInvoiceDto dto)
@@ -316,13 +308,14 @@ namespace Bakery.Business.Services
             if (supplier == null)
                 throw new KeyNotFoundException("المورد غير موجود.");
 
-            if (dto.Items == null || !dto.Items.Any(i => i.Quantity > 0 && i.UnitPrice >= 0))
+            var validItems = dto.Items?.Where(i => i.Quantity > 0 && i.UnitPrice >= 0).ToList();
+            if (validItems == null || !validItems.Any())
                 throw new InvalidOperationException("الفاتورة يجب أن تحتوي على بنود مادية صحيحة (كمية وسعر).");
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 1. Revert stock of the OLD invoice items
+                // 1. العودة عن المخزون القديم
                 foreach (var oldItem in invoice.Items)
                 {
                     var material = await _context.RawMaterials.FindAsync(oldItem.RawMaterialId);
@@ -344,16 +337,14 @@ namespace Bakery.Business.Services
                         {
                             decimal materialValueWithoutBatch = material.TotalValue - oldItem.TotalAmount;
                             material.CurrentQuantity = projectedQuantity;
-                            material.TotalValue = materialValueWithoutBatch < 0 ? 0 : Math.Round(materialValueWithoutBatch, 2);
+                            material.TotalValue = Math.Max(0, Math.Round(materialValueWithoutBatch, 2));
                             material.UnitPrice = Math.Round(material.TotalValue / projectedQuantity, 4);
                         }
                         material.LastUpdatedDate = DateTime.Now;
-                        _context.RawMaterials.Update(material);
                     }
                 }
-                await _context.SaveChangesAsync();
 
-                // 2. Remove old Inventory Transactions and their associated Expense records
+                // 2. حذف الحركات القديمة المرتبطة بالفاتورة
                 var oldInvTxs = await _context.InventoryTransactions
                     .Where(t => t.SupplierInvoiceId == invoice.Id)
                     .ToListAsync();
@@ -368,40 +359,20 @@ namespace Bakery.Business.Services
                 }
 
                 _context.InventoryTransactions.RemoveRange(oldInvTxs);
-                await _context.SaveChangesAsync();
 
-                // 3. Remove old SupplierInvoiceItems
+                // 3. مسح بنود الفاتورة القديمة
                 _context.SupplierInvoiceItems.RemoveRange(invoice.Items);
-                await _context.SaveChangesAsync();
 
-                // 4. Calculate new amounts
-                var validItems = dto.Items.Where(i => i.Quantity > 0 && i.UnitPrice >= 0).ToList();
+                // 4. الحسابات الجديدة
                 decimal totalAmount = validItems.Sum(i => i.Quantity * i.UnitPrice);
-
-                decimal paidAmount = dto.PaidAmount;
-                if (paidAmount > totalAmount)
-                    throw new InvalidOperationException("المبلغ المدفوع لا يمكن أن يكون أكبر من إجمالي قيمة الفاتورة.");
-
-                if (dto.PaymentMethod == PaymentMethod.Cash || dto.PaymentMethod == PaymentMethod.BankTransfer)
-                {
-                    paidAmount = totalAmount;
-                }
-                else if (dto.PaymentMethod == PaymentMethod.Unpaid)
-                {
-                    paidAmount = 0;
-                }
-                else // PartiallyPaid
-                {
-                    if (paidAmount < 0) paidAmount = 0;
-                }
-
+                decimal paidAmount = CalculatePaidAmount(dto.PaymentMethod, dto.PaidAmount, totalAmount);
                 decimal remainingAmount = totalAmount - paidAmount;
 
                 string invNum = string.IsNullOrWhiteSpace(dto.InvoiceNumber)
-                    ? $"INV-{DateTime.Now:yyyyMMdd}-{new Random().Next(1000, 9999)}"
+                    ? $"INV-{DateTime.Now:yyyyMMdd}-{Random.Shared.Next(1000, 9999)}"
                     : dto.InvoiceNumber.Trim();
 
-                // 5. Update invoice header properties
+                // 5. تحديث رأس الفاتورة
                 invoice.SupplierId = dto.SupplierId;
                 invoice.InvoiceNumber = invNum;
                 invoice.InvoiceDate = dto.InvoiceDate;
@@ -411,7 +382,7 @@ namespace Bakery.Business.Services
                 invoice.PaymentMethod = dto.PaymentMethod;
                 invoice.Notes = dto.Notes;
 
-                // 6. Add new SupplierInvoiceItems
+                // 6. إضافة البنود الجديدة
                 foreach (var item in validItems)
                 {
                     invoice.Items.Add(new SupplierInvoiceItem
@@ -422,10 +393,10 @@ namespace Bakery.Business.Services
                         TotalAmount = item.Quantity * item.UnitPrice
                     });
                 }
-                _context.SupplierInvoices.Update(invoice);
-                await _context.SaveChangesAsync();
 
-                // 7. Add stock for new items (which creates new inventory transactions and new Expense records)
+                await _context.SaveChangesAsync(); // تطبيق مسح البنود السابقة وحفظ البنود الجديدة
+
+                // 7. إعادة تطبيق إضافات المخزون
                 decimal paidRatio = totalAmount > 0 ? paidAmount / totalAmount : 0;
                 foreach (var item in validItems)
                 {
@@ -444,7 +415,7 @@ namespace Bakery.Business.Services
                     );
                 }
 
-                // 8. Update or record Treasury Transaction
+                // 8. تحديث الخزينة
                 var treasuryTx = await _context.TreasuryTransactions
                     .FirstOrDefaultAsync(t => t.SupplierInvoiceId == invoice.Id);
 
@@ -459,11 +430,10 @@ namespace Bakery.Business.Services
                         treasuryTx.PaidAmount = paidAmount;
                         treasuryTx.RemainingAmount = remainingAmount;
                         treasuryTx.Notes = $"مورد: {supplier.Name} | {dto.Notes}";
-                        _context.TreasuryTransactions.Update(treasuryTx);
                     }
                     else
                     {
-                        var newTreasuryTx = new TreasuryTransaction
+                        await _context.TreasuryTransactions.AddAsync(new TreasuryTransaction
                         {
                             Date = invoice.InvoiceDate,
                             TransactionName = $"فاتورة توريد خامات #{invoice.InvoiceNumber} ({supplier.Name})",
@@ -475,16 +445,12 @@ namespace Bakery.Business.Services
                             RemainingAmount = remainingAmount,
                             Notes = $"مورد: {supplier.Name} | {dto.Notes}",
                             SupplierInvoiceId = invoice.Id
-                        };
-                        await _context.TreasuryTransactions.AddAsync(newTreasuryTx);
+                        });
                     }
                 }
-                else
+                else if (treasuryTx != null)
                 {
-                    if (treasuryTx != null)
-                    {
-                        _context.TreasuryTransactions.Remove(treasuryTx);
-                    }
+                    _context.TreasuryTransactions.Remove(treasuryTx);
                 }
 
                 await _context.SaveChangesAsync();
@@ -495,6 +461,21 @@ namespace Bakery.Business.Services
                 await transaction.RollbackAsync();
                 throw;
             }
+        }
+
+        // 💡 دالة مساعدة لتجميع منطق حساب المدفوع
+        private static decimal CalculatePaidAmount(PaymentMethod method, decimal inputPaid, decimal total)
+        {
+            if (inputPaid > total)
+                throw new InvalidOperationException("المبلغ المدفوع لا يمكن أن يكون أكبر من إجمالي قيمة الفاتورة.");
+
+            return method switch
+            {
+                PaymentMethod.Cash or PaymentMethod.BankTransfer => total,
+                PaymentMethod.Unpaid => 0,
+                PaymentMethod.PartiallyPaid => Math.Max(0, inputPaid),
+                _ => inputPaid
+            };
         }
 
         public async Task DeleteInvoiceAsync(int invoiceId)

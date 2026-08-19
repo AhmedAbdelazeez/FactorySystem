@@ -140,7 +140,12 @@ namespace Bakery.Business.Services
             var material = await _materialRepo.GetByIdAsync(rawMaterialId);
             if (material == null) throw new KeyNotFoundException("المادة الخام غير موجودة.");
 
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            bool isOuterTransaction = _context.Database.CurrentTransaction != null;
+
+            // إذا لم تكن هناك Transaction، ننشئ واحدة جديدة، وإلا نستخدم الحالية
+            using var transaction = isOuterTransaction
+                ? null
+                : await _context.Database.BeginTransactionAsync();
             try
             {
                 decimal newBatchValue = quantity * unitPrice;
@@ -236,11 +241,18 @@ namespace Bakery.Business.Services
                 await _transactionRepo.AddAsync(invTransaction);
                 await _context.SaveChangesAsync();
 
-                await transaction.CommitAsync();
+
+                if (transaction != null)
+                {
+                    await transaction.CommitAsync();
+                }
             }
             catch
             {
-                await transaction.RollbackAsync();
+                if (transaction != null)
+                {
+                    await transaction.RollbackAsync();
+                }
                 throw;
             }
         }
