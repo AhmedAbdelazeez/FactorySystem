@@ -263,12 +263,9 @@
 										تتم إدارتها وتعديلها من سجل حركة المخزن
 									</td>
 									<td class="text-center">
-										@if (item.RemainingAmount > 0)
-										{
-											<button class="btn btn-sm btn-outline-success" onclick="openPayModal(@item.Id, '@item.Name', @item.RemainingAmount)">
-												<i class="fa-solid fa-hand-holding-dollar"></i> سداد
-											</button>
-										}
+										<span class="badge bg-light text-muted border px-2 py-1" title="مرتبطة بفاتورة مورد. الإجراءات تتم من صفحة الموردين.">
+											<i class="fa-solid fa-lock me-1"></i> فاتورة مورد
+										</span>
 									</td>
 								</tr>
 							}
