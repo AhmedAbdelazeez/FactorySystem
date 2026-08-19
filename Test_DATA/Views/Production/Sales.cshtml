@@ -120,14 +120,12 @@
 										onclick="openEditAgentModal(@agent.Id, '@agent.Name.Replace("'","\\'")', '@(agent.Phone ?? "")', '@(agent.Notes ?? "")')">
 									<i class="fa-solid fa-pen-to-square"></i>
 								</button>
-								<form asp-action="DeleteAgent" method="post" style="display:inline;"
-									  onsubmit="return confirm('هل أنت متأكد من حذف/تعطيل الوكيل @agent.Name?')">
-									@Html.AntiForgeryToken()
-									<input type="hidden" name="id" value="@agent.Id" />
-									<button type="submit" class="btn btn-sm btn-outline-danger px-2 py-1" title="حذف الوكيل">
-										<i class="fa-solid fa-trash"></i>
-									</button>
-								</form>
+								<button type="button"
+										class="btn btn-sm btn-outline-danger px-2 py-1"
+										title="حذف الوكيل"
+										onclick="confirmDelete(@agent.Id, '@Url.Action("DeleteAgent")', 'هل أنت متأكد من حذف الوكيل (@agent.Name.Replace("'", "\\'"))؟')">
+									<i class="fa-solid fa-trash"></i>
+								</button>
 							</div>
 						</div>
 
