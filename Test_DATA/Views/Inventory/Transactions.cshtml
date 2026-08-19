@@ -215,7 +215,7 @@
 											<span class="text-muted small">-</span>
 										}
 									</td>
-									<td class="small text-secondary text-truncate" style="max-width: 150px;">@(string.IsNullOrWhiteSpace(tx.Notes) ? "-" : tx.Notes)</td>
+									<td class="small text-secondary text-truncate" title="@tx.Notes" style="max-width: 150px;">@(string.IsNullOrWhiteSpace(tx.Notes) ? "-" : tx.Notes)</td>
 									<td class="text-center">
 										<div class="d-flex align-items-center justify-content-center gap-1">
 											@if (tx.SupplierInvoiceId.HasValue || (tx.Notes != null && tx.Notes.Contains("فاتورة مورد")))
