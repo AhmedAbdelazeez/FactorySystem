@@ -27,55 +27,72 @@
 
 <!-- Net Profit & Treasury Summary Main Cards -->
 <div class="row g-3 mb-4">
+	<!-- كارت إجمالي الإيرادات -->
 	<div class="col-md-3">
-		<div class="card stat-card p-4 border-0 shadow-sm bg-success text-white">
-			<div class="d-flex align-items-center justify-content-between">
-				<div>
-					<span class="text-white-50 small fw-bold d-block mb-1">إجمالي الإيرادات (المبيعات)</span>
-					<h2 class="fw-extrabold mb-0">@summary.TotalIncome.ToString("N2") <small class="fs-5 fw-normal text-white-50">ج.م</small></h2>
-					<small class="text-white-75 d-block mt-1 opacity-75">إجمالي قيمة المبيعات كاملة</small>
+		<div class="card stat-card h-100 p-3 border-0 shadow-sm bg-success text-white">
+			<div class="d-flex align-items-center justify-content-between h-100">
+				<div class="d-flex flex-column justify-content-between h-100">
+					<div>
+						<span class="text-white-50 small fw-bold d-block mb-1">إجمالي الإيرادات (المبيعات)</span>
+						<h3 class="fw-extrabold mb-0 text-nowrap">@summary.TotalIncome.ToString("N2") <small class="fs-6 fw-normal text-white-50">ج.م</small></h3>
+					</div>
+					<small class="text-white-75 d-block mt-2 opacity-75">إجمالي قيمة المبيعات كاملة</small>
 				</div>
-				<div class="stat-icon-wrapper bg-white bg-opacity-25 text-white rounded-circle p-3 fs-3">
+				<div class="stat-icon-wrapper bg-white bg-opacity-25 text-white rounded-circle p-3 fs-4 ms-2 flex-shrink-0">
 					<i class="fa-solid fa-arrow-trend-up"></i>
 				</div>
 			</div>
 		</div>
 	</div>
+
+	<!-- كارت كاش داخل الخزنة -->
 	<div class="col-md-3">
-		<div class="card stat-card p-4 border-0 shadow-sm text-white" style="background-color: #0d6efd;">
-			<div class="d-flex align-items-center justify-content-between">
-				<div>
-					<span class="text-white-50 small fw-bold d-block mb-1">كاش داخل الخزنة فعلاً</span>
-					<h2 class="fw-extrabold mb-0">@summary.TotalActualCash.ToString("N2") <small class="fs-5 fw-normal text-white-50">ج.م</small></h2>
-					<small class="text-white d-block mt-1 opacity-75">المبالغ المحصلة فعلاً</small>
+		<div class="card stat-card h-100 p-3 border-0 shadow-sm text-white" style="background-color: #0d6efd;">
+			<div class="d-flex align-items-center justify-content-between h-100">
+				<div class="d-flex flex-column justify-content-between h-100">
+					<div>
+						<span class="text-white-50 small fw-bold d-block mb-1">كاش داخل الخزنة فعلاً</span>
+						<h3 class="fw-extrabold mb-0 text-nowrap">@summary.TotalActualCash.ToString("N2") <small class="fs-6 fw-normal text-white-50">ج.م</small></h3>
+					</div>
+					<small class="text-white d-block mt-2 opacity-75">المبالغ المحصلة فعلاً</small>
 				</div>
-				<div class="stat-icon-wrapper bg-white bg-opacity-25 text-white rounded-circle p-3 fs-3">
+				<div class="stat-icon-wrapper bg-white bg-opacity-25 text-white rounded-circle p-3 fs-4 ms-2 flex-shrink-0">
 					<i class="fa-solid fa-sack-dollar"></i>
 				</div>
 			</div>
 		</div>
 	</div>
+
+	<!-- كارت إجمالي المصروفات -->
 	<div class="col-md-3">
-		<div class="card stat-card p-4 border-0 shadow-sm bg-danger text-white">
-			<div class="d-flex align-items-center justify-content-between">
-				<div>
-					<span class="text-white-50 small fw-bold d-block mb-1">إجمالي المصروفات الكلية</span>
-					<h2 class="fw-extrabold mb-0">@summary.TotalExpenses.ToString("N2") <small class="fs-5 fw-normal text-white-50">ج.م</small></h2>
+		<div class="card stat-card h-100 p-3 border-0 shadow-sm bg-danger text-white">
+			<div class="d-flex align-items-center justify-content-between h-100">
+				<div class="d-flex flex-column justify-content-between h-100">
+					<div>
+						<span class="text-white-50 small fw-bold d-block mb-1">إجمالي المصروفات الكلية</span>
+						<h3 class="fw-extrabold mb-0 text-nowrap">@summary.TotalExpenses.ToString("N2") <small class="fs-6 fw-normal text-white-50">ج.م</small></h3>
+					</div>
+					<small class="text-white d-block mt-2 opacity-75">إجمالي كافة المصاريف</small>
 				</div>
-				<div class="stat-icon-wrapper bg-white bg-opacity-25 text-white rounded-circle p-3 fs-3">
+				<div class="stat-icon-wrapper bg-white bg-opacity-25 text-white rounded-circle p-3 fs-4 ms-2 flex-shrink-0">
 					<i class="fa-solid fa-arrow-trend-down"></i>
 				</div>
 			</div>
 		</div>
 	</div>
+
+	<!-- كارت صافي الربح الفعلي -->
 	<div class="col-md-3">
-		<div class="card stat-card p-4 border-0 shadow-sm @(summary.NetProfit >= 0 ? "bg-orange" : "bg-warning") text-white">
-			<div class="d-flex align-items-center justify-content-between">
-				<div>
-					<span class="text-white-50 small fw-bold d-block mb-1">صافي الربح الفعلي (الإيراد - المصروف)</span>
-					<h2 class="fw-extrabold mb-0">@summary.NetProfit.ToString("N2") <small class="fs-5 fw-normal text-white-50">ج.م</small></h2>
+		<div class="card stat-card h-100 p-3 border-0 shadow-sm @(summary.NetProfit >= 0 ? "bg-orange" : "bg-warning") text-white">
+			<div class="d-flex align-items-center justify-content-between h-100">
+				<div class="d-flex flex-column justify-content-between h-100">
+					<div>
+						<span class="text-white-50 small fw-bold d-block mb-1">صافي الربح الفعلي</span>
+						<h3 class="fw-extrabold mb-0 text-nowrap">@summary.NetProfit.ToString("N2") <small class="fs-6 fw-normal text-white-50">ج.م</small></h3>
+					</div>
+					<small class="text-white d-block mt-2 opacity-75">(الإيراد - المصروف)</small>
 				</div>
-				<div class="stat-icon-wrapper bg-white bg-opacity-25 text-white rounded-circle p-3 fs-3">
+				<div class="stat-icon-wrapper bg-white bg-opacity-25 text-white rounded-circle p-3 fs-4 ms-2 flex-shrink-0">
 					<i class="fa-solid fa-scale-balanced"></i>
 				</div>
 			</div>

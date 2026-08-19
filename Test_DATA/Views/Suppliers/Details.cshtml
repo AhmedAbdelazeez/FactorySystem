@@ -132,7 +132,10 @@
                                         <button class="btn btn-sm btn-outline-primary fw-bold me-1" onclick="openEditInvoiceModal(@inv.Id)">
                                             <i class="fa-solid fa-pen-to-square me-1"></i> تعديل الفاتورة
                                         </button>
-                                        <button class="btn btn-sm btn-outline-danger fw-bold me-1" onclick="confirmDeleteInvoice(@inv.Id, '@inv.InvoiceNumber', @Model.Id)">
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger fw-bold me-1"
+                                                onclick="confirmDelete('@inv.Id', '@Url.Action("DeleteInvoice", "Suppliers", new { id = inv.Id, returnSupplierId = Model.Id })', 'هل أنت متأكد من حذف الفاتورة رقم (#@inv.InvoiceNumber)؟ سيتم عكس جميع الكميات المضافة للمخازن، وحذف المصروفات وحركات الخزينة التابعة لها بالكامل.')"
+                                                title="حذف الفاتورة">
                                             <i class="fa-solid fa-trash me-1"></i> حذف الفاتورة
                                         </button>
                                         @if (inv.RemainingAmount > 0)
@@ -279,20 +282,25 @@
                     <!-- Payment Details -->
                     <div class="col-md-4">
                         <label class="form-label fw-bold">طريقة الدفع <span class="text-danger">*</span></label>
-                        <select name="PaymentMethod" id="invoicePaymentMethod" class="form-select fw-bold" onchange="toggleInvoicePaidInput()">
-                            <option value="1">كاش (مدفوع بالكامل)</option>
-                            <option value="2">تحويل بنكي (مدفوع بالكامل)</option>
-                            <option value="3" selected>مدفوع جزئياً</option>
-                            <option value="4">غير مدفوع (آجل بالكامل)</option>
+                        <select name="PaymentMethod" id="invoicePaymentMethod" class="form-select fw-bold" onchange="toggleInvoicePaidInput('add')">
+                            <option value="@((int)PaymentMethod.Cash)">كاش (مدفوع بالكامل)</option>
+                            <option value="@((int)PaymentMethod.BankTransfer)">تحويل بنكي (مدفوع بالكامل)</option>
+                            <option value="@((int)PaymentMethod.PartiallyPaid)">مدفوع جزئياً</option>
+                            <option value="@((int)PaymentMethod.Unpaid)" selected>غير مدفوع (آجل بالكامل)</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold">المبلغ المدفوع الآن (ج.م)</label>
-                        <input type="number" step="0.01" name="PaidAmount" id="invoicePaidAmount" value="0" class="form-control fw-bold text-success" />
+                    <div class="col-md-4" id="addInvoicePaidAmountContainer" style="display: none;">
+                        <label class="form-label fw-bold">المبلغ المدفوع الآن (ج.م) <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" min="0" name="PaidAmount" id="invoicePaidAmount" value="0" class="form-control fw-bold text-success" autocomplete="off" oninput="validateInvoicePartialPayment('add')" />
+                        <div id="invoicePaidAmountError" class="text-danger small fw-bold mt-1 d-none">
+                            المبلغ المدفوع يجب أن يكون أقل من إجمالي الفاتورة وأكبر من صفر.
+                        </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-4" id="invoiceRemainingContainer" style="display: none;">
                         <label class="form-label fw-bold">المتبقي (المديونية)</label>
-                        <input type="text" id="invoiceRemainingDisplay" readonly class="form-control fw-bold text-danger bg-light" value="0.00 ج.م" />
+                        <div class="p-2 bg-danger bg-opacity-10 rounded text-center border border-danger">
+                            <span id="invoiceRemainingDisplay" class="fs-6 fw-bold text-danger">0.00</span> ج.م
+                        </div>
                     </div>
 
                     <div class="col-12">
@@ -332,8 +340,8 @@
                     <div class="col-12">
                         <label class="form-label fw-bold">طريقة السداد <span class="text-danger">*</span></label>
                         <select name="paymentMethod" class="form-select fw-bold">
-                            <option value="1">كاش</option>
-                            <option value="2">تحويل بنكي</option>
+                            <option value="@((int)PaymentMethod.Cash)">كاش</option>
+                            <option value="@((int)PaymentMethod.BankTransfer)">تحويل بنكي</option>
                         </select>
                     </div>
                 </div>
@@ -406,20 +414,25 @@
                     <!-- Payment Information -->
                     <div class="col-md-4">
                         <label class="form-label fw-bold">طريقة الدفع <span class="text-danger">*</span></label>
-                        <select name="PaymentMethod" id="editInvoicePaymentMethod" class="form-select fw-bold" onchange="toggleEditInvoicePaidInput()">
-                            <option value="1">كاش (مدفوع بالكامل)</option>
-                            <option value="2">تحويل بنكي (مدفوع بالكامل)</option>
-                            <option value="3">مدفوع جزئياً</option>
-                            <option value="4">غير مدفوع (آجل بالكامل)</option>
+                        <select name="PaymentMethod" id="editInvoicePaymentMethod" class="form-select fw-bold" onchange="toggleInvoicePaidInput('edit')">
+                            <option value="@((int)PaymentMethod.Cash)">كاش (مدفوع بالكامل)</option>
+                            <option value="@((int)PaymentMethod.BankTransfer)">تحويل بنكي (مدفوع بالكامل)</option>
+                            <option value="@((int)PaymentMethod.PartiallyPaid)">مدفوع جزئياً</option>
+                            <option value="@((int)PaymentMethod.Unpaid)" selected>غير مدفوع (آجل بالكامل)</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold">المبلغ المدفوع (ج.م)</label>
-                        <input type="number" step="0.01" name="PaidAmount" id="editInvoicePaidAmount" value="0" class="form-control fw-bold text-success" />
+                    <div class="col-md-4" id="editInvoicePaidAmountContainer" style="display: none;">
+                        <label class="form-label fw-bold">المبلغ المدفوع حالياً (ج.م) <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" min="0" name="PaidAmount" id="editInvoicePaidAmount" value="0" class="form-control fw-bold text-success" autocomplete="off" oninput="validateInvoicePartialPayment('edit')" />
+                        <div id="editInvoicePaidAmountError" class="text-danger small fw-bold mt-1 d-none">
+                            المبلغ المدفوع يجب أن يكون أقل من إجمالي الفاتورة وأكبر من صفر.
+                        </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-4" id="editInvoiceRemainingContainer" style="display: none;">
                         <label class="form-label fw-bold">المتبقي (المديونية)</label>
-                        <input type="text" id="editInvoiceRemainingDisplay" readonly class="form-control fw-bold text-danger bg-light" value="0.00 ج.م" />
+                        <div class="p-2 bg-danger bg-opacity-10 rounded text-center border border-danger">
+                            <span id="editInvoiceRemainingDisplay" class="fs-6 fw-bold text-danger">0.00</span> ج.م
+                        </div>
                     </div>
 
                     <div class="col-12">
@@ -438,14 +451,20 @@
 
 @section Scripts {
     <script>
+        // 1. البيانات الأساسية للمواد الخام
         const rawMaterialsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(rawMaterials.Select(m => new { id = m.Id, name = m.MaterialName, unit = m.MeasurementUnit?.Name ?? "", unitPrice = m.UnitPrice })));
 
+        // 2. قيم Enum طرق الدفع
+        const pmCash = "@((int)PaymentMethod.Cash)";
+        const pmBank = "@((int)PaymentMethod.BankTransfer)";
+        const pmPartial = "@((int)PaymentMethod.PartiallyPaid)";
+        const pmUnpaid = "@((int)PaymentMethod.Unpaid)";
 
-
+        // 3. فتح مودال إضافة فاتورة جديدة لهذا المورد
         function openAddInvoiceModalForSupplier(supplierId) {
             const tbody = document.getElementById('invoiceItemsTbody');
             tbody.innerHTML = '';
-            
+
             rawMaterialsData.forEach(m => {
                 const tr = document.createElement('tr');
                 tr.className = 'invoice-item-row';
@@ -475,7 +494,8 @@
             new bootstrap.Modal(document.getElementById('addInvoiceModal')).show();
         }
 
-        function toggleRowInputs(matId, mode) {
+        // 4. تفعيل / إيقاف مدخلات الصف عند الضغط على Checkbox
+        function toggleRowInputs(matId, mode = 'add') {
             const tbodyId = mode === 'add' ? 'invoiceItemsTbody' : 'editInvoiceItemsTbody';
             const row = document.querySelector(`#${tbodyId} #item_row_${matId}`);
             if (!row) return;
@@ -499,13 +519,11 @@
             recalculateInvoiceTotal(mode);
         }
 
-        function recalculateInvoiceTotal(mode) {
+        // 5. إعادة حساب إجمالي الفاتورة وقيم البنود
+        function recalculateInvoiceTotal(mode = 'add') {
             let total = 0;
             const tbodyId = mode === 'add' ? 'invoiceItemsTbody' : 'editInvoiceItemsTbody';
             const displayId = mode === 'add' ? 'invoiceTotalDisplay' : 'editInvoiceTotalDisplay';
-            const methodSelectId = mode === 'add' ? 'invoicePaymentMethod' : 'editInvoicePaymentMethod';
-            const paidInputId = mode === 'add' ? 'invoicePaidAmount' : 'editInvoicePaidAmount';
-            const remainingId = mode === 'add' ? 'invoiceRemainingDisplay' : 'editInvoiceRemainingDisplay';
 
             const rows = document.querySelectorAll(`#${tbodyId} .invoice-item-row`);
             rows.forEach(r => {
@@ -527,38 +545,121 @@
                 }
             });
 
-            document.getElementById(displayId).innerText = total.toFixed(2) + ' ج.م';
-
-            const methodSelect = document.getElementById(methodSelectId);
-            const paidInput = document.getElementById(paidInputId);
-
-            if (methodSelect.value === "1" || methodSelect.value === "2") {
-                paidInput.value = total.toFixed(2);
-                paidInput.readOnly = true;
-            } else if (methodSelect.value === "4") {
-                paidInput.value = 0;
-                paidInput.readOnly = true;
-            } else {
-                paidInput.readOnly = false;
+            const displayElem = document.getElementById(displayId);
+            if (displayElem) {
+                displayElem.innerText = total.toFixed(2) + ' ج.م';
             }
 
-            const paidVal = parseFloat(paidInput.value || 0);
-            
-            // Client-side validation: paidAmount cannot exceed total!
-            paidInput.max = total;
-
-            const remaining = Math.max(0, total - paidVal);
-            document.getElementById(remainingId).value = remaining.toFixed(2) + ' ج.م';
+            toggleInvoicePaidInput(mode);
         }
 
-        function toggleInvoicePaidInput() {
-            recalculateInvoiceTotal('add');
+        // 6. التحكم في إظهار وحساب حقول طرق الدفع والمتبقي
+        function toggleInvoicePaidInput(mode = 'add') {
+            const isAdd = mode === 'add';
+            const pmSelect = document.getElementById(isAdd ? 'invoicePaymentMethod' : 'editInvoicePaymentMethod');
+            if (!pmSelect) return;
+
+            const pm = pmSelect.value;
+            const totalDisplay = document.getElementById(isAdd ? 'invoiceTotalDisplay' : 'editInvoiceTotalDisplay');
+            const total = parseFloat((totalDisplay?.innerText || '0').replace(/[^\d.-]/g, '')) || 0;
+
+            const paidInp = document.getElementById(isAdd ? 'invoicePaidAmount' : 'editInvoicePaidAmount');
+            const paidContainer = document.getElementById(isAdd ? 'addInvoicePaidAmountContainer' : 'editInvoicePaidAmountContainer');
+            const remainingContainer = document.getElementById(isAdd ? 'invoiceRemainingContainer' : 'editInvoiceRemainingContainer');
+
+            if (!paidInp) return;
+
+            // كاش أو تحويل بنكي (مدفوع بالكامل)
+            if (pm === pmCash || pm === pmBank) {
+                if (paidContainer) paidContainer.style.display = "none";
+                if (remainingContainer) remainingContainer.style.display = "none";
+                paidInp.value = total > 0 ? total.toFixed(2) : '0.00';
+                paidInp.required = false;
+                clearInvoicePaymentError(mode);
+                return;
+            }
+
+            // آجل (غير مدفوع)
+            if (pm === pmUnpaid) {
+                if (paidContainer) paidContainer.style.display = "none";
+                if (remainingContainer) remainingContainer.style.display = "none";
+                paidInp.value = '0.00';
+                paidInp.required = false;
+                clearInvoicePaymentError(mode);
+                return;
+            }
+
+            // دفع جزئي
+            if (pm === pmPartial) {
+                if (paidContainer) paidContainer.style.display = "block";
+                if (remainingContainer) remainingContainer.style.display = "block";
+                paidInp.required = true;
+
+                let currentPaid = parseFloat(paidInp.value) || 0;
+
+                // في حالة الإضافة فقط أو عند عدم وجود قيمة سابقة يتم وضع نصف الإجمالي افتراضياً
+                if (isAdd && (currentPaid === 0 || currentPaid >= total)) {
+                    paidInp.value = total > 0 ? (total / 2).toFixed(2) : "0.00";
+                }
+
+                validateInvoicePartialPayment(mode);
+            }
         }
 
-        function toggleEditInvoicePaidInput() {
-            recalculateInvoiceTotal('edit');
+        // 7. التحقق من الدفع الجزئي للحقول
+        function validateInvoicePartialPayment(mode = 'add') {
+            const isAdd = mode === 'add';
+            const totalDisplay = document.getElementById(isAdd ? 'invoiceTotalDisplay' : 'editInvoiceTotalDisplay');
+            const total = parseFloat((totalDisplay?.innerText || '0').replace(/[^\d.-]/g, '')) || 0;
+            const paidInp = document.getElementById(isAdd ? 'invoicePaidAmount' : 'editInvoicePaidAmount');
+            const paid = parseFloat(paidInp?.value || 0);
+
+            if (paid <= 0) {
+                showInvoicePaymentError("يجب إدخال مبلغ مدفوع أكبر من صفر.", mode);
+                return false;
+            }
+
+            if (paid >= total && total > 0) {
+                showInvoicePaymentError("في الدفع الجزئي، المبلغ المدفوع يجب أن يكون أقل من إجمالي الفاتورة.", mode);
+                return false;
+            }
+
+            clearInvoicePaymentError(mode);
+
+            const remaining = Math.max(total - paid, 0);
+            const remElem = document.getElementById(isAdd ? 'invoiceRemainingDisplay' : 'editInvoiceRemainingDisplay');
+            if (remElem) {
+                remElem.innerText = remaining.toFixed(2);
+            }
+
+            return true;
         }
 
+        // 8. إظهار وإخفاء رسائل أخطاء الدفع وتجميد زر الحفظ
+        function showInvoicePaymentError(msg, mode = 'add') {
+            const isAdd = mode === 'add';
+            const err = document.getElementById(isAdd ? 'invoicePaidAmountError' : 'editInvoicePaidAmountError');
+            const formId = isAdd ? 'addInvoiceForm' : 'editInvoiceForm';
+            const btn = document.querySelector(`#${formId} button[type="submit"]`);
+
+            if (err) {
+                err.innerText = msg;
+                err.classList.remove('d-none');
+            }
+            if (btn) btn.disabled = true;
+        }
+
+        function clearInvoicePaymentError(mode = 'add') {
+            const isAdd = mode === 'add';
+            const err = document.getElementById(isAdd ? 'invoicePaidAmountError' : 'editInvoicePaidAmountError');
+            const formId = isAdd ? 'addInvoiceForm' : 'editInvoiceForm';
+            const btn = document.querySelector(`#${formId} button[type="submit"]`);
+
+            if (err) err.classList.add('d-none');
+            if (btn) btn.disabled = false;
+        }
+
+        // 9. فتح مودال تعديل الفاتورة وتعبئة بياناتها
         async function openEditInvoiceModal(id) {
             try {
                 const response = await fetch(`/Suppliers/GetInvoiceDetailsJson/${id}`);
@@ -587,7 +688,7 @@
                 rawMaterialsData.forEach(m => {
                     const invoiceItem = invoiceItemsMap[m.id];
                     const isChecked = invoiceItem !== undefined;
-                    
+
                     const tr = document.createElement('tr');
                     tr.className = 'invoice-item-row';
                     tr.id = `item_row_${m.id}`;
@@ -620,20 +721,14 @@
             }
         }
 
+        // 10. التحقق من صحة الفاتورة قبل الإرسال
         function validateInvoiceForm(formId) {
             const form = document.getElementById(formId);
-            
-            const totalDisplay = form.querySelector('[id$="TotalDisplay"]').innerText;
-            const total = parseFloat(totalDisplay.replace(/[^\d.-]/g, '')) || 0;
-            
-            const paidInput = form.querySelector('[id$="PaidAmount"]');
-            const paidVal = parseFloat(paidInput.value) || 0;
-            
-            if (paidVal > total + 0.001) {
-                alert("خطأ: المبلغ المدفوع لا يمكن أن يكون أكبر من إجمالي قيمة الفاتورة!");
-                paidInput.focus();
-                return false;
-            }
+            if (!form) return false;
+
+            const mode = formId === 'addInvoiceForm' ? 'add' : 'edit';
+            const pmSelect = form.querySelector('[name="PaymentMethod"]');
+            const pm = pmSelect ? pmSelect.value : '';
 
             let hasChecked = false;
             const checkboxes = form.querySelectorAll('.mat-checkbox');
@@ -646,21 +741,27 @@
                 return false;
             }
 
+            if (pm === pmPartial) {
+                const isValid = validateInvoicePartialPayment(mode);
+                if (!isValid) return false;
+            }
+
             prepareInvoiceSubmit(formId);
             return true;
         }
 
+        // 11. تجهيز أسماء مدخلات البنود للإرسال بأسماء مصفوفة C# (Items[i].Prop)
         function prepareInvoiceSubmit(formId) {
             const form = document.getElementById(formId);
             let seqIndex = 0;
-            
+
             const rows = form.querySelectorAll('.invoice-item-row');
             rows.forEach(row => {
                 const checkbox = row.querySelector('.mat-checkbox');
                 const matSelect = row.querySelector('.mat-id-input');
                 const qtyInput = row.querySelector('.qty-input');
                 const priceInput = row.querySelector('.price-input');
-                
+
                 if (checkbox && checkbox.checked) {
                     matSelect.name = `Items[${seqIndex}].RawMaterialId`;
                     qtyInput.name = `Items[${seqIndex}].Quantity`;
@@ -675,9 +776,7 @@
             return true;
         }
 
-        document.getElementById('invoicePaidAmount').addEventListener('input', () => recalculateInvoiceTotal('add'));
-        document.getElementById('editInvoicePaidAmount').addEventListener('input', () => recalculateInvoiceTotal('edit'));
-
+        // 12. فتح مودال سداد مديونية فاتورة
         function openPayInvoiceModal(id, num, supplierName, remaining) {
             document.getElementById('payInvoiceId').value = id;
             document.getElementById('payInvoiceNum').innerText = num;
@@ -687,27 +786,7 @@
             new bootstrap.Modal(document.getElementById('payInvoiceModal')).show();
         }
 
-        function confirmDeleteInvoice(id, invoiceNumber, supplierId) {
-            if (confirm(`هل أنت متأكد من حذف الفاتورة رقم #${invoiceNumber}؟\nسيتم عكس جميع الكميات المضافة للمخازن، وحذف المصروفات وحركات الخزينة التابعة لها بالكامل.`)) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '/Suppliers/DeleteInvoice';
-                
-                const idInput = document.createElement('input');
-                idInput.type = 'hidden';
-                idInput.name = 'id';
-                idInput.value = id;
-                form.appendChild(idInput);
-
-                const returnSupplierIdInput = document.createElement('input');
-                returnSupplierIdInput.type = 'hidden';
-                returnSupplierIdInput.name = 'returnSupplierId';
-                returnSupplierIdInput.value = supplierId;
-                form.appendChild(returnSupplierIdInput);
-
-                document.body.appendChild(form);
-                form.submit();
-            }
-        }
+    
+       
     </script>
 }
